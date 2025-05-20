@@ -7,7 +7,7 @@ import { useTranslation } from "./helper";
 export default function AssignmentEntryView(props: {
     assignment: AssignmentEntry;
     isSubset: boolean;
-    onCheck: (checked: boolean) => void;
+    onCheck: (checked: boolean, requestDate?: boolean) => void;
 }) {
     const dueTime = props.assignment.isDuePassed(CurrentTime) ? props.assignment.closeTime : props.assignment.dueTime;
     const dueDateString = createDateString(dueTime);
@@ -21,14 +21,13 @@ export default function AssignmentEntryView(props: {
         <>
             {!props.isSubset ? (
                 <>
-                    <input
-                        id={labelId}
-                        className="cs-checkbox"
-                        type="checkbox"
-                        checked={props.assignment.hasFinished}
-                        onChange={(ev) => props.onCheck(ev.target.checked)}
-                    ></input>
-                    <label htmlFor={labelId}></label>
+                    <div 
+                        className="cs-minus-button"
+                        onClick={() => {
+                            // マイナスボタンをクリックしたら日時入力を求める
+                            props.onCheck(true, true);
+                        }}
+                    ></div>
                     <p className="cs-assignment-date">{dueDateString}</p>
                 </>
             ) : (
@@ -52,6 +51,12 @@ export default function AssignmentEntryView(props: {
                 {props.assignment.submitted && props.assignment.allowResubmitNumber && props.assignment.allowResubmitNumber !== "-1" && (
                     <span className="cs-badge cs-badge-resubmit">
                         再提出可能回数: {props.assignment.allowResubmitNumber}
+                    </span>
+                )}
+                {/* チェックタイムスタンプがある場合に表示 */}
+                {props.assignment.checkTimestamp && (
+                    <span className="cs-badge cs-badge-timestamp">
+                        完了: {props.assignment.checkTimestamp}
                     </span>
                 )}
             </p>

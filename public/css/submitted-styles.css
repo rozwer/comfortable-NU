@@ -1,0 +1,82 @@
+/* 提出済みと非表示タブのスタイル */
+
+/* タブラベルのスタイル */
+#submittedTab + label,
+#dismissedTab + label {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    padding: 8px 15px;
+    margin-right: 2px;
+    font-weight: normal;
+}
+
+/* アクティブ状態のタブスタイル */
+#submittedTab:checked + label {
+    background-color: #62b665;
+    color: white;
+    border-color: #62b665;
+    font-weight: bold;
+}
+
+#dismissedTab:checked + label {
+    background-color: #888888;
+    color: white;
+    border-color: #888888;
+    font-weight: bold;
+}
+
+/* 非表示タブコンテンツのスタイル */
+.cs-minisakai-list-dismissed {
+    border-left: 3px solid #888888;
+    margin-bottom: 10px;
+    background-color: rgba(136, 136, 136, 0.05);
+}
+
+/* 提出済みタブコンテンツのスタイル */
+.cs-minisakai-list-submitted {
+    border-left: 3px solid #62b665;
+    margin-bottom: 10px;
+    background-color: rgba(98, 182, 101, 0.05);
+}
+
+/* バッジスタイル */
+.cs-badge-dismissed {
+    background-color: #888888;
+    color: white;
+    font-size: 0.7em;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-left: 5px;
+}
+
+.cs-badge-submitted {
+    background-color: #62b665;
+    color: white;
+    font-size: 0.7em;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-left: 5px;
+}
+
+/* クリアボタン（非表示タブで表示される課題を戻すボタン） */
+.cs-dismissed-clear-btn {
+    background-color: #888888;
+    color: white;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 5px;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.cs-dismissed-clear-btn:hover {
+    background-color: #6d6d6d;
+}

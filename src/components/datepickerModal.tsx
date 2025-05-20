@@ -1,0 +1,117 @@
+import React, { useState } from 'react';
+
+interface DatepickerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (date: string) => void;
+  initialDate?: string;
+}
+
+/**
+ * 日付選択モーダルコンポーネント
+ * 年月日時を選択できるUIを提供します
+ */
+export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClose, onSave, initialDate }) => {
+  // 現在時刻から初期値を設定
+  const now = new Date();
+  const initDate = initialDate ? new Date(initialDate.replace(/\//g, '-')) : now;
+  
+  const [year, setYear] = useState(initDate.getFullYear());
+  const [month, setMonth] = useState(initDate.getMonth() + 1);
+  const [day, setDay] = useState(initDate.getDate());
+  const [hour, setHour] = useState(initDate.getHours());
+
+  // モーダル外側をクリックした時に閉じる
+  const handleOutsideClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  // 保存処理
+  const handleSave = () => {
+    const formattedMonth = String(month).padStart(2, '0');
+    const formattedDay = String(day).padStart(2, '0');
+    const formattedHour = String(hour).padStart(2, '0');
+    
+    onSave(`${year}/${formattedMonth}/${formattedDay}/${formattedHour}`);
+  };
+
+  // モーダルが閉じている場合は何もレンダリングしない
+  if (!isOpen) return null;
+
+  // 月に応じた日数のオプションを生成
+  const getDaysInMonth = (year: number, month: number) => {
+    return new Date(year, month, 0).getDate();
+  };
+
+  const daysInSelectedMonth = getDaysInMonth(year, month);
+
+  return (
+    <div className="cs-datepicker-overlay" onClick={handleOutsideClick}>
+      <div className="cs-datepicker-modal">
+        <div className="cs-datepicker-header">
+          <h3>課題完了日時を選択</h3>
+          <button className="cs-datepicker-close-button" onClick={onClose}>✕</button>
+        </div>
+        
+        <div className="cs-datepicker-content">
+          <div className="cs-datepicker-row">
+            <div className="cs-datepicker-field">
+              <label>年</label>
+              <select 
+                value={year} 
+                onChange={(e) => setYear(parseInt(e.target.value))}
+              >
+                {Array.from({ length: 10 }, (_, i) => now.getFullYear() - 5 + i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="cs-datepicker-field">
+              <label>月</label>
+              <select 
+                value={month} 
+                onChange={(e) => setMonth(parseInt(e.target.value))}
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="cs-datepicker-field">
+              <label>日</label>
+              <select 
+                value={day}
+                onChange={(e) => setDay(parseInt(e.target.value))}
+              >
+                {Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1).map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="cs-datepicker-field">
+              <label>時</label>
+              <select 
+                value={hour} 
+                onChange={(e) => setHour(parseInt(e.target.value))}
+              >
+                {Array.from({ length: 24 }, (_, i) => i).map(h => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div className="cs-datepicker-footer">
+          <button className="cs-datepicker-cancel-button" onClick={onClose}>キャンセル</button>
+          <button className="cs-datepicker-save-button" onClick={handleSave}>保存</button>
+        </div>
+      </div>
+    </div>
+  );
+};

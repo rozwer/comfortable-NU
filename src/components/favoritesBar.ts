@@ -91,8 +91,23 @@ const createDueMap = (settings: Settings, courseMap: CourseMap): DueMap => {
         let isRead = true;
         
         for (const entry of entries.entries) {
-            // 完了済みや提出済みのエントリは考慮しない
-            if (entry.hasFinished === true) continue;
+            // 完了済みかどうかはcheckTimestampで判断
+            const checkTimestamp = (entry as any).checkTimestamp;
+            if (checkTimestamp) {
+                // yyyy/mm/dd/hh形式のタイムスタンプをパースして現在時刻と比較
+                const parts = checkTimestamp.split('/');
+                if (parts.length === 4) {
+                    const checkDate = new Date(
+                        parseInt(parts[0]), // 年
+                        parseInt(parts[1]) - 1, // 月（0-11）
+                        parseInt(parts[2]), // 日
+                        parseInt(parts[3]) // 時間
+                    );
+                    // チェック時刻が現在時刻よりも後であれば処理をスキップ
+                    if (checkDate.getTime() / 1000 > settings.appInfo.currentTime) continue;
+                }
+            }
+            // 提出済みのエントリは考慮しない
             if ((entry as any).submitted === true) continue;
 
             // エントリの締め切り時間を取得

@@ -27,7 +27,7 @@ function MiniSakaiCourse(props: {
     entries: EntryUnion[];
     dueType: DueType;
     isSubset: boolean;
-    onCheck: (entry: EntryUnion, checked: boolean) => void;
+    onCheck: (entry: EntryUnion, checked: boolean, requestDate?: boolean) => void;
     onDelete: (entry: EntryUnion) => void;
 }) {
     const divClass = useMemo(() => `cs-assignment-${props.dueType}`, [props.dueType]);
@@ -42,7 +42,7 @@ function MiniSakaiCourse(props: {
                         key={entry.getID()}
                         isSubset={props.isSubset}
                         assignment={entry}
-                        onCheck={(checked) => props.onCheck(entry, checked)}
+                        onCheck={(checked, requestDate) => props.onCheck(entry, checked, requestDate)}
                     />
                 );
             } else if (entry instanceof QuizEntry) {
@@ -51,7 +51,7 @@ function MiniSakaiCourse(props: {
                         key={entry.getID()}
                         isSubset={props.isSubset}
                         quiz={entry}
-                        onCheck={(checked) => props.onCheck(entry, checked)}
+                        onCheck={(checked, requestDate) => props.onCheck(entry, checked, requestDate)}
                     />
                 );
             } else if (entry instanceof MemoEntry) {
@@ -93,7 +93,7 @@ export function EntryTab(props: {
     showMemoBox: boolean;
     entities: EntityUnion[];
     settings: Settings;
-    onCheck: (entry: EntryUnion, checked: boolean) => void;
+    onCheck: (entry: EntryUnion, checked: boolean, requestDate?: boolean) => void;
     onDelete: (entry: EntryUnion) => void;
     onMemoAdd: (memo: MemoAddInfo) => void;
 }) {
@@ -121,7 +121,8 @@ export function EntryTab(props: {
             // エントリから追加情報を取得
             const entryInfo = {
                 openTimeString: (entry as any).openTimeString,
-                submitted: (entry as any).submitted
+                submitted: (entry as any).submitted,
+                checkTimestamp: (entry as any).checkTimestamp
             };
             
             const daysUntilDue = getDaysUntil(
@@ -185,7 +186,15 @@ export function EntryTab(props: {
                     // 提出済み課題は表示しない（課題一覧に表示しない）
                     break;
                 case "dismissed":
-                    // 非表示課題の処理（未実装）
+                    /**
+                     * -----------------------------------------------------------------
+                     * Added by: GitHub Copilot
+                     * Date       : 2025-05-20
+                     * Changes    : 非表示課題は課題一覧に表示しないように修正
+                     * Category   : 表示ロジック変更
+                     * -----------------------------------------------------------------
+                     */
+                    // 非表示課題は表示しない（課題一覧に表示しない）
                     break;
             }
         }
@@ -349,7 +358,7 @@ export function MiniSakaiEntryList(props: {
     }[];
     settings: Settings;
     isSubset: boolean;
-    onCheck: (entry: EntryUnion, checked: boolean) => void;
+    onCheck: (entry: EntryUnion, checked: boolean, requestDate?: boolean) => void;
     onDelete: (entry: EntryUnion) => void;
 }) {
     const className = useMemo(() => {
@@ -391,7 +400,7 @@ export function MiniSakaiEntryList(props: {
                 isSubset={props.isSubset}
                 dueType={props.dueType}
                 entries={entries.sort(sortEntries)}
-                onCheck={(entry, checked) => props.onCheck(entry, checked)}
+                onCheck={(entry, checked, requestDate) => props.onCheck(entry, checked, requestDate)}
                 onDelete={(entry) => props.onDelete(entry)}
             />
         );

@@ -1,9 +1,10 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { useTranslation } from "./helper";
 import { formatTimestamp, getEntities, updateIsReadFlag } from "../utils";
 import { EntityUnion, EntryTab, EntryUnion, MemoAddInfo } from "./entryTab";
 import { SettingsChange, SettingsTab } from "./settings";
 import { SubmittedEntryList } from "./submittedEntryList";
+import { DismissedEntryList } from "./dismissedEntryList";
 import _ from "lodash";
 import { applyColorSettings, toggleMiniSakai } from "../minisakai";
 import { Settings } from "../features/setting/types";
@@ -16,6 +17,7 @@ import { MemoEntry } from "../features/entity/memo/types";
 import { removeMemoEntry, saveNewMemoEntry } from "../features/entity/memo/saveMemo";
 import { createFavoritesBar, resetFavoritesBar } from "./favoritesBar";
 import { getSakaiCourses } from "../features/course/getCourse";
+import { DatepickerModal } from "./datepickerModal";
 
 export const MiniSakaiContext = React.createContext<{
     settings: Settings;
@@ -58,6 +60,34 @@ type MiniSakaiRootState = {
      * -----------------------------------------------------------------
      */
     submittedMemoBoxShown: boolean; // 提出済みタブ用のメモボックス表示状態
+    /**
+     * -----------------------------------------------------------------
+     * Added by: roz
+     * Date       : 2025-05-20
+     * Changes    : 非表示タブ用のメモボックス表示状態を追加
+     * Category   : 状態管理
+     * -----------------------------------------------------------------
+     */
+    dismissedMemoBoxShown: boolean; // 非表示タブ用のメモボックス表示状態
+    /**
+     * -----------------------------------------------------------------
+     * Added by: roz
+     * Date       : 2025-05-20
+     * Changes    : 選択された非表示エントリを追加
+     * Category   : 状態管理
+     * -----------------------------------------------------------------
+     */
+    selectedDismissedEntry: EntryUnion | null; // 選択された非表示エントリ
+    /**
+     * -----------------------------------------------------------------
+     * Added by: roz
+     * Date       : 2025-05-20
+     * Changes    : 日付ピッカーモーダルの状態を追加
+     * Category   : 状態管理
+     * -----------------------------------------------------------------
+     */
+    datepickerModalOpen: boolean; // 日付ピッカーモーダルの表示状態
+    currentEntry: EntryUnion | null; // 日付設定対象のエントリ
 };
 
 export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakaiRootState> {
@@ -72,7 +102,11 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
             },
             shownTab: "assignment",
             memoBoxShown: false,
-            submittedMemoBoxShown: false
+            submittedMemoBoxShown: false,
+            dismissedMemoBoxShown: false,
+            selectedDismissedEntry: null,
+            datepickerModalOpen: false,
+            currentEntry: null
         };
 
         this.onCheck = this.onCheck.bind(this);
@@ -104,11 +138,41 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
             });
         });
         
+        /**
+         * -----------------------------------------------------------------
+         * Added by: GitHub Copilot
+         * Date       : 2025-05-20
+         * Changes    : 日付ピッカー用のCSSを動的に読み込み
+         * Category   : UI改善
+         * -----------------------------------------------------------------
+         */
+        // 日付ピッカー用のCSSを動的に読み込む
+        this.loadDatePickerCSS();
+        
         getStoredSettings(this.props.hostname).then((s) => {
             this.setState({ settings: s }, () => {
                 this.reloadEntities();
             });
         });
+    }
+    
+    /**
+     * -----------------------------------------------------------------
+     * Added by: GitHub Copilot
+     * Date       : 2025-05-20
+     * Changes    : 日付ピッカー用のCSSを動的に読み込む関数を追加
+     * Category   : UI改善
+     * -----------------------------------------------------------------
+     */
+    private loadDatePickerCSS() {
+        // すでに読み込まれているかチェック
+        if (!document.querySelector('link[href*="date-picker.css"]')) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.type = 'text/css';
+            link.href = chrome.runtime.getURL('css/date-picker.css');
+            document.head.appendChild(link);
+        }
     }
     
     componentWillUnmount() {
@@ -154,13 +218,34 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                 .map(item => item.entry);
             
             // 非表示の課題を抽出
-            // 注：現在「非表示」タグはまだ割り振っていないので、空のリストを返します
-            const dismissedEntries: EntryUnion[] = []; // 一時的に空リストを設定
-            
-            // 将来的にはこのようなコードになる予定:
-            // const dismissedEntries = allEntries
-            //    .filter(item => (item.entry as any).dismissed === true)
-            //    .map(item => item.entry);
+            // checkTimestampが現時刻より後であれば非表示タブに振り分け
+            const dismissedEntries = allEntries
+                .filter(item => {
+                    // checkTimestampを持っている場合はチェック
+                    const checkTimestamp = (item.entry as any).checkTimestamp;
+                    if (!checkTimestamp) return false;
+                    
+                    // フォーマット：yyyy/mm/dd/hh
+                    try {
+                        const parts = checkTimestamp.split('/');
+                        if (parts.length !== 4) return false;
+                        
+                        // タイムスタンプを解析
+                        const checkDate = new Date(
+                            parseInt(parts[0]), // 年
+                            parseInt(parts[1]) - 1, // 月（JavaScriptでは0始まり）
+                            parseInt(parts[2]), // 日
+                            parseInt(parts[3]) // 時間
+                        );
+                        
+                        // 現在時刻よりも後ならtrue（非表示タブに表示）
+                        return checkDate.getTime() / 1000 > this.state.settings.appInfo.currentTime;
+                    } catch (e) {
+                        console.error("Invalid timestamp format:", e);
+                        return false;
+                    }
+                })
+                .map(item => item.entry);
             
             this.setState({
                 entities: allEntities,
@@ -173,11 +258,73 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
         });
     }
 
-    private onCheck(entry: EntryUnion, checked: boolean) {
+    /**
+     * -----------------------------------------------------------------
+     * Modified by: GitHub Copilot
+     * Date       : 2025-05-20
+     * Changes    : 日付入力をDatepickerModalを使用する形に変更
+     * Category   : UI改善
+     * -----------------------------------------------------------------
+     */
+    private onCheck(entry: EntryUnion, checked: boolean, requestDate?: boolean) {
         const newEntry = _.cloneDeep(entry);
-        newEntry.hasFinished = checked;
-        newEntry.save(this.props.hostname).then(() => {
-            this.reloadEntities();
+        
+        // マイナスボタンをクリックした時の処理（日付ピッカーを表示）
+        if (requestDate) {
+            // 日付ピッカーモーダルを表示するための状態をセット
+            this.setState({
+                datepickerModalOpen: true,
+                currentEntry: entry
+            });
+            return; // モーダルでの操作が完了するまで保存せず終了
+        } else {
+            // checkTimestampを削除
+            (newEntry as any).checkTimestamp = undefined;
+            
+            newEntry.save(this.props.hostname).then(() => {
+                this.reloadEntities();
+            });
+        }
+    }
+    
+    /**
+     * -----------------------------------------------------------------
+     * Added by: GitHub Copilot
+     * Date       : 2025-05-20
+     * Changes    : 日付ピッカーモーダルでの保存処理を追加
+     * Category   : UI改善
+     * -----------------------------------------------------------------
+     */
+    private handleDatepickerSave = (dateString: string) => {
+        if (this.state.currentEntry) {
+            const newEntry = _.cloneDeep(this.state.currentEntry);
+            // 入力された日時を保存
+            (newEntry as any).checkTimestamp = dateString;
+            
+            newEntry.save(this.props.hostname).then(() => {
+                // モーダルを閉じて状態をクリア
+                this.setState({
+                    datepickerModalOpen: false,
+                    currentEntry: null
+                }, () => {
+                    this.reloadEntities();
+                });
+            });
+        }
+    }
+    
+    /**
+     * -----------------------------------------------------------------
+     * Added by: GitHub Copilot
+     * Date       : 2025-05-20
+     * Changes    : 日付ピッカーモーダルを閉じる処理を追加
+     * Category   : UI改善
+     * -----------------------------------------------------------------
+     */
+    private handleDatepickerClose = () => {
+        this.setState({
+            datepickerModalOpen: false,
+            currentEntry: null
         });
     }
 
@@ -187,7 +334,8 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
             // メモ追加後にメモボックスを閉じる
             this.setState({
                 memoBoxShown: false,
-                submittedMemoBoxShown: false
+                submittedMemoBoxShown: false,
+                dismissedMemoBoxShown: false
             }, () => {
                 this.reloadEntities();
             });
@@ -340,12 +488,49 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                     </>
                 ) : null}
                 {this.state.shownTab === "dismissed" ? (
-                    <div className="cs-tab-content">
+                    <>
                         <h3>非表示の課題</h3>
-                        <p>「非表示」機能は現在開発中です。将来のバージョンで実装される予定です。</p>
-                        <p>この機能を使用すると、特定の課題をリストから非表示にできるようになります。</p>
-                    </div>
+                        {this.state.filteredEntities.dismissed.length > 0 ? (
+                            <DismissedEntryList
+                                entriesWithCourse={this.state.filteredEntities.dismissed.map(entry => {
+                                    // 元々のエントリに対応するコースを見つける
+                                    const entityWithCourse = this.state.entities.find(entity => 
+                                        entity.entries.some(e => e.id === entry.id)
+                                    );
+                                    return {
+                                        entry: entry,
+                                        course: entityWithCourse ? entityWithCourse.getCourse() : { id: "", name: "Unknown", link: "" }
+                                    };
+                                })}
+                                isSubset={this.props.subset}
+                                hostname={this.state.settings.appInfo.hostname}
+                                showMemoBox={this.state.dismissedMemoBoxShown}
+                                onMemoAdd={this.onMemoAdd}
+                                onEntryClick={(entry) => {
+                                    // 選択された非表示エントリを記憶
+                                    this.setState({ selectedDismissedEntry: entry }, () => {
+                                        // checkTimestampをクリア
+                                        this.onCheck(entry, false);
+                                    });
+                                }}
+                                onToggleMemoBox={(show) => {
+                                    this.setState({ dismissedMemoBoxShown: show });
+                                }}
+                            />
+                        ) : (
+                            <div className="cs-empty-message">非表示に設定した課題はありません</div>
+                        )}
+                    </>
                 ) : null}
+                
+                {/* 日付ピッカーモーダル */}
+                <DatepickerModal
+                    isOpen={this.state.datepickerModalOpen}
+                    onClose={this.handleDatepickerClose}
+                    onSave={this.handleDatepickerSave}
+                    initialDate={this.state.currentEntry ? 
+                        (this.state.currentEntry as any).checkTimestamp : undefined}
+                />
             </MiniSakaiContext.Provider>
         );
     }

@@ -19,7 +19,8 @@ export class AssignmentEntry implements EntryProtocol {
         public hasFinished: boolean,
         public openTimeString?: string,
         public submitted?: boolean,
-        public allowResubmitNumber?: string
+        public allowResubmitNumber?: string,
+        public checkTimestamp?: string  // チェック時のタイムスタンプを保存
     ) {}
 
     getTimestamp(currentTime: number, showLateAcceptedEntry: boolean): number {

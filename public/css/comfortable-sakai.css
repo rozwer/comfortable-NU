@@ -439,8 +439,34 @@
     box-shadow: 2px 0 0 white, 4px 0 0 white, 4px -2px 0 white, 4px -4px 0 white, 4px -6px 0 white, 4px -8px 0 white;
     -webkit-transform: rotate(45deg);
     transform: rotate(45deg);
-    margin-top: 3px;
-    margin-left: 5px;
+}
+
+/* マイナスボタンのスタイル */
+.cs-minus-button {
+    display: inline-block;
+    vertical-align: middle;
+    width: 20px;
+    height: 20px;
+    background: #0064cd;
+    border-radius: 10px;
+    margin: 3px 5px 0 5px;
+    cursor: pointer;
+    position: relative;
+}
+
+.cs-minus-button:hover {
+    background: #004e9e;
+}
+
+.cs-minus-button::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 9px;
+    width: 10px;
+    height: 2px;
+    background-color: white;
+
 }
 
 .cs-tab *, .cs-tab *:before, .cs-tab *:after {
@@ -548,6 +574,12 @@
  * Category   : スタイル追加
  * -----------------------------------------------------------------
  */
+.cs-badge-timestamp {
+    color: #fff;
+    background-color: #17a2b8;
+    margin-left: 5px;
+    font-size: 0.75em;
+}
 .cs-badge-resubmit {
     color: #fff;
     background-color: #c24a4a;

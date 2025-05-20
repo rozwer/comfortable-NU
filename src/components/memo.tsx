@@ -6,7 +6,7 @@ import { useTranslation } from "./helper";
 export default function MemoEntryView(props: {
     memo: MemoEntry;
     isSubset: boolean;
-    onCheck: (checked: boolean) => void;
+    onCheck: (checked: boolean, requestDate?: boolean) => void;
     onDelete: () => void;
 }) {
     const dueDateString = createDateString(props.memo.dueTime);
@@ -20,14 +20,13 @@ export default function MemoEntryView(props: {
         <>
             {!props.isSubset ? (
                 <>
-                    <input
-                        id={labelId}
-                        className="cs-checkbox"
-                        type="checkbox"
-                        checked={props.memo.hasFinished}
-                        onChange={(ev) => props.onCheck(ev.target.checked)}
-                    ></input>
-                    <label htmlFor={labelId}></label>
+                    <div 
+                        className="cs-minus-button"
+                        onClick={() => {
+                            // マイナスボタンをクリックしたら日時入力を求める
+                            props.onCheck(true, true);
+                        }}
+                    ></div>
                     <p className="cs-assignment-date">{dueDateString}</p>
                 </>
             ) : (
@@ -41,6 +40,11 @@ export default function MemoEntryView(props: {
                     <img src={chrome.runtime.getURL("img/closeBtn.svg")} alt="delete memo" className="cs-del-memo-btn" />
                 </a>
                 {props.memo.title}
+                {props.memo.checkTimestamp && (
+                    <span className="cs-badge cs-badge-timestamp">
+                        完了: {props.memo.checkTimestamp}
+                    </span>
+                )}
             </p>
         </>
     );

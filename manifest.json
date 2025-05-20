@@ -20,7 +20,8 @@
       ],
       "css": [
         "css/comfortable-sakai.css",
-        "css/tact-extension.css"
+        "css/tact-extension.css",
+        "css/date-picker.css"
       ],
       "matches": [
         "http://*/*",
@@ -39,6 +40,7 @@
       "resources": [
         "css/comfortable-sakai.css",
         "css/tact-extension.css",
+        "css/date-picker.css",
         "img/logo.png",
         "img/noAssignment.png",
         "img/miniSakaiBtn.png",

@@ -14,7 +14,7 @@ export const decodeMemoFromArray = (data: Array<any>): Array<Memo> => {
         const course: Course = new Course(memo.course.id, memo.course.name, memo.course.link);
         const entries: Array<MemoEntry> = [];
         for (const e of memo.entries) {
-            const entry = new MemoEntry(e.id, e.title, e.dueTime, e.hasFinished);
+            const entry = new MemoEntry(e.id, e.title, e.dueTime, e.hasFinished, e.checkTimestamp || null);
             if (entry.getDueDateTimestamp > CurrentTime) entries.push(entry);
         }
         memos.push(new Memo(course, entries));

@@ -1,0 +1,26 @@
+/* マイナスボタンのスタイル */
+.cs-minus-button {
+    display: inline-block;
+    vertical-align: middle;
+    width: 20px;
+    height: 20px;
+    background: #0064cd;
+    border-radius: 10px;
+    margin: 3px 5px 0 5px;
+    cursor: pointer;
+    position: relative;
+}
+
+.cs-minus-button:hover {
+    background: #004e9e;
+}
+
+.cs-minus-button::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 9px;
+    width: 10px;
+    height: 2px;
+    background-color: white;
+}

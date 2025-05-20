@@ -101,10 +101,32 @@ export async function getFetchTime(hostname: string): Promise<FetchTime> {
  * @param {object} entryInfo Optional entry information
  * @returns {DueCategory}
  */
-function getDaysUntil(dt1: number, dt2: number, entryInfo?: { openTimeString?: string; submitted?: boolean }): DueCategory {
+function getDaysUntil(dt1: number, dt2: number, entryInfo?: { openTimeString?: string; submitted?: boolean; checkTimestamp?: string }): DueCategory {
     // 提出状態がtrueならsubmittedカテゴリを割り当て
     if (entryInfo && entryInfo.submitted === true) {
         return "submitted";
+    }
+    
+    // チェックタイムスタンプがあり、現在時刻より後なら非表示カテゴリを割り当て
+    if (entryInfo && entryInfo.checkTimestamp) {
+        try {
+            const parts = entryInfo.checkTimestamp.split('/');
+            if (parts.length === 4) {
+                const checkDate = new Date(
+                    parseInt(parts[0]), // 年
+                    parseInt(parts[1]) - 1, // 月（JavaScriptでは0始まり）
+                    parseInt(parts[2]), // 日
+                    parseInt(parts[3]) // 時間
+                );
+                
+                // チェック時刻が現在時刻よりも後であれば非表示
+                if (checkDate.getTime() / 1000 > dt1) {
+                    return "dismissed";
+                }
+            }
+        } catch (e) {
+            console.error("Invalid timestamp format:", e);
+        }
     }
     
     // 公開日より前ならnotPublishedカテゴリを割り当て
@@ -164,8 +186,22 @@ export const getClosestTime = (settings: Settings, entries: Array<EntryProtocol>
         .filter((e) => {
             // Check if user chose to hide completed Entry
             if (!option.showCompletedEntry) {
-                // Skip if the Entry is completed
-                if (e.hasFinished) return false;
+                // 完了したエントリーかどうかは、チェックタイムスタンプの日付が現在時刻よりも後であるかどうかで判断する
+                const checkTimestamp = (e as any).checkTimestamp;
+                if (checkTimestamp) {
+                    // yyyy/mm/dd/hh形式のタイムスタンプをパースして現在時刻と比較
+                    const parts = checkTimestamp.split('/');
+                    if (parts.length === 4) {
+                        const checkDate = new Date(
+                            parseInt(parts[0]), // 年
+                            parseInt(parts[1]) - 1, // 月（0-11）
+                            parseInt(parts[2]), // 日
+                            parseInt(parts[3]) // 時間
+                        );
+                        // チェック時刻が現在時刻よりも後であればtrueを返す（表示しない）
+                        if (checkDate.getTime() / 1000 > settings.appInfo.currentTime) return false;
+                    }
+                }
             }
             return settings.appInfo.currentTime <= e.getTimestamp(appInfo.currentTime, option.showLateAcceptedEntry);
         })

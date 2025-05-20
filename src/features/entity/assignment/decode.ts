@@ -79,7 +79,8 @@ export const decodeAssignmentFromArray = (data: Array<any>): Array<Assignment> =
                 e.hasFinished,
                 e.openTimeString || null,
                 e.submitted || false,
-                e.allowResubmitNumber || "-1"
+                e.allowResubmitNumber || "-1",
+                e.checkTimestamp || null
             );
             if (entry.getCloseDateTimestamp > CurrentTime) entries.push(entry);
         }
