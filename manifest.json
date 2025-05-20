@@ -35,6 +35,9 @@
   "permissions": [
     "storage"
   ],
+  "host_permissions": [
+    "https://tact.ac.thers.ac.jp/*"
+  ],
   "web_accessible_resources": [
     {
       "resources": [

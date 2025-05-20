@@ -13,4 +13,6 @@ export const SettingsStorage = "Settings";
 export const AssignmentFetchTimeStorage = "AssignmentFetchTime";
 export const QuizFetchTimeStorage = "QuizFetchTime";
 export const HostnameStorage = "Hostname";
+export const TimetableYearStorage = "TimetableYear";
+export const TimetableTermStorage = "TimetableTerm";
 export const MaxTimestamp = 99999999999999;

@@ -3,8 +3,9 @@
  * このモジュールはTACTポータルに時間割表示機能を追加します
  */
 
-import { MaxTimestamp } from "../../constant";
+import { MaxTimestamp, TimetableYearStorage, TimetableTermStorage } from "../../constant";
 import { courseColorInfo } from "../../components/favoritesBar";
+import { fromStorage, toStorage } from "../storage";
 
 // 講義情報を格納する型
 interface CourseInfo {
@@ -139,12 +140,50 @@ const SAMPLE_COURSES: CourseInfo[] = [
  */
 let cachedCourses: CourseInfo[] | null = null;
 
+/**
+ * 保存された時間割設定を読み込む
+ * @param hostname サイトのホスト名
+ * @returns 年度と学期の設定情報
+ */
+async function loadTimetableSettings(hostname: string): Promise<{year: string, term: string}> {
+    // LocalStorageから年度と学期の設定を読み込む
+    const savedYear = await fromStorage<string | undefined>(hostname, TimetableYearStorage, 
+        (data: any) => data === undefined ? undefined : String(data));
+    
+    const savedTerm = await fromStorage<string | undefined>(hostname, TimetableTermStorage,
+        (data: any) => data === undefined ? undefined : String(data));
+    
+    // 現在の年度をデフォルト値として使用
+    const currentYear = new Date().getFullYear().toString();
+    
+    return {
+        year: savedYear || currentYear,
+        term: savedTerm || 'spring'
+    };
+}
+
+/**
+ * 時間割設定を保存する
+ * @param hostname サイトのホスト名
+ * @param year 年度
+ * @param term 学期
+ */
+async function saveTimetableSettings(hostname: string, year: string, term: string): Promise<void> {
+    // 年度と学期の設定をLocalStorageに保存
+    await toStorage(hostname, TimetableYearStorage, year);
+    await toStorage(hostname, TimetableTermStorage, term);
+    console.log(`時間割設定を保存しました - 年度: ${year}, 学期: ${term}`);
+}
+
 export const showTimetableModal = (): void => {
     // 既存のモーダルがあれば削除
     const existingModal = document.querySelector('.cs-tact-modal');
     if (existingModal) {
         existingModal.remove();
     }
+    
+    // 現在のホスト名を取得
+    const currentHostname = window.location.hostname;
     
     // 講義情報の事前取得を試みる
     setTimeout(() => {
@@ -221,15 +260,8 @@ export const showTimetableModal = (): void => {
         const option = document.createElement('option');
         option.value = String(year);
         option.textContent = `${year}年`;
-        if (year === currentYear) {
-            option.selected = true;
-        }
         yearSelect.appendChild(option);
     }
-    
-    yearSelect.addEventListener('change', updateTimetable);
-    yearSelector.appendChild(yearSelect);
-    selectors.appendChild(yearSelector);
     
     // 学期選択
     const termSelector = document.createElement('div');
@@ -258,7 +290,33 @@ export const showTimetableModal = (): void => {
         termSelect.appendChild(option);
     });
     
+    // 保存されている設定を読み込む
+    const currentSiteHostname = window.location.hostname;
+    loadTimetableSettings(currentSiteHostname).then(settings => {
+        // 年度セレクトボックスを設定
+        for (let i = 0; i < yearSelect.options.length; i++) {
+            if (yearSelect.options[i].value === settings.year) {
+                yearSelect.selectedIndex = i;
+                break;
+            }
+        }
+        
+        // 学期セレクトボックスを設定
+        for (let i = 0; i < termSelect.options.length; i++) {
+            if (termSelect.options[i].value === settings.term) {
+                termSelect.selectedIndex = i;
+                break;
+            }
+        }
+    });
+    
+    // イベントリスナー設定
+    yearSelect.addEventListener('change', updateTimetable);
     termSelect.addEventListener('change', updateTimetable);
+    
+    yearSelector.appendChild(yearSelect);
+    selectors.appendChild(yearSelector);
+    
     termSelector.appendChild(termSelect);
     selectors.appendChild(termSelector);
     
@@ -278,9 +336,13 @@ export const showTimetableModal = (): void => {
     // ページにモーダルを追加
     document.body.appendChild(modalContainer);
     
-    // 初期表示
+    // 保存された設定を読み込んでから初期表示
     console.log('時間割モーダルを初期化します');
-    updateTimetable();
+    const siteHostname = window.location.hostname;
+    loadTimetableSettings(siteHostname).then(settings => {
+        // ロードした後にyearSelectとtermSelectを更新した後で初期表示
+        updateTimetable();
+    });
     
     // 年度・学期選択のデバッグ表示
     yearSelect.addEventListener('change', () => {
@@ -605,6 +667,10 @@ function updateTimetable() {
     const year = yearSelect.value;
     const term = termSelect.value;
     
+    // 選択された値をローカルストレージに保存
+    const currentSiteHostname = window.location.hostname;
+    saveTimetableSettings(currentSiteHostname, year, term);
+    
     // まず時間割表示領域をクリア
     timetableDiv.innerHTML = '';
     
@@ -688,17 +754,48 @@ function updateTimetable() {
         const normalizedCourseTerm = normalizeTerm(course.term);
         const normalizedSelectedTerm = term;
         
-        // 春・秋の大分類だけで比較
+        // 春・秋の大分類を抽出
         const courseTermBase = normalizedCourseTerm.split('-')[0]; // spring or fall
         const selectedTermBase = normalizedSelectedTerm.split('-')[0]; // spring or fall
         
+        // 学期の番号を抽出 (spring-1 -> 1, spring-2 -> 2)
+        const courseTermNumber = normalizedCourseTerm.includes('-') ? normalizedCourseTerm.split('-')[1] : '';
+        const selectedTermNumber = normalizedSelectedTerm.includes('-') ? normalizedSelectedTerm.split('-')[1] : '';
+        
         // 学期の詳細まで確認（spring-1, spring-2など）
-        const termMatch = 
-            normalizedCourseTerm === normalizedSelectedTerm || // 完全一致
-            (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')); // 大分類のみ一致
+        let termMatch = false;
+        
+        // Case 1: 完全一致（例: spring-1 と spring-1）
+        if (normalizedCourseTerm === normalizedSelectedTerm) {
+            termMatch = true;
+        }
+        // Case 2: 大分類のみ選択時は全ての細分類を表示（例: 選択がspringで講義がspring-1、spring-2）
+        else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
+            termMatch = true;
+        }
+        // Case 3: 講義が大分類のみの場合は表示（例: 選択がspring-1で講義がspring）
+        else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
+            termMatch = true;
+        }
+        // Case 4: 選択が細分類（spring-1など）で講義が別の細分類（spring-2など）の場合は表示しない
+        // （例: 選択がspring-1で講義がspring-2の場合、条件に当てはまらないので自動的に除外される）
+        
+        // フィルタリング結果の理由を詳細に出力
+        let termMatchReason = '';
+        if (normalizedCourseTerm === normalizedSelectedTerm) {
+            termMatchReason = '完全一致';
+        } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
+            termMatchReason = '大分類一致（選択が大分類のみ）';
+        } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
+            termMatchReason = '大分類一致（講義が大分類のみ）';
+        } else if (courseTermBase === selectedTermBase) {
+            termMatchReason = '大分類一致だが細分類不一致（表示しない）';
+        } else {
+            termMatchReason = '不一致';
+        }
         
         // デバッグ出力を追加
-        console.log(`フィルタリング - 講義: ${course.title}, 保存年度: ${course.academicYear || "なし"}, 抽出年度: ${courseYear || "不明"}, 選択年度: ${year}, 学期: ${course.term}, 正規化: ${normalizedCourseTerm}, 年度一致: ${isYearMatching}, 学期一致: ${termMatch}`);
+        console.log(`フィルタリング - 講義: ${course.title}, 保存年度: ${course.academicYear || "なし"}, 抽出年度: ${courseYear || "不明"}, 選択年度: ${year}, 学期: ${course.term}, 正規化: ${normalizedCourseTerm}, 年度一致: ${isYearMatching}, 学期一致: ${termMatch}, 理由: ${termMatchReason}`);
         
         return isYearMatching && termMatch;
     });
