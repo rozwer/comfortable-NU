@@ -756,6 +756,8 @@ function updateTimetable() {
             cell.style.verticalAlign = 'top';
             cell.style.border = '1px solid #ddd';
             cell.style.height = '120px'; // セルの高さを固定
+            cell.style.cursor = 'pointer'; // クリック可能なことを示すカーソル
+            cell.style.transition = 'all 0.3s ease'; // すべての変化をスムーズに
             
             // その時限・曜日の授業データを検索
             const coursesForCell = filteredCourses.filter(course => {
@@ -766,6 +768,37 @@ function updateTimetable() {
                 // カテゴリ情報を抽出
                 const courseCategoryMap = extractCourseCategories();
                 
+                // 最初のコースのURLを取得（複数ある場合は最初のもののみ使用）
+                const courseUrl = coursesForCell[0].url;
+                
+                // 最初のコースのカテゴリ情報を取得して背景色を設定する
+                const firstCourse = coursesForCell[0];
+                const shortTitle = firstCourse.title.split('(')[0].trim();
+                const category = courseCategoryMap.get(shortTitle);
+                
+                // カテゴリに基づいてセルの背景色を設定
+                if (category && category !== 'passed') {
+                    // カテゴリ別の背景色設定
+                    if (category === 'due24h') {
+                        cell.style.backgroundColor = 'rgba(255, 82, 82, 0.1)'; // 薄い赤
+                        cell.dataset.category = 'due24h';
+                    } else if (category === 'due5d') {
+                        cell.style.backgroundColor = 'rgba(255, 215, 0, 0.1)'; // 薄い黄色
+                        cell.dataset.category = 'due5d';
+                    } else if (category === 'due14d') {
+                        cell.style.backgroundColor = 'rgba(76, 175, 80, 0.1)'; // 薄い緑
+                        cell.dataset.category = 'due14d';
+                    } else if (category === 'dueOver14d') {
+                        cell.style.backgroundColor = 'rgba(224, 224, 224, 0.3)'; // 薄いグレー
+                        cell.dataset.category = 'dueOver14d';
+                    }
+                }
+                
+                // セル全体をクリック可能に
+                cell.addEventListener('click', () => {
+                    window.location.href = courseUrl;
+                });
+                
                 // 複数の講義がある場合は全て表示
                 coursesForCell.forEach(course => {
                     const courseDiv = document.createElement('div');
@@ -774,10 +807,6 @@ function updateTimetable() {
                     courseDiv.style.padding = '4px 2px';
                     courseDiv.style.minHeight = '40px';    // 最小高さを設定
 
-                    
-                    const courseLink = document.createElement('a');
-                    courseLink.href = course.url;
-                    
                     // タイトルを適切な長さに調整（年度情報などを除去）
                     let displayTitle = course.title;
                     if (displayTitle.includes('(')) {
@@ -789,65 +818,23 @@ function updateTimetable() {
                         displayTitle = displayTitle.substring(0, 12) + '...';
                     }
                     
-                    courseLink.textContent = displayTitle;
-                    courseLink.className = 'cs-timetable-link';
-                    courseLink.title = course.title; // ツールチップには完全なタイトルを表示
-                    courseLink.style.display = 'block';
-                    courseLink.style.overflow = 'hidden';
-                    courseLink.style.textOverflow = 'ellipsis';
-                    courseLink.style.whiteSpace = 'nowrap';
-                    courseLink.style.fontSize = '12px';
-                    // 同じタブで開く（_blankを指定しない）
+                    // タイトルをテキストとして表示
+                    const courseTitleEl = document.createElement('div');
+                    courseTitleEl.textContent = displayTitle;
+                    courseTitleEl.className = 'cs-timetable-title';
+                    courseTitleEl.title = course.title; // ツールチップには完全なタイトルを表示
+                    courseTitleEl.style.display = 'block';
+                    courseTitleEl.style.overflow = 'hidden';
+                    courseTitleEl.style.textOverflow = 'ellipsis';
+                    courseTitleEl.style.whiteSpace = 'nowrap';
+                    courseTitleEl.style.fontSize = '12px';
+                    courseTitleEl.style.color = '#265b81'; // リンク色を維持
+                    courseTitleEl.style.fontWeight = 'bold';
                     
-                    courseDiv.appendChild(courseLink);
+                    courseDiv.appendChild(courseTitleEl);
                     
                     // コース名を短縮してマップから探す
-                    const shortTitle = course.title.split('(')[0].trim();
-                    const category = courseCategoryMap.get(shortTitle);
-                    
-                    // カテゴリ情報（タグ）があれば表示
-                    if (category && category !== 'passed') { // passedは表示しない
-                        const tagDiv = document.createElement('div');
-                        tagDiv.className = `cs-timetable-tag cs-timetable-tag-${category}`;
-                        
-                        // 全角空白6つを表示
-                        tagDiv.textContent = '　　　　　　';
-                        
-                        // カテゴリに応じたスタイルを適用
-                        tagDiv.style.fontSize = '9px';
-                        tagDiv.style.padding = '2px 4px';
-                        tagDiv.style.margin = '2px 0';
-                        tagDiv.style.borderRadius = '3px';
-                        tagDiv.style.display = 'inline-block';
-                        tagDiv.style.textAlign = 'center';
-                        tagDiv.style.width = 'auto';
-                        tagDiv.style.minWidth = '20px';
-                        tagDiv.style.maxWidth = '100%';
-                        tagDiv.style.zIndex = '10';
-                        tagDiv.style.textOverflow = 'ellipsis';
-                        tagDiv.style.whiteSpace = 'nowrap';
-                        tagDiv.style.overflow = 'hidden';
-                        
-                        // カテゴリ別の色分け
-                        if (category === 'due24h') {
-                            tagDiv.style.backgroundColor = '#FF5252'; // 赤
-                            tagDiv.style.color = '#FFF';
-                        } else if (category === 'due5d') {
-                            tagDiv.style.backgroundColor = '#FFD700'; // 黄色
-                            tagDiv.style.color = '#000';
-                        } else if (category === 'due14d') {
-                            tagDiv.style.backgroundColor = '#4CAF50'; // 緑
-                            tagDiv.style.color = '#FFF';
-                        } else if (category === 'dueOver14d') {
-                            tagDiv.style.backgroundColor = '#E0E0E0'; // グレー
-                            tagDiv.style.color = '#666';
-                        }
-                        
-                        courseDiv.appendChild(tagDiv);
-                        
-                        // デバッグ情報
-                        console.log(`コースにタグ付け: ${shortTitle} - カテゴリ: ${category}`);
-                    }
+                    // 注: カテゴリ情報はすでにセル全体に適用されているので、ここでは何もしない
                     
                     cell.appendChild(courseDiv);
                     

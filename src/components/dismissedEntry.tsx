@@ -1,6 +1,6 @@
 /**
  * -----------------------------------------------------------------
- * Created by: GitHub Copilot
+ * Created by: roz
  * Date       : 2025-05-20
  * Changes    : 非表示課題のエントリ表示用コンポーネント
  * Category   : UI追加

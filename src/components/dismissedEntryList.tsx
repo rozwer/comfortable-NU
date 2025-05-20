@@ -1,6 +1,6 @@
 /**
  * -----------------------------------------------------------------
- * Created by: GitHub Copilot
+ * Created by: roz
  * Date       : 2025-05-20
  * Changes    : 非表示課題のリスト表示用コンポーネント
  * Category   : UI追加
@@ -17,7 +17,7 @@ import { getSakaiCourses } from "../features/course/getCourse";
 
 /**
  * -----------------------------------------------------------------
- * Added by: GitHub Copilot
+ * Added by: roz
  * Date       : 2025-05-20
  * Changes    : 非表示タブでのメモ追加機能
  * Category   : 機能拡張

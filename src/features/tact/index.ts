@@ -217,7 +217,7 @@ export const addSampleCustomTabs = (): void => {
     addCustomToolTab(
         '掲示板',
         'icon-sakai--sakai-forums cs-custom-icon',
-        'カスタム掲示板',
+        'カスタム掲示板(開発中)',
         () => {
             // 掲示板のコンテンツ
             const forumContainer = document.createElement('div');
@@ -227,7 +227,7 @@ export const addSampleCustomTabs = (): void => {
             forumHeader.className = 'cs-forum-header';
             
             const forumTitle = document.createElement('h3');
-            forumTitle.textContent = 'カスタム掲示板';
+            forumTitle.textContent = 'カスタム掲示板(開発中)';
             forumHeader.appendChild(forumTitle);
             
             const newPostButton = document.createElement('button');
@@ -336,7 +336,7 @@ export const addSampleCustomTabs = (): void => {
             
             forumContainer.appendChild(postList);
             
-            showTabContent('カスタム掲示板', forumContainer);
+            showTabContent('カスタム掲示板(開発中)', forumContainer);
         }
     );
 };

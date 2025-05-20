@@ -973,8 +973,8 @@ input[type="radio"]:disabled + label {
 }
 
 .cs-tab-default {
-    /* デフォルト色の設定（または色なし）*/
-    background: inherit !important;
-    color: inherit !important;
-    border: inherit !important;
+    /* デフォルト色の設定 */
+    background: #E5E5E5 !important;
+    color: #333435 !important;
+    border: 0 solid #E5E5E5 !important;
 }

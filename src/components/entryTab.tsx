@@ -188,7 +188,7 @@ export function EntryTab(props: {
                 case "dismissed":
                     /**
                      * -----------------------------------------------------------------
-                     * Added by: GitHub Copilot
+                     * Added by: roz
                      * Date       : 2025-05-20
                      * Changes    : 非表示課題は課題一覧に表示しないように修正
                      * Category   : 表示ロジック変更
