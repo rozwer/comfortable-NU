@@ -110,7 +110,25 @@ export function EntryTab(props: {
     for (const entity of props.entities) {
         const course = entity.getCourse();
         for (const entry of entity.entries) {
-            const daysUntilDue = getDaysUntil(CurrentTime, entry.getDueDate(props.settings.miniSakaiOption.showLateAcceptedEntry));
+            /**
+             * -----------------------------------------------------------------
+             * Modified by: roz
+             * Date       : 2025-05-19
+             * Changes    : エントリから追加情報を取得し、課題ステータス判定に利用
+             * Category   : ロジック拡張
+             * -----------------------------------------------------------------
+             */
+            // エントリから追加情報を取得
+            const entryInfo = {
+                openTimeString: (entry as any).openTimeString,
+                submitted: (entry as any).submitted
+            };
+            
+            const daysUntilDue = getDaysUntil(
+                CurrentTime, 
+                entry.getDueDate(props.settings.miniSakaiOption.showLateAcceptedEntry),
+                entryInfo
+            );
 
             switch (daysUntilDue) {
                 case "due24h":
@@ -136,6 +154,38 @@ export function EntryTab(props: {
                         entry: entry,
                         course: course
                     });
+                    break;
+                case "notPublished":
+                    /**
+                     * -----------------------------------------------------------------
+                     * Modified by: roz
+                     * Date       : 2025-05-19
+                     * Changes    : 未公開課題の表示制御を設定に基づいて行うように修正
+                     * Category   : ロジック改善
+                     * -----------------------------------------------------------------
+                     */
+                    // 設定で「未公開の課題を非表示にする」がtrueの場合は表示しない
+                    // falseの場合は「その他」カテゴリに表示する
+                    if (!props.settings.miniSakaiOption.hideUnpublishedAssignments) {
+                        otherElements.push({
+                            entry: entry,
+                            course: course
+                        });
+                    }
+                    break;
+                case "submitted":
+                    /**
+                     * -----------------------------------------------------------------
+                     * Modified by: roz
+                     * Date       : 2025-05-19
+                     * Changes    : 提出済み課題は課題一覧に表示しないように修正
+                     * Category   : 表示ロジック変更
+                     * -----------------------------------------------------------------
+                     */
+                    // 提出済み課題は表示しない（課題一覧に表示しない）
+                    break;
+                case "dismissed":
+                    // 非表示課題の処理（未実装）
                     break;
             }
         }

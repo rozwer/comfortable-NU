@@ -12,7 +12,15 @@ import { saveAssignments } from "./features/entity/assignment/saveAssignment";
 import { EntryProtocol } from "./features/entity/type";
 import {i18nMessage} from "./features/chrome";
 
-export type DueCategory = "due24h" | "due5d" | "due14d" | "dueOver14d" | "duePassed";
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-19
+ * Changes    : 新しい課題ステータスタイプ（notPublished、submitted、dismissed）を追加
+ * Category   : タイプ定義
+ * -----------------------------------------------------------------
+ */
+export type DueCategory = "due24h" | "due5d" | "due14d" | "dueOver14d" | "duePassed" | "notPublished" | "submitted" | "dismissed";
 
 /**
  * Fetch entities for miniSakai.
@@ -79,12 +87,35 @@ export async function getFetchTime(hostname: string): Promise<FetchTime> {
 }
 
 /**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-19
+ * Changes    : 課題の提出状態と公開日時に基づいた分類ロジックを追加
+ * Category   : ロジック拡張
+ * -----------------------------------------------------------------
+ */
+/**
  * Calculate category of due date according to days until due.
  * @param {number} dt1 Current timestamp
  * @param {number} dt2 Target timestamp
+ * @param {object} entryInfo Optional entry information
  * @returns {DueCategory}
  */
-function getDaysUntil(dt1: number, dt2: number): DueCategory {
+function getDaysUntil(dt1: number, dt2: number, entryInfo?: { openTimeString?: string; submitted?: boolean }): DueCategory {
+    // 提出状態がtrueならsubmittedカテゴリを割り当て
+    if (entryInfo && entryInfo.submitted === true) {
+        return "submitted";
+    }
+    
+    // 公開日より前ならnotPublishedカテゴリを割り当て
+    if (entryInfo && entryInfo.openTimeString) {
+        const openTime = new Date(entryInfo.openTimeString).getTime() / 1000;
+        if (dt1 < openTime) {
+            return "notPublished";
+        }
+    }
+    
+    // その他の場合は従来通りの期限ベースでカテゴリ判定
     let diff = dt2 - dt1;
     diff /= 3600 * 24;
     let category: DueCategory;

@@ -9,7 +9,7 @@ if (process.argv.length !== 3) {
 const browser = process.argv[2];
 const version = packageJSON.version;
 
-const output = fs.createWriteStream(`./dist/release/comfortable-sakai-${browser}-v${version}.zip`);
+const output = fs.createWriteStream(`./dist/release/comfortable-ishii-${browser}-v${version}.zip`);
 const archive = archiver("zip", {
     zlib: { level: 9 }
 });
@@ -22,7 +22,7 @@ archive.pipe(output);
 
 switch (browser) {
     case "chrome":
-        archive.directory(`./dist/source/${browser}`, `comfortable-sakai-v${version}`);
+        archive.directory(`./dist/source/${browser}`, `comfortable-ishii-v${version}`);
         break;
     case "firefox":
         archive.directory(`./dist/source/${browser}`, ``);

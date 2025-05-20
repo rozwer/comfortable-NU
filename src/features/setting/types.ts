@@ -17,9 +17,18 @@ type CacheInterval = {
     quiz: number;
 };
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-19
+ * Changes    : 未公開課題を非表示にする設定オプションを追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
 type DisplayOption = {
     showCompletedEntry: boolean;
     showLateAcceptedEntry: boolean;
+    hideUnpublishedAssignments: boolean;
 };
 
 type CSColor = {
@@ -55,7 +64,8 @@ export class Settings {
     };
     miniSakaiOption: DisplayOption = {
         showCompletedEntry: true,
-        showLateAcceptedEntry: false
+        showLateAcceptedEntry: false,
+        hideUnpublishedAssignments: true
     };
     color: CSColor = {
         topDanger: "#f78989",

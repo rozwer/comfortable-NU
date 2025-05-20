@@ -41,6 +41,19 @@ export default function AssignmentEntryView(props: {
                     <span className="cs-badge cs-badge-late">{lateBadge}</span>
                 )}
                 {props.assignment.title}
+                {/**
+                 * -----------------------------------------------------------------
+                 * Modified by: roz
+                 * Date       : 2025-05-20
+                 * Changes    : 再提出可能回数をバッジとして表示する機能を追加
+                 * Category   : UI拡張
+                 * -----------------------------------------------------------------
+                 */}
+                {props.assignment.submitted && props.assignment.allowResubmitNumber && props.assignment.allowResubmitNumber !== "-1" && (
+                    <span className="cs-badge cs-badge-resubmit">
+                        再提出可能回数: {props.assignment.allowResubmitNumber}
+                    </span>
+                )}
             </p>
         </>
     );

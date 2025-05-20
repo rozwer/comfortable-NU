@@ -1,5 +1,5 @@
 {
-  "name": "Comfortable Sakai",
+  "name": "Comfortable Ishii",
   "description": "__MSG_EXTENSION_DESCRIPTION__",
   "version": "----",
   "manifest_version": 3,
@@ -19,7 +19,8 @@
         "content_script.js"
       ],
       "css": [
-        "css/comfortable-sakai.css"
+        "css/comfortable-sakai.css",
+        "css/tact-extension.css"
       ],
       "matches": [
         "http://*/*",
@@ -37,10 +38,13 @@
     {
       "resources": [
         "css/comfortable-sakai.css",
+        "css/tact-extension.css",
         "img/logo.png",
         "img/noAssignment.png",
         "img/miniSakaiBtn.png",
-        "img/closeBtn.svg"
+        "img/closeBtn.svg",
+        "img/scheduleBtn.svg",
+        "img/favoriteBtn.svg"
       ],
       "matches": [
         "http://*/*",

@@ -1,0 +1,505 @@
+/* TACT Portal 拡張用のスタイル */
+
+/* カスタムタブのスタイル */
+.cs-custom-tab {
+  position: relative;
+}
+
+.cs-custom-tab .Mrphs-toolsNav__menuitem--link {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.cs-custom-tab .Mrphs-toolsNav__menuitem--link:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* カスタムアイコンのスタイル */
+.cs-custom-icon {
+  color: #265b81; /* TACTの青色に合わせる */
+}
+
+/* モーダルのスタイル */
+.cs-tact-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  width: 80%;
+  max-width: 800px;
+  max-height: 80vh;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cs-tact-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #265b81;
+  color: white;
+}
+
+.cs-tact-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.cs-tact-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+  padding: 0;
+  margin: 0;
+}
+
+.cs-tact-modal-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+/* フォルダ機能のスタイル */
+.cs-tact-folder {
+  padding: 10px;
+}
+
+.cs-folder-section {
+  margin-bottom: 25px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cs-folder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.cs-folder-header h4 {
+  margin: 0;
+  color: #265b81;
+  font-size: 16px;
+}
+
+.cs-folder-add-btn {
+  padding: 5px 10px;
+  background-color: #265b81;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.cs-folder-add-btn:hover {
+  background-color: #1d4561;
+}
+
+.cs-folder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cs-folder-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.cs-folder-item:last-child {
+  border-bottom: none;
+}
+
+.cs-folder-item:hover {
+  background-color: #f9f9f9;
+}
+
+.cs-folder-item-icon {
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+.cs-folder-item-name {
+  flex-grow: 1;
+  font-size: 14px;
+}
+
+.cs-folder-item-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.cs-folder-action-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.cs-folder-action-btn:hover {
+  background-color: #e0e0e0;
+}
+
+/* 掲示板のスタイル */
+.cs-tact-forum {
+  padding: 10px;
+}
+
+.cs-forum-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.cs-forum-header h3 {
+  margin: 0;
+  color: #265b81;
+}
+
+.cs-forum-new-post-btn {
+  padding: 8px 15px;
+  background-color: #265b81;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.cs-forum-new-post-btn:hover {
+  background-color: #1d4561;
+}
+
+.cs-forum-category-tabs {
+  display: flex;
+  gap: 5px;
+  margin: 20px 0;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.cs-forum-category-tab {
+  padding: 8px 15px;
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cs-forum-category-tab.active {
+  background-color: #265b81;
+  color: white;
+  border-color: #265b81;
+}
+
+.cs-forum-category-tab:hover:not(.active) {
+  background-color: #f5f5f5;
+}
+
+.cs-forum-post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.cs-forum-post {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 15px;
+  background-color: #fff;
+  transition: box-shadow 0.2s;
+}
+
+.cs-forum-post:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cs-forum-post-header {
+  margin-bottom: 10px;
+}
+
+.cs-forum-post-title {
+  margin: 0 0 5px 0;
+  color: #265b81;
+  font-size: 16px;
+}
+
+.cs-forum-post-meta {
+  font-size: 12px;
+  color: #777;
+}
+
+.cs-forum-post-content {
+  margin: 10px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cs-forum-post-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.cs-forum-reply-btn {
+  padding: 5px 10px;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.2s;
+}
+
+.cs-forum-reply-btn:hover {
+  background-color: #e0e0e0;
+}
+
+/* 時間割表示用のスタイル */
+.cs-timetable-modal {
+  width: 95%;
+  max-width: 950px;
+  max-height: 90vh; /* 画面の90%の高さに制限 */
+}
+
+.cs-timetable-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cs-timetable-selectors {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 15px;
+  gap: 20px;
+}
+
+.cs-timetable-selector {
+  width: 200px;
+}
+
+.cs-timetable-selector select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 14px;
+}
+
+.cs-timetable-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* 均等な列幅のために追加 */
+}
+
+.cs-timetable-table th,
+.cs-timetable-table td {
+  border: 1px solid #ccc;
+  padding: 5px;
+  text-align: center;
+  vertical-align: top;
+}
+
+.cs-timetable-table th {
+  background-color: #f0f0f0;
+  font-weight: bold;
+  height: 30px;
+}
+
+/* 1列目（時限列）の幅を調整 */
+.cs-timetable-table th:first-child,
+.cs-timetable-table td:first-child {
+  width: 40px;
+}
+
+.cs-timetable-period {
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
+
+.cs-timetable-cell {
+  height: 80px;
+  width: 120px;
+  overflow: hidden;
+  position: relative;
+  padding: 5px;
+  transition: background-color 0.2s;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+
+.cs-timetable-cell:hover {
+  background-color: #f5f5f5;
+}
+
+.cs-timetable-course {
+  font-size: 11px;
+  margin-bottom: 3px;
+  font-weight: bold;
+  color: #265b81;
+  word-break: break-word;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  max-height: 2.4em;
+  text-align: left;
+}
+
+.cs-timetable-link {
+  color: #265b81;
+  text-decoration: none;
+  transition: color 0.2s;
+  display: block;
+}
+
+.cs-timetable-link:hover {
+  color: #1a3f5c;
+  text-decoration: underline;
+}
+
+.cs-timetable-dummy {
+  color: #888;
+  font-style: italic;
+}
+
+.cs-timetable-room {
+  font-size: 11px;
+  color: #666;
+}
+
+.cs-timetable-instructor {
+  font-size: 11px;
+  color: #666;
+}
+
+/* 時間割のリンク色設定 */
+.cs-timetable-course a {
+  color: inherit;
+}
+
+/* 時間割のカテゴリラベルスタイル */
+.cs-timetable-category-danger {
+  background-color: var(--miniDanger, #e85555);
+  color: white;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  margin: 2px;
+  font-weight: normal;
+  width: auto;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-timetable-category-warning {
+  background-color: var(--miniWarning, #d7aa57);
+  color: white;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  margin: 2px;
+  font-weight: normal;
+  width: auto;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-timetable-category-success {
+  background-color: var(--miniSuccess, #62b665);
+  color: white;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  margin: 2px;
+  font-weight: normal;
+  width: auto;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-timetable-category-other {
+  background-color: var(--miniOther, #777777);
+  color: white;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  margin: 2px;
+  font-weight: normal;
+  width: auto;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-timetable-category-default {
+  background-color: #999;
+  color: white;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  margin: 2px;
+  font-weight: normal;
+  width: auto;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

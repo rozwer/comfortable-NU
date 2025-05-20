@@ -37,12 +37,38 @@ export const hamburger = document.createElement("button");
 hamburger.className = "cs-loading";
 hamburger.addEventListener("click", toggleMiniSakai);
 
+// 時間割ボタンの作成
+export const scheduleButton = document.createElement("button");
+scheduleButton.className = "cs-header-btn cs-schedule-btn";
+scheduleButton.innerHTML = `<img src="${chrome.runtime.getURL("img/scheduleBtn.svg")}" alt="schedule">`;
+scheduleButton.addEventListener("click", () => {
+    // 時間割タブを表示
+    import("./features/tact/timetable").then(({ showTimetableModal }) => {
+        showTimetableModal();
+    });
+});
+
+// お気に入りボタンの作成
+export const favoriteButton = document.createElement("button");
+favoriteButton.className = "cs-header-btn cs-favorite-btn";
+favoriteButton.innerHTML = `<img src="${chrome.runtime.getURL("img/favoriteBtn.svg")}" alt="favorite">`;
+favoriteButton.addEventListener("click", () => {
+    // お気に入りタブを表示するためのダミー関数
+    // 実際の機能実装は将来の課題
+    alert("お気に入り機能は準備中です");
+});
+
 /**
  * Add a button to open miniSakai.
  */
 export function addMiniSakaiBtn(): void {
     const topbar = document.getElementById("mastLogin");
     try {
+        // お気に入りボタンを追加
+        topbar?.appendChild(favoriteButton);
+        // 時間割ボタンを追加
+        topbar?.appendChild(scheduleButton);
+        // 既存のハンバーガーボタンを追加
         topbar?.appendChild(hamburger);
     } catch (e) {
         console.log("could not launch miniSakai.");

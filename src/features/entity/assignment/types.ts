@@ -2,13 +2,24 @@ import { Course } from "../../course/types";
 import { EntityProtocol, EntryProtocol } from "../type";
 import { saveAssignmentEntry } from "./saveAssignment";
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-19
+ * Changes    : 課題エントリークラスに提出状態関連フィールドを追加
+ * Category   : クラス拡張
+ * -----------------------------------------------------------------
+ */
 export class AssignmentEntry implements EntryProtocol {
     constructor(
         public id: string,
         public title: string,
         public dueTime: number,
         public closeTime: number,
-        public hasFinished: boolean
+        public hasFinished: boolean,
+        public openTimeString?: string,
+        public submitted?: boolean,
+        public allowResubmitNumber?: string
     ) {}
 
     getTimestamp(currentTime: number, showLateAcceptedEntry: boolean): number {
