@@ -1,0 +1,109 @@
+/* 授業資料追加・編集モーダル用スタイル */
+.cs-material-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.cs-material-dialog-modal {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  width: 380px;
+  max-width: 90vw;
+  overflow: hidden;
+}
+
+.cs-material-dialog-header {
+  background-color: #0064cd;
+  color: white;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cs-material-dialog-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.cs-material-dialog-close-button {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.cs-material-dialog-content {
+  padding: 16px;
+}
+
+.cs-material-dialog-form-group {
+  margin-bottom: 16px;
+}
+
+.cs-material-dialog-form-group label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.cs-material-dialog-form-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.cs-material-dialog-form-group input:focus {
+  border-color: #0064cd;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 100, 205, 0.2);
+}
+
+.cs-material-dialog-footer {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #eee;
+}
+
+.cs-material-dialog-cancel-button,
+.cs-material-dialog-save-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.cs-material-dialog-cancel-button {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  color: #333;
+}
+
+.cs-material-dialog-save-button {
+  background-color: #0064cd;
+  border: 1px solid #0064cd;
+  color: white;
+}
+
+.cs-material-dialog-error {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 4px;
+}
