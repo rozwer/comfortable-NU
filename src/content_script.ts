@@ -37,7 +37,7 @@ function initTactFeatures() {
         const toolMenu = document.querySelector('#toolMenu ul');
         if (toolMenu) {
             clearInterval(checkToolMenu);
-            // カスタムタブを追加
+            // TACT機能を初期化
             addSampleCustomTabs();
         }
     }, 500);

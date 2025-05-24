@@ -151,7 +151,7 @@ export const showTabContent = (title: string, content: string | HTMLElement): vo
  * CSS ファイルを動的に読み込む
  * @param cssFileName CSSファイル名
  */
-const loadMemoCSS = async (cssFileName: string): Promise<void> => {
+const loadCSS = async (cssFileName: string): Promise<void> => {
     return new Promise((resolve) => {
         const existingLink = document.querySelector(`link[href*="${cssFileName}"]`);
         if (existingLink) {
@@ -172,10 +172,6 @@ const loadMemoCSS = async (cssFileName: string): Promise<void> => {
  * カスタムタブを追加
  */
 export const addSampleCustomTabs = (): void => {
-    if (!isTactPortal()) {
-        return;
-    }
-
     // メモタブ
     addCustomToolTab(
         'メモ',
@@ -184,7 +180,7 @@ export const addSampleCustomTabs = (): void => {
         async () => {
             try {
                 // CSS を読み込み
-                await loadMemoCSS('memo-styles.css');
+                await loadCSS('memo-styles.css');
                 
                 // メモUIを初期化
                 const memoUI = new MemoUI();

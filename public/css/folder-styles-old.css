@@ -1,0 +1,537 @@
+/* TACT Portal Folder System Styles */
+
+/* フォルダコンテナ全体 */
+.cs-folder-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ヘッダー */
+.cs-folder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e1e5e9;
+}
+
+.cs-folder-title {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.5em;
+}
+
+.cs-folder-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* ナビゲーション（パンくずリスト） */
+.cs-folder-navigation {
+    background: #f8f9fa;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.cs-breadcrumb-item {
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.cs-breadcrumb-item:hover {
+    background-color: #e9ecef;
+}
+
+.cs-breadcrumb-separator {
+    color: #6c757d;
+    margin: 0 4px;
+}
+
+.cs-breadcrumb-current {
+    color: #495057;
+    font-weight: 500;
+}
+
+/* ツールバー */
+.cs-folder-toolbar {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
+.cs-folder-search {
+    flex: 1;
+    min-width: 200px;
+}
+
+.cs-folder-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.cs-folder-search-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.cs-folder-view-mode {
+    display: flex;
+    gap: 2px;
+}
+
+.cs-folder-view-mode .cs-btn {
+    padding: 8px 12px;
+    font-size: 16px;
+}
+
+.cs-folder-view-mode .cs-btn.active {
+    background-color: #007bff;
+    color: white;
+}
+
+/* コンテンツエリア */
+.cs-folder-content-area {
+    min-height: 400px;
+}
+
+/* グリッド表示 */
+.cs-folder-content-area.cs-folder-grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+/* リスト表示 */
+.cs-folder-content-area.cs-folder-list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cs-folder-list-view .cs-folder-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.cs-folder-list-view .cs-folder-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+/* フォルダ・ファイルアイテム */
+.cs-folder-item {
+    background: white;
+    border: 1px solid #e1e5e9;
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.cs-folder-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.cs-folder-item-icon {
+    font-size: 2em;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.cs-folder-grid-view .cs-folder-item-icon {
+    font-size: 2.5em;
+}
+
+.cs-folder-list-view .cs-folder-item-icon {
+    font-size: 1.5em;
+    margin-right: 12px;
+    margin-bottom: 0;
+}
+
+.cs-folder-item-content {
+    flex: 1;
+}
+
+.cs-folder-item-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    word-break: break-word;
+}
+
+.cs-folder-item-details {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.cs-folder-item-description {
+    margin: 4px 0;
+    font-style: italic;
+}
+
+.cs-folder-item-tags {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.cs-folder-tag {
+    background: #e9ecef;
+    color: #495057;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.cs-folder-item-actions {
+    display: flex;
+    gap: 4px;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.cs-folder-list-view .cs-folder-item-actions {
+    position: relative;
+    top: auto;
+    right: auto;
+    opacity: 1;
+}
+
+.cs-folder-item:hover .cs-folder-item-actions {
+    opacity: 1;
+}
+
+.cs-folder-action-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e1e5e9;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.cs-folder-action-btn:hover {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cs-folder-action-delete:hover {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+/* 空の状態 */
+.cs-folder-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.cs-folder-empty-icon {
+    font-size: 4em;
+    margin-bottom: 20px;
+}
+
+.cs-folder-empty p {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+/* ダイアログ */
+.cs-folder-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10500;
+}
+
+.cs-folder-dialog {
+    background: white;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 10501;
+    position: relative;
+}
+
+.cs-folder-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 0;
+}
+
+.cs-folder-dialog-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.3em;
+}
+
+.cs-dialog-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6c757d;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.cs-dialog-close:hover {
+    background-color: #f8f9fa;
+}
+
+.cs-folder-dialog-content {
+    padding: 20px 24px;
+}
+
+.cs-folder-form-group {
+    margin-bottom: 20px;
+}
+
+.cs-folder-form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.cs-folder-input,
+.cs-folder-select,
+.cs-folder-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e1e5e9;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+.cs-folder-input:focus,
+.cs-folder-select:focus,
+.cs-folder-textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.cs-folder-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.cs-folder-warning {
+    background: #fff3cd;
+    color: #856404;
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 4px solid #ffc107;
+    margin-top: 16px;
+    font-size: 14px;
+}
+
+.cs-folder-dialog-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding: 0 24px 24px;
+}
+
+/* 統計情報 */
+.cs-folder-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.cs-stat-item {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.cs-stat-number {
+    font-size: 2em;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 8px;
+}
+
+.cs-stat-label {
+    color: #6c757d;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ボタンスタイル */
+.cs-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cs-btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.cs-btn-primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.cs-btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.cs-btn-secondary:hover {
+    background-color: #545b62;
+    transform: translateY(-1px);
+}
+
+.cs-btn-info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.cs-btn-info:hover {
+    background-color: #117a8b;
+    transform: translateY(-1px);
+}
+
+.cs-btn-outline {
+    background-color: transparent;
+    color: #007bff;
+    border: 1px solid #007bff;
+}
+
+.cs-btn-outline:hover {
+    background-color: #007bff;
+    color: white;
+}
+
+.cs-btn-outline.active {
+    background-color: #007bff;
+    color: white;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .cs-folder-container {
+        padding: 10px;
+    }
+    
+    .cs-folder-toolbar {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .cs-folder-search {
+        order: -1;
+        width: 100%;
+    }
+    
+    .cs-folder-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .cs-folder-content-area.cs-folder-grid-view {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+    }
+    
+    .cs-folder-dialog {
+        width: 95%;
+        max-height: 90vh;
+    }
+    
+    .cs-folder-stats {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .cs-folder-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .cs-folder-content-area.cs-folder-grid-view {
+        grid-template-columns: 1fr;
+    }
+    
+    .cs-folder-dialog-content {
+        padding: 15px 20px;
+    }
+    
+    .cs-folder-dialog-footer {
+        padding: 0 20px 20px;
+    }
+}
