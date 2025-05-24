@@ -268,4 +268,47 @@ describe("Asssignment", () => {
         const mergedAssignments = mergeEntities<Assignment>(oldAssignments, newAssignments);
         expect(mergedAssignments).toStrictEqual(expectAssignments);
     });
+
+    test("checkTimestamp preservation during merge", () => {
+        const oldAssignments = [
+            new Assignment(
+                new Course("course1", "course1", ""),
+                [
+                    mockAssignmentEntry("a1", 100, 100, false, "2025/05/21/15"), // 非表示課題
+                    mockAssignmentEntry("a2", 200, 200, true), // 完了済み課題
+                    mockAssignmentEntry("a3", 300, 300, false) // 通常課題
+                ],
+                false
+            )
+        ];
+
+        const newAssignments = [
+            new Assignment(
+                new Course("course1", "course1", ""),
+                [
+                    mockAssignmentEntry("a1", 100, 100, false), // 新しく取得されたデータ（checkTimestampなし）
+                    mockAssignmentEntry("a2", 200, 200, false), // 新しく取得されたデータ（hasFinishedがfalse）
+                    mockAssignmentEntry("a3", 300, 300, false), // 変更なし
+                    mockAssignmentEntry("a4", 400, 400, false)  // 新規課題
+                ],
+                false
+            )
+        ];
+
+        const expectAssignments = [
+            new Assignment(
+                new Course("course1", "course1", ""),
+                [
+                    mockAssignmentEntry("a1", 100, 100, false, "2025/05/21/15"), // checkTimestampが保持される
+                    mockAssignmentEntry("a2", 200, 200, true), // hasFinishedが保持される
+                    mockAssignmentEntry("a3", 300, 300, false), // 変更なし
+                    mockAssignmentEntry("a4", 400, 400, false)  // 新規課題
+                ],
+                false
+            )
+        ];
+
+        const mergedAssignments = mergeEntities<Assignment>(oldAssignments, newAssignments);
+        expect(mergedAssignments).toStrictEqual(expectAssignments);
+    });
 });

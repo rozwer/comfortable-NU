@@ -9,9 +9,10 @@ export const mockAssignmentEntry = (
   id: string,
   dueTime: number,
   closeTime: number,
-  hasFinished: boolean
+  hasFinished: boolean,
+  checkTimestamp?: string
 ): AssignmentEntry => {
-  return new AssignmentEntry(id, id, dueTime, closeTime, hasFinished);
+  return new AssignmentEntry(id, id, dueTime, closeTime, hasFinished, undefined, false, "-1", checkTimestamp);
 };
 
 

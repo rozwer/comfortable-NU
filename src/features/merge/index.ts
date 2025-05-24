@@ -27,6 +27,10 @@ export const mergeEntries = <Entry extends EntryProtocol>(oldEntryMap: Map<strin
         const oldEntry = oldEntryMap.get(id);
         if (oldEntry !== undefined) {
             entry.hasFinished = oldEntry.hasFinished;
+            // checkTimestampフィールドも保持する
+            if ((oldEntry as any).checkTimestamp) {
+                (entry as any).checkTimestamp = (oldEntry as any).checkTimestamp;
+            }
         }
         entries.push(entry);
     });
