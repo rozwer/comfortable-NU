@@ -174,6 +174,8 @@
     margin: -12px 0 0 -5px;
     background: var(--miniDanger);
     border-radius: 20px 20px 20px 20px;
+    position: relative;
+    z-index: 0;
 }
 
 .cs-minisakai-list .cs-course-danger:hover {
@@ -196,6 +198,8 @@
     margin: -12px 0 0 -5px;
     background: var(--miniWarning);
     border-radius: 20px 20px 20px 20px;
+    position: relative;
+    z-index: 0;
 }
 
 .cs-minisakai-list .cs-course-warning:hover {
@@ -218,6 +222,8 @@
     margin: -12px 0 0 -5px;
     background: var(--miniSuccess);
     border-radius: 20px 20px 20px 20px;
+    position: relative;
+    z-index: 0;
 }
 
 .cs-minisakai-list .cs-course-success:hover {
@@ -240,6 +246,8 @@
     margin: -12px 0 0 -5px;
     background: var(--miniOther);
     border-radius: 20px 20px 20px 20px;
+    position: relative;
+    z-index: 0;
 }
 
 .cs-minisakai-list .cs-course-other:hover {
@@ -262,6 +270,8 @@
     margin: -12px 0 0 -5px;
     background: var(--miniLate);
     border-radius: 20px 20px 20px 20px;
+    position: relative;
+    z-index: 0;
 }
 
 .cs-minisakai-list .cs-course-late:hover {
@@ -548,22 +558,42 @@
     white-space: nowrap;
     vertical-align: baseline;
     border-radius: 0.25rem;
-    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    position: relative;
+    z-index: 1;
+    /* トランジション効果を削除 - バッジの色変化アニメーションを防ぐ */
 }
 
 .cs-badge-memo {
-    color: #fff;
-    background-color: #28a745;
+    color: #fff !important;
+    background-color: #28a745 !important;
+    font-weight: bold;
+    border: 1px solid #20c997;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-shadow: 0 0 1px rgba(0,0,0,0.3);
+    transition: none !important;
 }
 
 .cs-badge-quiz {
-    color: #fff;
-    background-color: #ef2410;
+    color: #fff !important;
+    background-color: #ef2410 !important;
+    font-weight: bold;
+    border: 1px solid #dc1f00;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-shadow: 0 0 1px rgba(0,0,0,0.3);
+    transition: none !important;
 }
 
 .cs-badge-late {
-    color: #fff;
-    background-color: #2d2d2d;
+    color: #fff !important;
+    background-color: #dc3545 !important;
+    position: relative;
+    z-index: 2;
+    font-weight: bold;
+    border: 2px solid #c82333;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    text-shadow: 0 0 1px rgba(0,0,0,0.5);
+    /* アニメーション効果を無効化 */
+    transition: none !important;
 }
 
 /**
@@ -575,17 +605,31 @@
  * -----------------------------------------------------------------
  */
 .cs-badge-timestamp {
-    color: #fff;
-    background-color: #17a2b8;
+    color: #fff !important;
+    background-color: #17a2b8 !important;
     margin-left: 5px;
     font-size: 0.75em;
+    font-weight: bold;
+    border: 1px solid #138496;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-shadow: 0 0 1px rgba(0,0,0,0.3);
+    transition: none !important;
 }
 .cs-badge-resubmit {
-    color: #fff;
-    background-color: #c24a4a;
-    display: block;
+    color: #000 !important;
+    background-color: #20c997 !important;
+    display: inline-block;
     margin-top: 3px;
+    margin-left: 5px;
     font-size: 70%;
+    font-weight: bold;
+    z-index: 1;
+    position: relative;
+    border: 2px solid #17a2b8;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    text-shadow: 0 0 1px rgba(255,255,255,0.5);
+    /* アニメーション効果を無効化 */
+    transition: none !important;
 }
 
 .cs-dummy-btn {
@@ -621,6 +665,8 @@
     margin: -12px 0 0 -5px;
     background: #62b665;
     border-radius: 20px;
+    position: relative;
+    z-index: 0;
 }
 
 .cs-course-submitted:hover {

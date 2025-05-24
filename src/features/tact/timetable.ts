@@ -154,10 +154,24 @@ async function loadTimetableSettings(hostname: string): Promise<{year: string, t
         (data: any) => data === undefined ? undefined : String(data));
     
     // 現在の年度をデフォルト値として使用
-    const currentYear = new Date().getFullYear().toString();
+    const currentYear = new Date().getFullYear();
+    const currentYearStr = currentYear.toString();
+    
+    // 保存された年度が古すぎる場合（5年以上前）は現在の年度を使用
+    let finalYear = currentYearStr;
+    if (savedYear) {
+        const savedYearNum = parseInt(savedYear);
+        if (!isNaN(savedYearNum) && savedYearNum >= currentYear - 5) {
+            finalYear = savedYear;
+        } else {
+            console.warn(`保存された年度 ${savedYear} が古すぎるため、現在の年度 ${currentYearStr} を使用します。`);
+        }
+    }
+    
+    console.log(`設定読み込み - 保存年度: ${savedYear}, 保存学期: ${savedTerm}, 最終年度: ${finalYear}`);
     
     return {
-        year: savedYear || currentYear,
+        year: finalYear,
         term: savedTerm || 'spring'
     };
 }
@@ -254,9 +268,9 @@ export const showTimetableModal = (): void => {
     const yearSelect = document.createElement('select');
     yearSelect.id = 'cs-timetable-year';
     
-    // 現在の年から前後数年の選択肢を追加
+    // 現在の年から前後5年の選択肢を追加（範囲を拡大）
     const currentYear = new Date().getFullYear();
-    for (let year = currentYear - 2; year <= currentYear + 2; year++) {
+    for (let year = currentYear - 5; year <= currentYear + 2; year++) {
         const option = document.createElement('option');
         option.value = String(year);
         option.textContent = `${year}年`;
@@ -293,19 +307,47 @@ export const showTimetableModal = (): void => {
     // 保存されている設定を読み込む
     const currentSiteHostname = window.location.hostname;
     loadTimetableSettings(currentSiteHostname).then(settings => {
+        console.log(`読み込まれた設定 - 年度: ${settings.year}, 学期: ${settings.term}`);
+        
         // 年度セレクトボックスを設定
+        let yearFound = false;
         for (let i = 0; i < yearSelect.options.length; i++) {
             if (yearSelect.options[i].value === settings.year) {
                 yearSelect.selectedIndex = i;
+                yearFound = true;
                 break;
             }
         }
         
+        // 保存された年度がセレクトボックスにない場合、現在の年度を選択
+        if (!yearFound) {
+            console.warn(`保存された年度 ${settings.year} がセレクトボックスにありません。現在の年度 ${currentYear} を選択します。`);
+            for (let i = 0; i < yearSelect.options.length; i++) {
+                if (yearSelect.options[i].value === String(currentYear)) {
+                    yearSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+        
         // 学期セレクトボックスを設定
+        let termFound = false;
         for (let i = 0; i < termSelect.options.length; i++) {
             if (termSelect.options[i].value === settings.term) {
                 termSelect.selectedIndex = i;
+                termFound = true;
                 break;
+            }
+        }
+        
+        // 保存された学期がセレクトボックスにない場合、デフォルト学期を選択
+        if (!termFound) {
+            console.warn(`保存された学期 ${settings.term} がセレクトボックスにありません。デフォルト学期 'spring' を選択します。`);
+            for (let i = 0; i < termSelect.options.length; i++) {
+                if (termSelect.options[i].value === 'spring') {
+                    termSelect.selectedIndex = i;
+                    break;
+                }
             }
         }
     });

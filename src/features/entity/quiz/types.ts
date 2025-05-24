@@ -9,7 +9,7 @@ export class QuizEntry implements EntryProtocol {
         return this.id;
     }
 
-    getDueDate(): number {
+    getDueDate(showLate?: boolean): number {
         return this.dueTime;
     }
 
@@ -17,7 +17,7 @@ export class QuizEntry implements EntryProtocol {
         return this.dueTime;
     }
 
-    getTimestamp(): number {
+    getTimestamp(currentTime?: number, showLateAcceptedEntry?: boolean): number {
         return this.getDueDateTimestamp;
     }
 

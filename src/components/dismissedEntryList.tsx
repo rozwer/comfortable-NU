@@ -9,11 +9,12 @@
 import React, { useMemo, useState } from "react";
 import { Course } from "../features/course/types";
 import { AssignmentEntry } from "../features/entity/assignment/types";
-import { EntryUnion, MemoAddInfo } from "./entryTab";
+import { EntryUnion, MemoAddInfo, DueType } from "./entryTab";
 import { CurrentTime, MaxTimestamp } from "../constant";
 import DismissedEntryView from "./dismissedEntry";
 import { useTranslation } from "./helper";
 import { getSakaiCourses } from "../features/course/getCourse";
+import { getDaysUntil } from "../utils";
 
 /**
  * -----------------------------------------------------------------
@@ -150,11 +151,12 @@ export function DismissedCourse(props: {
     coursePage: string;
     courseName: string;
     entries: EntryUnion[];
+    dueType: DueType;
     isSubset: boolean;
     onToggleMemoBox?: (entry: EntryUnion) => void;
 }) {
-    const divClass = "cs-assignment-dismissed";
-    const aClass = "cs-course-dismissed cs-course-name";
+    const divClass = `cs-assignment-${props.dueType}`;
+    const aClass = `cs-course-${props.dueType} cs-course-name`;
 
     const elements = useMemo(() => {
         const elems: JSX.Element[] = [];
@@ -206,6 +208,25 @@ export function DismissedEntryList(props: {
     const [selectedEntry, setSelectedEntry] = useState<EntryUnion | null>(null);
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
+    // DueTypeを計算する関数
+    const calculateDueType = (entries: EntryUnion[]): DueType => {
+        const minDue = entries.reduce((prev, e) => Math.min(e.dueTime, prev), MaxTimestamp);
+        const daysUntilCategory = getDaysUntil(CurrentTime, minDue);
+        
+        // DueCategoryをDueTypeに変換
+        switch (daysUntilCategory) {
+            case "due24h":
+                return "danger";
+            case "due5d":
+                return "warning";
+            case "due14d":
+            case "dueOver14d":
+                return "success";
+            default:
+                return "other";
+        }
+    };
+
     // エントリをコース別にグループ化
     let courseIdMap = new Map<string, EntryUnion[]>();
     const courseNameMap = new Map<string, string>();
@@ -246,6 +267,7 @@ export function DismissedEntryList(props: {
     const courses: JSX.Element[] = [];
     for (const [courseID, entries] of courseIdMap.entries()) {
         const courseName = courseNameMap.get(courseID) ?? "<unknown>";
+        const dueType = calculateDueType(entries);
         courses.push(
             <DismissedCourse
                 key={courseID}
@@ -253,6 +275,7 @@ export function DismissedEntryList(props: {
                 courseName={courseName}
                 coursePage={`https://${props.hostname}/portal/site/${courseID}`}
                 isSubset={props.isSubset}
+                dueType={dueType}
                 entries={entries.sort(sortEntries)}
                 onToggleMemoBox={(entry) => {
                     // 「×」がクリックされたので、このエントリのcheckTimestampをクリアする処理を呼び出す

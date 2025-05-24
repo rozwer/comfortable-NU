@@ -77,11 +77,11 @@ export default function SubmittedEntryView(props: {
 
             <p className="cs-assignment-title" style={{ color: "#464646", opacity: 1 }}>
                 {isAssignment && (entry as AssignmentEntry).isDuePassed(CurrentTime) && (
-                    <span className="cs-badge cs-badge-late" style={{ opacity: 1 }}>{lateBadge}</span>
+                    <span className="cs-badge cs-badge-late" style={{ opacity: 1, position: "relative", zIndex: 2 }}>{lateBadge}</span>
                 )}
                 <span style={{ color: "#464646", opacity: 1 }}>{entry.title}</span>
                 {allowResubmit && (
-                    <span className="cs-badge cs-badge-resubmit" style={{ opacity: 1 }}>
+                    <span className="cs-badge cs-badge-resubmit" style={{ opacity: 1, position: "relative", zIndex: 2 }}>
                         再提出可能回数: {(entry as AssignmentEntry).allowResubmitNumber}
                     </span>
                 )}

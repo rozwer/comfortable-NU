@@ -103,3 +103,43 @@
 .cs-datepicker-save-button:hover {
   background-color: #004e9e;
 }
+
+/* 永久非表示オプション用のスタイル */
+.cs-datepicker-permanent-option {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #0064cd;
+}
+
+.cs-datepicker-permanent-label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  margin: 0;
+}
+
+.cs-datepicker-permanent-checkbox {
+  margin-right: 8px;
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.cs-datepicker-permanent-info {
+  padding: 12px;
+  background-color: #e8f4f8;
+  border-radius: 6px;
+  border-left: 4px solid #17a2b8;
+  text-align: center;
+}
+
+.cs-datepicker-permanent-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #17a2b8;
+  font-weight: 500;
+}

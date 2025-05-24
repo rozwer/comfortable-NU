@@ -20,6 +20,7 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
   const [month, setMonth] = useState(initDate.getMonth() + 1);
   const [day, setDay] = useState(initDate.getDate());
   const [hour, setHour] = useState(initDate.getHours());
+  const [isPermanent, setIsPermanent] = useState(false);
 
   // モーダル外側をクリックした時に閉じる
   const handleOutsideClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -30,11 +31,25 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
 
   // 保存処理
   const handleSave = () => {
-    const formattedMonth = String(month).padStart(2, '0');
-    const formattedDay = String(day).padStart(2, '0');
-    const formattedHour = String(hour).padStart(2, '0');
-    
-    onSave(`${year}/${formattedMonth}/${formattedDay}/${formattedHour}`);
+    if (isPermanent) {
+      // 永久オプションが選択された場合は、現在時刻から1年後の日付を設定
+      const oneYearLater = new Date();
+      oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+      
+      const permYear = oneYearLater.getFullYear();
+      const permMonth = String(oneYearLater.getMonth() + 1).padStart(2, '0');
+      const permDay = String(oneYearLater.getDate()).padStart(2, '0');
+      const permHour = String(oneYearLater.getHours()).padStart(2, '0');
+      
+      onSave(`${permYear}/${permMonth}/${permDay}/${permHour}`);
+    } else {
+      // 通常の日付選択の場合
+      const formattedMonth = String(month).padStart(2, '0');
+      const formattedDay = String(day).padStart(2, '0');
+      const formattedHour = String(hour).padStart(2, '0');
+      
+      onSave(`${year}/${formattedMonth}/${formattedDay}/${formattedHour}`);
+    }
   };
 
   // モーダルが閉じている場合は何もレンダリングしない
@@ -51,60 +66,83 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
     <div className="cs-datepicker-overlay" onClick={handleOutsideClick}>
       <div className="cs-datepicker-modal">
         <div className="cs-datepicker-header">
-          <h3>課題完了日時を選択</h3>
+          <h3>課題の非表示期間を設定</h3>
           <button className="cs-datepicker-close-button" onClick={onClose}>✕</button>
         </div>
         
         <div className="cs-datepicker-content">
-          <div className="cs-datepicker-row">
-            <div className="cs-datepicker-field">
-              <label>年</label>
-              <select 
-                value={year} 
-                onChange={(e) => setYear(parseInt(e.target.value))}
-              >
-                {Array.from({ length: 10 }, (_, i) => now.getFullYear() - 5 + i).map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="cs-datepicker-field">
-              <label>月</label>
-              <select 
-                value={month} 
-                onChange={(e) => setMonth(parseInt(e.target.value))}
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="cs-datepicker-field">
-              <label>日</label>
-              <select 
-                value={day}
-                onChange={(e) => setDay(parseInt(e.target.value))}
-              >
-                {Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1).map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="cs-datepicker-field">
-              <label>時</label>
-              <select 
-                value={hour} 
-                onChange={(e) => setHour(parseInt(e.target.value))}
-              >
-                {Array.from({ length: 24 }, (_, i) => i).map(h => (
-                  <option key={h} value={h}>{h}</option>
-                ))}
-              </select>
-            </div>
+          {/* 永久オプションのチェックボックス */}
+          <div className="cs-datepicker-permanent-option">
+            <label className="cs-datepicker-permanent-label">
+              <input 
+                type="checkbox" 
+                checked={isPermanent}
+                onChange={(e) => setIsPermanent(e.target.checked)}
+                className="cs-datepicker-permanent-checkbox"
+              />
+              永久に非表示にする（1年後まで設定）
+            </label>
           </div>
+          
+          {/* 日付選択フィールド（永久オプションが無効の場合のみ表示） */}
+          {!isPermanent && (
+            <div className="cs-datepicker-row">
+              <div className="cs-datepicker-field">
+                <label>年</label>
+                <select 
+                  value={year} 
+                  onChange={(e) => setYear(parseInt(e.target.value))}
+                >
+                  {Array.from({ length: 10 }, (_, i) => now.getFullYear() - 5 + i).map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="cs-datepicker-field">
+                <label>月</label>
+                <select 
+                  value={month} 
+                  onChange={(e) => setMonth(parseInt(e.target.value))}
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="cs-datepicker-field">
+                <label>日</label>
+                <select 
+                  value={day}
+                  onChange={(e) => setDay(parseInt(e.target.value))}
+                >
+                  {Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1).map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="cs-datepicker-field">
+                <label>時</label>
+                <select 
+                  value={hour} 
+                  onChange={(e) => setHour(parseInt(e.target.value))}
+                >
+                  {Array.from({ length: 24 }, (_, i) => i).map(h => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+          
+          {/* 永久オプションが選択された場合の説明 */}
+          {isPermanent && (
+            <div className="cs-datepicker-permanent-info">
+              <p>課題が永久に非表示になります。非表示タブから再表示できます。</p>
+            </div>
+          )}
         </div>
         
         <div className="cs-datepicker-footer">
