@@ -58,79 +58,100 @@ LinkItem {
 - JSONファイルからのインポート機能
 
 【実装状況】
-✅ 完了 - MemoManager クラス（memo.ts）
-✅ 完了 - MemoUI クラス（memo-ui.ts）
-✅ 完了 - CSS スタイル（memo-styles.css）
-✅ 完了 - index.ts への統合
-✅ 完了 - manifest.json への追加
+🔄 Phase 1 - FolderDataManager（データ層）
+🔄 Phase 2 - FolderExplorerUI（UI基盤）
+⏳ Phase 3 - 高度機能（プレビュー・検索）
+⏳ 統合テスト・最適化
 
 ================================================================================
-【2. フォルダ機能】 ※要件変更
+【2. フォルダ機能】 ※仕様確定版
 ================================================================================
 
 【目的】
-- TACTポータルのAPIからフォルダ構造を取得
-- VSCode形式のファイルエクスプローラー風UI提供
-- ローカルでのフォルダ・ファイル管理（仮想的）
+- TACTポータルのAPIからフォルダ構造を取得し、ローカル疑似エクスプローラーを構築
+- VSCode Explorer風の操作性でファイル・フォルダを管理
+- PDFプレビュー機能とリンク管理
 
 【機能要件】
 ■ API連携
-- TACTポータルのファイル・フォルダAPIからデータ取得
-- ファイル一覧の動的取得
-- フォルダ階層構造の維持
+- TACT Direct API `/direct/content/site/{siteId}.json` でフラットデータ取得
+- クライアント側で`container`フィールドを基に階層構造を構築
+- 講義サイト別のファイル構造管理
 
 ■ UI仕様
-- VSCodeのExplorer風インターフェース
-- 階層構造の表示（ツリー形式）
-- ファイル・フォルダアイコン
-- 展開・折りたたみ機能
-- パンくずナビゲーション
+- **Explorer風操作性**：VSCodeのような直感的なファイル操作
+- **階層表示**：インデントベースのツリー構造
+- **展開・折りたたみ**：フォルダクリックで開閉
+- **ファイルアクション**：
+  - クリック → 新タブで開く
+  - プレビューボタン → モーダルでPDF表示
+- **パンくずナビゲーション**：現在位置の表示と移動
 
-■ データ構造（修正版）
-```
-TACTFolder {
-  id: string
-  name: string
-  type: 'folder' | 'file'
-  parentId: string | null
-  path: string
-  url?: string // ファイルの場合のダウンロードURL
-  size?: number // ファイルサイズ
-  lastModified?: Date
-  children?: TACTFolder[] // フォルダの場合
+■ データ構造（確定版）
+```typescript
+// TACT APIレスポンス（実測値ベース）
+interface TactContentItem {
+  title: string;           // "lec01.pdf", "第1回(4月11日)"
+  type: string;           // "collection" | "application/pdf" | "text/plain" など
+  url: string;            // 実際のファイルURL
+  container: string;      // 親フォルダパス "/content/group/siteId/folder/"
+  numChildren?: number;   // フォルダの場合の子要素数
 }
 
-FolderTreeState {
-  expandedFolders: Set<string>
-  selectedItem: string | null
-  currentPath: string[]
+// 内部データ構造
+interface FolderItem {
+  id: string;             // container + title から生成
+  name: string;           // title
+  type: 'folder' | 'file';
+  parentPath: string;     // container
+  fullPath: string;       // parentPath + name
+  url: string;            // ファイルの場合のアクセスURL
+  mimeType?: string;      // ファイルタイプ
+  children: FolderItem[]; // フォルダの場合
+}
+
+// UI状態管理
+interface FolderViewState {
+  expandedFolders: Set<string>;     // 展開中のフォルダパス
+  selectedItem: string | null;     // 選択中のアイテムID
+  currentSiteId: string;           // 現在表示中の講義ID
+  breadcrumb: string[];            // パンくず（フォルダパス配列）
+  searchQuery: string;             // 検索文字列
 }
 ```
 
 ■ 基本操作
-- フォルダ展開・折りたたみ
-- ファイル選択・プレビュー
-- パス移動（パンくずクリック）
-- 検索機能（ファイル名・拡張子）
+- **フォルダ操作**：
+  - クリック → 展開・折りたたみ
+  - 子要素の表示・非表示切り替え
+- **ファイル操作**：
+  - クリック → `window.open(url, '_blank')` で新タブ
+  - プレビューボタン → PDF表示モーダル
+  - URLコピーボタン → クリップボードにURL
+- **ナビゲーション**：
+  - パンくずクリック → 該当フォルダまで移動
+  - 検索 → ファイル名・拡張子でフィルタ
 
-■ API仕様（想定）
-```
-GET /api/folders?path={path}
-→ 指定パスのフォルダ・ファイル一覧を取得
+■ API仕様（確定版）
+```typescript
+// データ取得
+GET https://tact.ac.thers.ac.jp/direct/content/site/{siteId}.json
+Response: {
+  entityPrefix: "content",
+  content_collection: TactContentItem[]
+}
 
-GET /api/files/{fileId}/download
-→ ファイルのダウンロードURL取得
+// 階層構築アルゴリズム
+1. 全アイテムを取得
+2. containerでグループ化
+3. type="collection"をフォルダとして識別
+4. 親子関係を構築してツリー化
 ```
 
 ■ ストレージ
-- 取得したフォルダ構造のキャッシュ
-- 展開状態の保持
-- キー: 'tact-folder-cache', 'tact-folder-state'
-
-【現在の実装状況】
-❌ 要修正 - 現在はローカルファイル管理として実装済み
-❌ 要修正 - API連携機能が未実装
-❌ 要修正 - VSCode風UIの作り直しが必要
+- **キャッシュ**：`tact-folder-cache-{siteId}` - API取得データ
+- **状態保存**：`tact-folder-state` - 展開状態・選択状態
+- **キャッシュ期間**：30分（API再取得の判断基準）
 
 ================================================================================
 【3. 技術仕様】
@@ -147,55 +168,128 @@ GET /api/files/{fileId}/download
 - z-index管理（TACTモーダル: 10000 < 機能モーダル）
 
 ■ エラーハンドリング
-- API通信エラーの適切な処理
-- ユーザーフレンドリーなエラーメッセージ
-- フォールバック機能
+- **API通信エラー**：
+  - ネットワークエラー → ローカルキャッシュにフォールバック
+  - 403/401エラー → ログイン要求メッセージ
+  - 500エラー → 「サーバーエラー、時間を置いて再試行」
+- **データ解析エラー**：
+  - 空レスポンス → 「フォルダが空です」表示
+  - 形式エラー → デフォルト階層で表示
+- **UI エラー**：
+  - PDF読み込み失敗 → 「プレビューできません」
+  - モーダル表示エラー → 新タブで開く
 
-【ファイル構成】
+【実装時の技術的注意点】
+■ パフォーマンス
+- **遅延読み込み**：大きなフォルダは段階的に展開
+- **仮想スクロール**：多数ファイル時のメモリ最適化
+- **キャッシュ戦略**：API結果を30分間保持
+
+■ セキュリティ
+- **XSS対策**：ファイル名のHTMLエスケープ
+- **URL検証**：TACT ドメイン以外のリンク拒否
+- **CSP準拠**：inline script回避
+
+■ アクセシビリティ
+- **キーボード操作**：矢印キー・Enter・Spaceキー対応
+- **スクリーンリーダー**：適切なaria-label設定
+- **フォーカス管理**：モーダル内のtab順序
+
+
+
+================================================================================
+【4. 実装タスク】 ※分割実装版
+================================================================================
+
+【Phase 1: 基盤実装】（優先度：最高）
+1. **データ層実装**
+   - `FolderDataManager` クラス作成
+   - TACT API連携機能
+   - フラットデータ → 階層構造変換
+   - キャッシュ機能
+
+2. **型定義・インターフェース**
+   - `types.ts` の更新
+   - API レスポンス型定義
+   - 内部データ構造定義
+
+【Phase 2: UI基盤】（優先度：高）
+3. **基本UI実装**
+   - `FolderExplorerUI` クラス作成
+   - モーダルダイアログ基盤
+   - ツリー構造表示ロジック
+
+4. **基本操作実装**
+   - フォルダ展開・折りたたみ
+   - ファイル選択機能
+   - 基本的なクリックイベント
+
+【Phase 3: 機能拡張】（優先度：中）
+5. **高度な操作**
+   - PDFプレビューモーダル
+   - パンくずナビゲーション
+   - 検索・フィルタ機能
+
+6. **統合・最適化**
+   - index.ts への統合
+   - CSS スタイリング
+   - エラーハンドリング強化
+
+【実装ファイル構成】
 ```
 src/features/tact/
-├── index.ts          # メイン統合ファイル
-├── memo.ts           # メモ管理 ✅完了
-├── memo-ui.ts        # メモUI ✅完了
-├── folder.ts         # フォルダ管理 ❌要修正
-├── folder-ui.ts      # フォルダUI ❌要修正
-└── types.ts          # 型定義
-
-public/css/
-├── memo-styles.css   # メモ用CSS ✅完了
-└── folder-styles.css # フォルダ用CSS ❌要修正
+├── folder-manager.ts      # データ管理・API連携
+├── folder-ui.ts          # UI表示・イベント処理  
+├── folder-types.ts       # 型定義（types.tsから分離）
+└── folder-styles.css     # Explorer風スタイル
 ```
 
-================================================================================
-【4. 実装タスク】
-================================================================================
+【Phase別詳細仕様】
 
-【優先度：高】
-1. フォルダ機能の要件変更対応
-   - API連携仕様の詳細化
-   - VSCode風UIの設計
-   - 既存実装の修正
+■ Phase 1: FolderDataManager
+```typescript
+class FolderDataManager {
+  // API関連
+  async fetchSiteContent(siteId: string): Promise<TactContentItem[]>
+  
+  // データ変換
+  buildHierarchy(flatItems: TactContentItem[]): FolderItem
+  
+  // キャッシュ管理
+  getCachedData(siteId: string): FolderItem | null
+  setCachedData(siteId: string, data: FolderItem): void
+  
+  // ユーティリティ
+  findItemByPath(root: FolderItem, path: string): FolderItem | null
+  searchItems(root: FolderItem, query: string): FolderItem[]
+}
+```
 
-2. API調査・実装
-   - TACTポータルのAPI仕様調査
-   - フォルダ・ファイル取得APIの実装
-   - エラーハンドリング
+■ Phase 2: FolderExplorerUI
+```typescript
+class FolderExplorerUI {
+  // UI構築
+  createModal(): HTMLElement
+  renderFolderTree(root: FolderItem): HTMLElement
+  renderFileItem(item: FolderItem): HTMLElement
+  
+  // イベントハンドリング  
+  handleFolderClick(folderId: string): void
+  handleFileClick(fileUrl: string): void
+  handlePreviewClick(fileUrl: string): void
+  
+  // 状態管理
+  toggleFolder(folderId: string): void
+  selectItem(itemId: string): void
+  updateBreadcrumb(path: string[]): void
+}
+```
 
-3. フォルダUIの再実装
-   - VSCodeエクスプローラー風デザイン
-   - ツリー構造表示
-   - 階層ナビゲーション
-
-【優先度：中】
-4. 統合テスト
-   - 両機能の動作確認
-   - z-index問題の最終確認
-   - TACTポータルでの実機テスト
-
-5. 最適化・改善
-   - パフォーマンス最適化
-   - UI/UXの改善
-   - エラーハンドリングの強化
+■ Phase 3: 高度機能
+- PDF表示用iframe/embed
+- 検索結果ハイライト
+- キーボードナビゲーション
+- 右クリックコンテキストメニュー
 
 ================================================================================
 【5. 注意事項】
@@ -216,11 +310,3 @@ public/css/
 - 適切なエラーログ
 - 機能の独立性維持
 
-================================================================================
-【6. 変更履歴】
-================================================================================
-
-2025-05-24: 初版作成
-- メモ機能：完了済み機能の整理
-- フォルダ機能：要件変更（ローカル管理→API連携）の反映
-- 実装タスクの優先度設定

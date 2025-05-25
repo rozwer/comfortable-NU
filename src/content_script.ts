@@ -1,7 +1,7 @@
 import { saveHostName } from "./features/storage";
 import { createMiniSakai, addMiniSakaiBtn } from "./minisakai";
 import { isLoggedIn, miniSakaiReady } from "./utils";
-import { isTactPortal, addSampleCustomTabs } from "./features/tact";
+import { isTactPortal, initializeTactFeatures } from "./features/tact/index-new";
 
 /**
  * Creates miniSakai.
@@ -38,7 +38,7 @@ function initTactFeatures() {
         if (toolMenu) {
             clearInterval(checkToolMenu);
             // TACT機能を初期化
-            addSampleCustomTabs();
+            initializeTactFeatures();
         }
     }, 500);
 }

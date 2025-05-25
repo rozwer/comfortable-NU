@@ -15,8 +15,10 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@types/chrome": "^0.0.178",
+    "@types/jszip": "^3.4.0",
     "archiver": "^5.3.0",
     "copy-webpack-plugin": "^10.2.4",
+    "jszip": "^3.10.1",
     "lodash": "^4.17.21",
     "mustache": "^4.2.0",
     "react": "^18.0.0",

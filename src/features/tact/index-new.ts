@@ -3,7 +3,8 @@
  * このモジュールはTACTポータルに新しい機能を追加します
  */
 
-import { MemoUI } from './memo-ui.js';
+import { MemoUI } from './memo-ui';
+import { FolderUI } from './folder-ui';
 
 /**
  * TACTポータルかどうかを判定する
@@ -133,6 +134,33 @@ function loadCSS(href: string): void {
 }
 
 /**
+ * フォルダ機能タブを追加
+ */
+export const addFolderTab = (): void => {
+    // フォルダ機能用のCSSを読み込み
+    const cssPath = chrome.runtime.getURL('css/folder-styles-new.css');
+    loadCSS(cssPath);
+
+    // フォルダタブを追加
+    addCustomToolTab(
+        'フォルダ',
+        'icon-sakai--sakai-resources',
+        'フォルダ・ファイル管理',
+        () => {
+            // フォルダUI用のコンテナを作成
+            const folderContainer = document.createElement('div');
+            folderContainer.className = 'folder-ui-container';
+            
+            // FolderUIクラスのインスタンスを作成
+            const folderUI = new FolderUI(folderContainer);
+            
+            // モーダルに表示
+            showTabContent('📁 フォルダ・ファイル管理', folderContainer);
+        }
+    );
+};
+
+/**
  * メモ機能タブを追加
  */
 export const addMemoTab = (): void => {
@@ -143,7 +171,7 @@ export const addMemoTab = (): void => {
     // メモタブを追加
     addCustomToolTab(
         'メモ',
-        'icon-sakai--sakai-gradebook2 cs-custom-icon',
+        'icon-sakai--sakai-assignment-grades',
         '講義メモ管理',
         () => {
             const memoUI = new MemoUI();
@@ -165,6 +193,9 @@ export const initializeTactFeatures = (): void => {
 
     // メモ機能を追加
     addMemoTab();
+    
+    // フォルダ機能を追加（メモの後、掲示板の前に配置）
+    addFolderTab();
     
     console.log('TACT Portal カスタム機能が初期化されました');
 };

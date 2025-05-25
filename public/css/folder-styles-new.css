@@ -1,0 +1,465 @@
+/* フォルダUI用のスタイル */
+
+.folder-ui-container {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.folder-ui {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* フォルダナビゲーション */
+.folder-nav {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0;
+    margin: 0;
+    border-radius: 8px 8px 0 0;
+}
+
+.folder-nav-item {
+    flex: 1;
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6c757d;
+    transition: all 0.2s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.folder-nav-item:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.folder-nav-item.active {
+    background: #fff;
+    color: #007bff;
+    border-bottom-color: #007bff;
+    font-weight: 600;
+}
+
+.folder-nav-item:first-child {
+    border-radius: 8px 0 0 0;
+}
+
+.folder-nav-item:last-child {
+    border-radius: 0 8px 0 0;
+}
+
+/* フォルダコンテンツ */
+.folder-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: #fff;
+}
+
+.folder-section {
+    max-width: 100%;
+}
+
+.folder-section h3 {
+    margin: 0 0 16px 0;
+    color: #333;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* フォルダアクション */
+.folder-actions {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.folder-actions .btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.folder-actions .btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.folder-actions .btn-primary:hover {
+    background: #0056b3;
+}
+
+.folder-actions .btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.folder-actions .btn-secondary:hover {
+    background: #5a6268;
+}
+
+/* フォルダリスト */
+.folder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.folder-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.folder-item:hover {
+    background: #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.folder-item.file-item {
+    background: #fff5f5;
+    border-color: #fecaca;
+}
+
+.folder-item.file-item:hover {
+    background: #fef2f2;
+}
+
+.folder-icon {
+    margin-right: 16px;
+    font-size: 24px;
+    color: #007bff;
+    min-width: 32px;
+    text-align: center;
+}
+
+.file-item .folder-icon {
+    color: #6c757d;
+}
+
+.folder-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.folder-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+    word-break: break-word;
+}
+
+.folder-path {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 4px;
+    word-break: break-all;
+}
+
+.folder-meta {
+    font-size: 11px;
+    color: #868e96;
+}
+
+.folder-item .folder-actions {
+    margin: 0;
+    display: flex;
+    gap: 8px;
+}
+
+.folder-item .folder-actions .btn {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: auto;
+}
+
+.folder-item .folder-actions .btn-sm {
+    background: #6c757d;
+    color: white;
+    border-radius: 4px;
+}
+
+.folder-item .folder-actions .btn-sm:hover {
+    background: #5a6268;
+}
+
+/* 検索セクション */
+.search-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.folder-search-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.folder-search-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.search-btn {
+    padding: 10px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.search-btn:hover {
+    background: #0056b3;
+}
+
+.search-results {
+    margin-top: 20px;
+}
+
+.search-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 空のメッセージ */
+.empty-message {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 40px 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px dashed #dee2e6;
+}
+
+.search-hint {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* アイコン */
+.fa-folder:before {
+    content: "📁";
+}
+
+.fa-file:before {
+    content: "📄";
+}
+
+.fa-plus:before {
+    content: "➕";
+}
+
+.fa-refresh:before {
+    content: "🔄";
+}
+
+.fa-search:before {
+    content: "🔍";
+}
+
+.fa-folder-open:before {
+    content: "📂";
+}
+
+.fa-download:before {
+    content: "⬇️";
+}
+
+.fa-trash:before {
+    content: "🗑️";
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .folder-nav {
+        flex-direction: column;
+    }
+    
+    .folder-nav-item {
+        border-radius: 0;
+        border-bottom: 1px solid #dee2e6;
+        border-right: none;
+    }
+    
+    .folder-nav-item:first-child {
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .folder-nav-item:last-child {
+        border-radius: 0;
+        border-bottom: none;
+    }
+    
+    .folder-nav-item.active {
+        border-bottom-color: transparent;
+        border-left: 3px solid #007bff;
+    }
+    
+    .folder-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .folder-icon {
+        margin-right: 0;
+        margin-bottom: 8px;
+    }
+    
+    .folder-item .folder-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .search-box {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-btn {
+        align-self: center;
+        width: fit-content;
+    }
+}
+
+/* TACT構造表示関連のスタイル */
+.tact-structure-container {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+.tact-structure-results {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.tact-statistics {
+    background: #e3f2fd;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.tact-statistics h4 {
+    margin: 0 0 8px 0;
+    color: #1976d2;
+    font-size: 16px;
+}
+
+.tact-statistics p {
+    margin: 4px 0;
+    color: #424242;
+}
+
+.tact-tree {
+    margin-bottom: 16px;
+}
+
+.tact-tree h4 {
+    margin: 0 0 12px 0;
+    color: #2e7d32;
+    font-size: 16px;
+}
+
+.tree-display {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #333;
+    overflow-x: auto;
+    white-space: pre;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.json-display {
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #333;
+    overflow-x: auto;
+    white-space: pre;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.tact-raw-data details {
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.tact-raw-data summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #666;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.tact-raw-data summary:hover {
+    background: #e9ecef;
+}
+
+.loading-message {
+    text-align: center;
+    color: #007bff;
+    font-style: italic;
+    padding: 20px;
+}
+
+.error-message {
+    background: #ffebee;
+    border: 1px solid #ffcdd2;
+    border-radius: 6px;
+    padding: 16px;
+    color: #c62828;
+}
+
+.error-message p {
+    margin: 8px 0;
+}

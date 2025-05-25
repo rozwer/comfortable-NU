@@ -20,6 +20,31 @@
 /* カスタムアイコンのスタイル */
 .cs-custom-icon {
   color: #265b81; /* TACTの青色に合わせる */
+  font-size: 18px;
+  margin-right: 8px;
+  position: relative;
+}
+
+/* メモアイコン */
+.cs-memo-icon::before {
+  content: "📝";
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+/* フォルダアイコン */
+.cs-folder-icon::before {
+  content: "📁";
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+/* FontAwesome アイコンが正しく表示されるように */
+.cs-custom-tab .fa {
+  display: inline-block;
+  font: normal normal normal 14px/1 FontAwesome;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* モーダルのスタイル */
@@ -545,4 +570,390 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* フォルダツリーのスタイル */
+.folder-tree {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  font-family: monospace;
+  line-height: 1.4;
+}
+
+.folder-tree ul {
+  list-style: none;
+  padding-left: 20px;
+  margin: 0;
+}
+
+.folder-item, .file-item {
+  margin: 2px 0;
+}
+
+.folder-item.collapsible .toggle-icon {
+  display: inline-block;
+  width: 12px;
+  margin-right: 4px;
+  font-size: 10px;
+  user-select: none;
+}
+
+.folder-name {
+  user-select: none;
+}
+
+.folder-children {
+  margin-top: 2px;
+}
+
+.tree-display {
+  border: 1px solid #ddd;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* ファイル名編集機能のスタイル */
+.edit-icon {
+  opacity: 0;
+  margin-left: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: opacity 0.2s;
+}
+
+.folder-item:hover .edit-icon,
+.file-item:hover .edit-icon {
+  opacity: 1;
+}
+
+.edit-icon:hover {
+  background-color: rgba(0, 123, 204, 0.1);
+  border-radius: 2px;
+}
+
+.editable-name {
+  position: relative;
+}
+
+.edit-input {
+  font-family: inherit;
+  font-size: inherit;
+  border: 1px solid #007acc;
+  outline: none;
+  background: white;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+/* ダウンロード機能のスタイル */
+.download-controls {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.download-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.download-btn:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.download-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.selected-count {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* ファイルチェックボックスのスタイル */
+.file-checkbox {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.file-item:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* 編集モードのスタイル */
+.edit-mode-controls {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.edit-mode-btn {
+    background-color: #007acc;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.edit-mode-btn:hover {
+    background-color: #005a9e;
+}
+
+.edit-mode-indicator {
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background-color: #e0e0e0;
+    color: #666;
+    transition: all 0.3s;
+}
+
+.edit-mode-indicator.active {
+    background-color: #ffeb3b;
+    color: #333;
+    font-weight: bold;
+}
+
+/* ドラッグ&ドロップのスタイル */
+.draggable {
+    cursor: move;
+    transition: all 0.3s;
+}
+
+.draggable:hover {
+    background-color: rgba(0, 122, 204, 0.1);
+}
+
+.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+.drop-target {
+    background-color: rgba(76, 175, 80, 0.2) !important;
+    border: 2px dashed #4caf50 !important;
+    border-radius: 4px;
+}
+
+.drop-target::before {
+    content: "📁 ここにドロップ";
+    position: absolute;
+    background-color: #4caf50;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    top: -8px;
+    left: 10px;
+    z-index: 1000;
+}
+
+/* 編集モード時のアイテムスタイル */
+.edit-mode .file-item,
+.edit-mode .folder-item {
+    border: 1px solid transparent;
+    padding: 5px;
+    margin: 2px 0;
+    border-radius: 4px;
+    position: relative;
+}
+
+.edit-mode .file-item:hover,
+.edit-mode .folder-item:hover {
+    border-color: #007acc;
+    background-color: rgba(0, 122, 204, 0.05);
+}
+
+/* 移動インジケーター */
+.move-indicator {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #666;
+    pointer-events: none;
+}
+
+.edit-mode .draggable .move-indicator::before {
+    content: "↕️";
+}
+
+/* 移動先選択ダイアログのスタイル */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.move-destination-dialog {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    z-index: 10001;
+    position: relative;
+}
+
+.move-destination-dialog h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 18px;
+    border-bottom: 2px solid #007acc;
+    padding-bottom: 8px;
+}
+
+.folder-list {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.folder-option {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.folder-option:last-child {
+    border-bottom: none;
+}
+
+.folder-option:hover {
+    background-color: #f5f5f5;
+}
+
+.folder-option.selected {
+    background-color: #007acc;
+    color: white;
+}
+
+.folder-option.root-folder {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.folder-option.root-folder.selected {
+    background-color: #28a745;
+    color: white;
+}
+
+.dialog-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-primary {
+    background-color: #007acc;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #005a9e;
+}
+
+.btn-primary:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* 移動ボタンのスタイル */
+.move-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 8px;
+    transition: background-color 0.2s;
+}
+
+.move-btn:hover {
+    background-color: #218838;
+}
+
+.move-btn:active {
+    background-color: #1e7e34;
+}
+
+/* 編集モード時のアイテムに移動ボタンを表示 */
+.edit-mode .file-item .move-btn,
+.edit-mode .folder-item .move-btn {
+    display: inline-block;
+}
+
+.move-btn {
+    display: none;
 }
