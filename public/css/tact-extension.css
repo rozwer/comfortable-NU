@@ -461,14 +461,51 @@
   font-style: italic;
 }
 
+.cs-timetable-title-container {
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.cs-timetable-room-container {
+  margin-top: 4px;
+}
+
+.cs-timetable-room-label {
+  font-size: 9px;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.cs-timetable-instructor-container {
+  margin-top: 4px;
+}
+
+.cs-timetable-instructor-label {
+  font-size: 9px;
+  color: #888;
+  margin-bottom: 2px;
+}
+
 .cs-timetable-room {
   font-size: 11px;
   color: #666;
+  background-color: #f5f5f5;
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid #e9ecef;
+  display: inline-block;
 }
 
 .cs-timetable-instructor {
-  font-size: 11px;
-  color: #666;
+  font-size: 10px;
+  color: #444;
+  font-style: italic;
+  background-color: #f8f9fa;
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid #e9ecef;
+  display: inline-block;
 }
 
 /* 時間割のリンク色設定 */

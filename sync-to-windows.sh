@@ -3,6 +3,9 @@
 # ビルドを実行
 npm run build:chrome
 
+# TypeScript background script build
+npx tsc src/background.ts --outDir . --target es2020 --module commonjs --lib es2020,dom
+
 # Windowsのフォルダパス
 WINDOWS_PATH="/mnt/c/Users/rozwe/デスクトップ/拡張機能"
 
@@ -26,4 +29,4 @@ if [ -d "$WINDOWS_PATH" ]; then
 else
     echo "エラー: 指定されたWindowsフォルダが見つかりません: $WINDOWS_PATH"
     exit 1
-fi 
+fi

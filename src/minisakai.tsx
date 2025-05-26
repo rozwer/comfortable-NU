@@ -51,11 +51,12 @@ scheduleButton.addEventListener("click", () => {
 // お気に入りボタンの作成
 export const favoriteButton = document.createElement("button");
 favoriteButton.className = "cs-header-btn cs-favorite-btn";
-favoriteButton.innerHTML = `<img src="${chrome.runtime.getURL("img/favoriteBtn.svg")}" alt="favorite">`;
+favoriteButton.innerHTML = `<img src="${chrome.runtime.getURL("img/favoriteBtn.svg")}" alt="sync">`;
 favoriteButton.addEventListener("click", () => {
-    // お気に入りタブを表示するためのダミー関数
-    // 実際の機能実装は将来の課題
-    alert("お気に入り機能は準備中です");
+    // Googleカレンダー同期モーダルを表示
+    import("./calendarSync").then(({ showSyncModal }) => {
+        showSyncModal();
+    });
 });
 
 /**

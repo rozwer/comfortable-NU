@@ -189,6 +189,85 @@ async function saveTimetableSettings(hostname: string, year: string, term: strin
     console.log(`時間割設定を保存しました - 年度: ${year}, 学期: ${term}`);
 }
 
+// 教室情報のストレージキー
+const ClassroomStorageKey = 'cs-timetable-classrooms';
+
+// 教室情報の保存・取得
+async function saveClassroomInfo(hostname: string, data: Record<string, string>) {
+    await toStorage(hostname, ClassroomStorageKey, data);
+}
+async function loadClassroomInfo(hostname: string): Promise<Record<string, string>> {
+    const result = await fromStorage<Record<string, string> | undefined>(hostname, ClassroomStorageKey, d => d || {});
+    return result || {};
+}
+
+// 教室編集モーダル
+function showClassroomEditModal() {
+    const hostname = window.location.hostname;
+    const modal = document.createElement('div');
+    modal.className = 'cs-tact-modal cs-timetable-modal';
+    modal.style.zIndex = '10001';
+    const header = document.createElement('div');
+    header.className = 'cs-tact-modal-header';
+    const title = document.createElement('h2');
+    title.textContent = '教室編集';
+    header.appendChild(title);
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.className = 'cs-tact-modal-close';
+    closeBtn.onclick = () => modal.remove();
+    header.appendChild(closeBtn);
+    modal.appendChild(header);
+    const content = document.createElement('div');
+    content.className = 'cs-tact-modal-content';
+    content.style.maxHeight = '60vh';
+    content.style.overflowY = 'auto';
+    // 講義リスト
+    const courses = cachedCourses || SAMPLE_COURSES;
+    loadClassroomInfo(hostname).then(classroomMap => {
+        courses.forEach(course => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.marginBottom = '8px';
+            const label = document.createElement('span');
+            label.textContent = course.title.split('(')[0];
+            label.style.flex = '0 0 200px';
+            label.style.fontWeight = 'bold';
+            row.appendChild(label);
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = classroomMap[course.title] || course.room || '';
+            input.style.flex = '1';
+            input.style.marginLeft = '8px';
+            input.placeholder = '教室名を入力';
+            row.appendChild(input);
+            row.dataset.title = course.title;
+            row.appendChild(input);
+            content.appendChild(row);
+        });
+        // 保存ボタン
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = '保存';
+        saveBtn.className = 'cs-btn cs-btn-primary';
+        saveBtn.style.marginTop = '16px';
+        saveBtn.onclick = async () => {
+            const newMap: Record<string, string> = {};
+            content.querySelectorAll('div[data-title]')?.forEach(row => {
+                const t = row.getAttribute('data-title')!;
+                const val = (row.querySelector('input') as HTMLInputElement).value.trim();
+                if (val) newMap[t] = val;
+            });
+            await saveClassroomInfo(hostname, newMap);
+            modal.remove();
+            updateTimetable();
+        };
+        content.appendChild(saveBtn);
+    });
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+}
+
 export const showTimetableModal = (): void => {
     // 既存のモーダルがあれば削除
     const existingModal = document.querySelector('.cs-tact-modal');
@@ -362,6 +441,14 @@ export const showTimetableModal = (): void => {
     termSelector.appendChild(termSelect);
     selectors.appendChild(termSelector);
     
+    // 教室編集ボタン追加
+    const classroomEditBtn = document.createElement('button');
+    classroomEditBtn.textContent = '教室編集';
+    classroomEditBtn.className = 'cs-btn cs-btn-secondary';
+    classroomEditBtn.style.marginLeft = '12px';
+    classroomEditBtn.onclick = showClassroomEditModal;
+    selectors.appendChild(classroomEditBtn);
+    
     timetableContainer.appendChild(selectors);
     
     // 時間割表示部分
@@ -526,7 +613,7 @@ function extractCoursesFromPage(): CourseInfo[] {
                             
                             // 曜日と時限情報の変換処理
                             const dayPeriods = periodInfo.split(',').map(dp => {
-                                return dp.replace(/([月火水木金土日])([１２３４５６７８９０]+|[一二三四五六七八九十]+|[0-9]+)限/, (match, day, num) => {
+                                return dp.replace(/([１２３４５６７８９０]+|[一二三四五六七八九十]+|[0-9]+)限/, (match, num) => {
                                     // 漢数字と全角数字を半角数字に変換
                                     const conversion: {[key: string]: string} = {
                                         '一': '1', '二': '2', '三': '3', '四': '4', '五': '5',
@@ -540,7 +627,7 @@ function extractCoursesFromPage(): CourseInfo[] {
                                         period += conversion[num[i]] || num[i];
                                     }
                                     
-                                    return day + period;
+                                    return period;
                                 });
                             });
                             
@@ -585,7 +672,7 @@ function extractCoursesFromPage(): CourseInfo[] {
                         console.log(`クラス名から抽出 - タイトル: ${courseTitle}, 年度: ${year}, 学期: ${term}`);
                         
                         const dayPeriods = periodInfo.split(',').map(dp => {
-                            return dp.replace(/([月火水木金土日])([１２３４５６７８９０]+|[一二三四五六七八九十]+|[0-9]+)限/, (m, day, num) => {
+                            return dp.replace(/([１２３４５６７８９０]+|[一二三四五六七八九十]+|[0-9]+)限/, (m, num) => {
                                 // 数字変換処理
                                 const conversion: {[key: string]: string} = {
                                     '一': '1', '二': '2', '三': '3', '四': '4', '五': '5',
@@ -599,7 +686,7 @@ function extractCoursesFromPage(): CourseInfo[] {
                                     period += conversion[num[i]] || num[i];
                                 }
                                 
-                                return day + period;
+                                return period;
                             });
                         });
                         
@@ -699,59 +786,38 @@ function extractCourseCategories(): Map<string, string> {
 /**
  * 時間割を更新する
  */
-function updateTimetable() {
+async function updateTimetable() {
     const timetableDiv = document.getElementById('cs-timetable');
     const yearSelect = document.getElementById('cs-timetable-year') as HTMLSelectElement;
     const termSelect = document.getElementById('cs-timetable-term') as HTMLSelectElement;
-    
     if (!timetableDiv || !yearSelect || !termSelect) return;
-    
     const year = yearSelect.value;
     const term = termSelect.value;
-    
-    // 選択された値をローカルストレージに保存
     const currentSiteHostname = window.location.hostname;
     saveTimetableSettings(currentSiteHostname, year, term);
-    
-    // まず時間割表示領域をクリア
     timetableDiv.innerHTML = '';
-    
-    // コース色情報は表示しない（デバッグ用のログのみ残す）
     if (courseColorInfo) {
         console.log("コース色情報が利用可能です");
     } else {
         console.log("利用可能なコース色情報がありません");
     }
-    
-    // 曜日と時限
     const days = ['', '月', '火', '水', '木', '金'];
     const periods = 6;
-    
-    // 講義データを取得
     let courses: CourseInfo[] = [];
-
-    // キャッシュされたデータがあればそれを使用
     if (cachedCourses && cachedCourses.length > 0) {
         console.log('キャッシュされた講義情報を使用します', cachedCourses.length);
         courses = cachedCourses;
     } else {
-        // なければ新たに取得を試みる
         try {
-            // 方法1: 通常の取得方法
             courses = fetchCoursesFromPortal();
             console.log('fetchCoursesFromPortal結果:', courses);
-            
-            // 方法2: 代替手段
             if (!courses || courses.length === 0) {
                 courses = extractCoursesFromPage();
                 console.log('extractCoursesFromPage結果:', courses);
             }
-            
-            // 取得成功したらキャッシュ
             if (courses && courses.length > 0) {
                 cachedCourses = courses;
             } else {
-                // どちらも失敗した場合はサンプルデータを使用
                 courses = SAMPLE_COURSES;
             }
         } catch (error) {
@@ -759,70 +825,42 @@ function updateTimetable() {
             courses = SAMPLE_COURSES;
         }
     }
-    
-    // デバッグ: 年度と学期の選択状況を出力
     console.log(`選択された年度: ${year}, 学期: ${term}`);
-    
-    // 選択された年度と学期に一致する講義のみをフィルタリング
     const filteredCourses = courses.filter(course => {
-        // 年度の比較 - academicYearフィールドを優先的に使用
         let courseYear = course.academicYear || "";
-
-        // academicYearフィールドがない場合は、タイトルまたはterm文字列から抽出を試みる
         if (!courseYear) {
-            // タイトルから年度情報を抽出
             const yearRegexMatch = course.title.match(/\((\d{4})年度/);
             if (yearRegexMatch && yearRegexMatch[1]) {
                 courseYear = yearRegexMatch[1];
             } else if (course.term && course.term.match(/(\d{4})年/)) {
-                // termから年度情報を抽出
                 const termYearMatch = course.term.match(/(\d{4})年/);
                 if (termYearMatch && termYearMatch[1]) {
                     courseYear = termYearMatch[1];
                 }
             }
         }
-        
-        // 年度の一致を確認（単純な文字列比較）
         let isYearMatching = courseYear === year;
-
-        // courseYearが設定されていない場合は、すべての年度にマッチさせる
-        // これにより、年度が明示的に指定されていない講義も表示される
         if (!courseYear) {
             isYearMatching = true;
         }
-        
-        // 学期の正規化と比較
         const normalizedCourseTerm = normalizeTerm(course.term);
         const normalizedSelectedTerm = term;
-        
-        // 春・秋の大分類を抽出
-        const courseTermBase = normalizedCourseTerm.split('-')[0]; // spring or fall
-        const selectedTermBase = normalizedSelectedTerm.split('-')[0]; // spring or fall
-        
-        // 学期の番号を抽出 (spring-1 -> 1, spring-2 -> 2)
+        const courseTermBase = normalizedCourseTerm.split('-')[0];
+        const selectedTermBase = normalizedSelectedTerm.split('-')[0];
         const courseTermNumber = normalizedCourseTerm.includes('-') ? normalizedCourseTerm.split('-')[1] : '';
         const selectedTermNumber = normalizedSelectedTerm.includes('-') ? normalizedSelectedTerm.split('-')[1] : '';
-        
-        // 学期の詳細まで確認（spring-1, spring-2など）
         let termMatch = false;
-        
-        // Case 1: 完全一致（例: spring-1 と spring-1）
         if (normalizedCourseTerm === normalizedSelectedTerm) {
             termMatch = true;
-        }
-        // Case 2: 大分類のみ選択時は全ての細分類を表示（例: 選択がspringで講義がspring-1、spring-2）
-        else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
+        } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
             termMatch = true;
-        }
-        // Case 3: 講義が大分類のみの場合は表示（例: 選択がspring-1で講義がspring）
-        else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
+        } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
             termMatch = true;
+        } else if (courseTermBase === selectedTermBase) {
+            termMatch = false;
+        } else {
+            termMatch = false;
         }
-        // Case 4: 選択が細分類（spring-1など）で講義が別の細分類（spring-2など）の場合は表示しない
-        // （例: 選択がspring-1で講義がspring-2の場合、条件に当てはまらないので自動的に除外される）
-        
-        // フィルタリング結果の理由を詳細に出力
         let termMatchReason = '';
         if (normalizedCourseTerm === normalizedSelectedTerm) {
             termMatchReason = '完全一致';
@@ -835,186 +873,191 @@ function updateTimetable() {
         } else {
             termMatchReason = '不一致';
         }
-        
-        // デバッグ出力を追加
         console.log(`フィルタリング - 講義: ${course.title}, 保存年度: ${course.academicYear || "なし"}, 抽出年度: ${courseYear || "不明"}, 選択年度: ${year}, 学期: ${course.term}, 正規化: ${normalizedCourseTerm}, 年度一致: ${isYearMatching}, 学期一致: ${termMatch}, 理由: ${termMatchReason}`);
-        
         return isYearMatching && termMatch;
     });
-    
-    // 時間割テーブルの作成
-    const table = document.createElement('table');
-    table.className = 'cs-timetable-table';
-    table.style.tableLayout = 'fixed'; // 列幅を固定
-    table.style.width = '100%';
-    table.style.borderCollapse = 'collapse';
-    
-    // テーブルヘッダー（曜日）
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    
-    days.forEach(day => {
-        const th = document.createElement('th');
-        th.textContent = day;
-        th.style.padding = '8px';
-        th.style.backgroundColor = '#f5f5f5';
-        th.style.border = '1px solid #ddd';
-        th.style.textAlign = 'center';
-        headerRow.appendChild(th);
-    });
-    
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-    
-    // テーブルの本体（時限と授業）
-    const tbody = document.createElement('tbody');
-    
-    for (let period = 1; period <= periods; period++) {
-        const row = document.createElement('tr');
-        
-        // 時限列
-        const periodCell = document.createElement('td');
-        periodCell.className = 'cs-timetable-period';
-        periodCell.textContent = `${period}限`;
-        periodCell.style.backgroundColor = '#f5f5f5';
-        periodCell.style.fontWeight = 'bold';
-        periodCell.style.textAlign = 'center';
-        periodCell.style.verticalAlign = 'middle';
-        periodCell.style.width = '50px';
-        periodCell.style.border = '1px solid #ddd';
-        row.appendChild(periodCell);
-        
-        // 曜日ごとのセル
-        for (let dayIndex = 1; dayIndex < days.length; dayIndex++) {
-            const day = days[dayIndex];
-            const cell = document.createElement('td');
-            cell.className = 'cs-timetable-cell';
-            cell.style.width = '20%'; // 各曜日の列幅を均等に
-            cell.style.maxWidth = '20%';
-            cell.style.padding = '5px';
-            cell.style.verticalAlign = 'top';
-            cell.style.border = '1px solid #ddd';
-            cell.style.height = '120px'; // セルの高さを固定
-            cell.style.cursor = 'pointer'; // クリック可能なことを示すカーソル
-            cell.style.transition = 'all 0.3s ease'; // すべての変化をスムーズに
-            
-            // その時限・曜日の授業データを検索
-            const coursesForCell = filteredCourses.filter(course => {
-                return course.dayPeriod.some(dp => dp === day + period);
-            });
-            
-            if (coursesForCell.length > 0) {
-                // カテゴリ情報を抽出
-                const courseCategoryMap = extractCourseCategories();
-                
-                // 最初のコースのURLを取得（複数ある場合は最初のもののみ使用）
-                const courseUrl = coursesForCell[0].url;
-                
-                // 最初のコースのカテゴリ情報を取得して背景色を設定する
-                const firstCourse = coursesForCell[0];
-                const shortTitle = firstCourse.title.split('(')[0].trim();
-                const category = courseCategoryMap.get(shortTitle);
-                
-                // カテゴリに基づいてセルの背景色を設定
-                if (category && category !== 'passed') {
-                    // カテゴリ別の背景色設定
-                    if (category === 'due24h') {
-                        cell.style.backgroundColor = 'rgba(255, 82, 82, 0.1)'; // 薄い赤
-                        cell.dataset.category = 'due24h';
-                    } else if (category === 'due5d') {
-                        cell.style.backgroundColor = 'rgba(255, 215, 0, 0.1)'; // 薄い黄色
-                        cell.dataset.category = 'due5d';
-                    } else if (category === 'due14d') {
-                        cell.style.backgroundColor = 'rgba(76, 175, 80, 0.1)'; // 薄い緑
-                        cell.dataset.category = 'due14d';
-                    } else if (category === 'dueOver14d') {
-                        cell.style.backgroundColor = 'rgba(224, 224, 224, 0.3)'; // 薄いグレー
-                        cell.dataset.category = 'dueOver14d';
+    // 教室情報を一度だけ取得
+    loadClassroomInfo(currentSiteHostname).then(classroomMap => {
+        const table = document.createElement('table');
+        table.className = 'cs-timetable-table';
+        table.style.tableLayout = 'fixed';
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        days.forEach(day => {
+            const th = document.createElement('th');
+            th.textContent = day;
+            th.style.padding = '8px';
+            th.style.backgroundColor = '#f5f5f5';
+            th.style.border = '1px solid #ddd';
+            th.style.textAlign = 'center';
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        for (let period = 1; period <= periods; period++) {
+            const row = document.createElement('tr');
+            const periodCell = document.createElement('td');
+            periodCell.className = 'cs-timetable-period';
+            periodCell.textContent = `${period}限`;
+            periodCell.style.backgroundColor = '#f5f5f5';
+            periodCell.style.fontWeight = 'bold';
+            periodCell.style.textAlign = 'center';
+            periodCell.style.verticalAlign = 'middle';
+            periodCell.style.width = '50px';
+            periodCell.style.border = '1px solid #ddd';
+            row.appendChild(periodCell);
+            for (let dayIndex = 1; dayIndex < days.length; dayIndex++) {
+                const day = days[dayIndex];
+                const cell = document.createElement('td');
+                cell.className = 'cs-timetable-cell';
+                cell.style.width = '20%';
+                cell.style.maxWidth = '20%';
+                cell.style.padding = '5px';
+                cell.style.verticalAlign = 'top';
+                cell.style.border = '1px solid #ddd';
+                cell.style.height = '120px';
+                cell.style.cursor = 'pointer';
+                cell.style.transition = 'all 0.3s ease';
+                const coursesForCell = filteredCourses.filter(course => {
+                    return course.dayPeriod.some(dp => dp === day + period);
+                });
+                if (coursesForCell.length > 0) {
+                    const courseCategoryMap = extractCourseCategories();
+                    const courseUrl = coursesForCell[0].url;
+                    const firstCourse = coursesForCell[0];
+                    const shortTitle = firstCourse.title.split('(')[0].trim();
+                    const category = courseCategoryMap.get(shortTitle);
+                    if (category && category !== 'passed') {
+                        if (category === 'due24h') {
+                            cell.style.backgroundColor = 'rgba(255, 82, 82, 0.1)';
+                            cell.dataset.category = 'due24h';
+                        } else if (category === 'due5d') {
+                            cell.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
+                            cell.dataset.category = 'due5d';
+                        } else if (category === 'due14d') {
+                            cell.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                            cell.dataset.category = 'due14d';
+                        } else if (category === 'dueOver14d') {
+                            cell.style.backgroundColor = 'rgba(224, 224, 224, 0.3)';
+                            cell.dataset.category = 'dueOver14d';
+                        }
                     }
+                    cell.addEventListener('click', () => {
+                        window.location.href = courseUrl;
+                    });
+                    coursesForCell.forEach(course => {
+                        const courseDiv = document.createElement('div');
+                        courseDiv.className = 'cs-timetable-course';
+                        courseDiv.style.margin = '0 0 10px 0';
+                        courseDiv.style.padding = '4px 2px';
+                        courseDiv.style.minHeight = '40px';
+                        courseDiv.style.display = 'flex';
+                        courseDiv.style.flexDirection = 'column';
+                        courseDiv.style.border = '1px solid rgba(0, 0, 0, 0.05)';
+                        courseDiv.style.borderRadius = '4px';
+                        courseDiv.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+                        let displayTitle = course.title;
+                        if (displayTitle.includes('(')) {
+                            displayTitle = displayTitle.split('(')[0].trim();
+                        }
+                        if (displayTitle.length > 15) {
+                            displayTitle = displayTitle.substring(0, 12) + '...';
+                        }
+                        // 教科名部分 - 明確に分離されたコンテナ
+                        const courseTitleContainer = document.createElement('div');
+                        courseTitleContainer.className = 'cs-timetable-title-container';
+                        courseTitleContainer.style.marginBottom = '6px';
+                        courseTitleContainer.style.paddingBottom = '4px';
+                        courseTitleContainer.style.borderBottom = '1px solid #e0e0e0';
+                        
+                        const courseTitleEl = document.createElement('div');
+                        courseTitleEl.textContent = displayTitle;
+                        courseTitleEl.className = 'cs-timetable-title';
+                        courseTitleEl.title = course.title;
+                        courseTitleEl.style.display = 'block';
+                        courseTitleEl.style.overflow = 'hidden';
+                        courseTitleEl.style.textOverflow = 'ellipsis';
+                        courseTitleEl.style.whiteSpace = 'nowrap';
+                        courseTitleEl.style.fontSize = '12px';
+                        courseTitleEl.style.color = '#265b81';
+                        courseTitleEl.style.fontWeight = 'bold';
+                        courseTitleContainer.appendChild(courseTitleEl);
+                        courseDiv.appendChild(courseTitleContainer);
+                        
+                        // 教室名部分 - 明確に分離
+                        const classroom = classroomMap[course.title] || course.room;
+                        if (classroom) {
+                            const roomContainer = document.createElement('div');
+                            roomContainer.className = 'cs-timetable-room-container';
+                            roomContainer.style.marginTop = '4px';
+                            
+                            const roomLabel = document.createElement('div');
+                            roomLabel.className = 'cs-timetable-room-label';
+                            roomLabel.textContent = '教室:';
+                            roomLabel.style.fontSize = '9px';
+                            roomLabel.style.color = '#888';
+                            roomLabel.style.marginBottom = '2px';
+                            roomContainer.appendChild(roomLabel);
+                            
+                            const roomDiv = document.createElement('div');
+                            roomDiv.className = 'cs-timetable-room';
+                            roomDiv.textContent = classroom;
+                            roomDiv.style.fontSize = '11px';
+                            roomDiv.style.color = '#444';
+                            roomDiv.style.fontWeight = 'normal';
+                            roomDiv.style.backgroundColor = '#f5f5f5';
+                            roomDiv.style.padding = '2px 4px';
+                            roomDiv.style.borderRadius = '3px';
+                            roomDiv.style.border = '1px solid #e9ecef';
+                            roomDiv.style.display = 'inline-block';
+                            roomContainer.appendChild(roomDiv);
+                            courseDiv.appendChild(roomContainer);
+                        }
+                        if (course.instructor) {
+                            const instructorContainer = document.createElement('div');
+                            instructorContainer.className = 'cs-timetable-instructor-container';
+                            instructorContainer.style.marginTop = '4px';
+                            
+                            const instructorLabel = document.createElement('div');
+                            instructorLabel.className = 'cs-timetable-instructor-label';
+                            instructorLabel.textContent = '担当:';
+                            instructorLabel.style.fontSize = '9px';
+                            instructorLabel.style.color = '#888';
+                            instructorLabel.style.marginBottom = '2px';
+                            instructorContainer.appendChild(instructorLabel);
+                            
+                            const instructorDiv = document.createElement('div');
+                            instructorDiv.className = 'cs-timetable-instructor';
+                            instructorDiv.textContent = course.instructor;
+                            instructorDiv.style.fontSize = '10px';
+                            instructorDiv.style.color = '#444';
+                            instructorDiv.style.fontStyle = 'italic';
+                            instructorDiv.style.backgroundColor = '#f8f9fa';
+                            instructorDiv.style.padding = '2px 4px';
+                            instructorDiv.style.borderRadius = '3px';
+                            instructorDiv.style.border = '1px solid #e9ecef';
+                            instructorDiv.style.display = 'inline-block';
+                            instructorContainer.appendChild(instructorDiv);
+                            courseDiv.appendChild(instructorContainer);
+                        }
+                        cell.appendChild(courseDiv);
+                        console.log(`セル配置: ${day}${period} - ${course.title}`);
+                    });
                 }
-                
-                // セル全体をクリック可能に
-                cell.addEventListener('click', () => {
-                    window.location.href = courseUrl;
-                });
-                
-                // 複数の講義がある場合は全て表示
-                coursesForCell.forEach(course => {
-                    const courseDiv = document.createElement('div');
-                    courseDiv.className = 'cs-timetable-course';
-                    courseDiv.style.margin = '0 0 10px 0';
-                    courseDiv.style.padding = '4px 2px';
-                    courseDiv.style.minHeight = '40px';    // 最小高さを設定
-
-                    // タイトルを適切な長さに調整（年度情報などを除去）
-                    let displayTitle = course.title;
-                    if (displayTitle.includes('(')) {
-                        displayTitle = displayTitle.split('(')[0].trim();
-                    }
-                    
-                    // タイトルが長すぎる場合は省略
-                    if (displayTitle.length > 15) {
-                        displayTitle = displayTitle.substring(0, 12) + '...';
-                    }
-                    
-                    // タイトルをテキストとして表示
-                    const courseTitleEl = document.createElement('div');
-                    courseTitleEl.textContent = displayTitle;
-                    courseTitleEl.className = 'cs-timetable-title';
-                    courseTitleEl.title = course.title; // ツールチップには完全なタイトルを表示
-                    courseTitleEl.style.display = 'block';
-                    courseTitleEl.style.overflow = 'hidden';
-                    courseTitleEl.style.textOverflow = 'ellipsis';
-                    courseTitleEl.style.whiteSpace = 'nowrap';
-                    courseTitleEl.style.fontSize = '12px';
-                    courseTitleEl.style.color = '#265b81'; // リンク色を維持
-                    courseTitleEl.style.fontWeight = 'bold';
-                    
-                    courseDiv.appendChild(courseTitleEl);
-                    
-                    // コース名を短縮してマップから探す
-                    // 注: カテゴリ情報はすでにセル全体に適用されているので、ここでは何もしない
-                    
-                    cell.appendChild(courseDiv);
-                    
-                    // 実際の講義情報がある場合はそれを表示
-                    if (course.room) {
-                        const roomDiv = document.createElement('div');
-                        roomDiv.className = 'cs-timetable-room';
-                        roomDiv.textContent = course.room;
-                        cell.appendChild(roomDiv);
-                    }
-                    
-                    if (course.instructor) {
-                        const instructorDiv = document.createElement('div');
-                        instructorDiv.className = 'cs-timetable-instructor';
-                        instructorDiv.textContent = course.instructor;
-                        cell.appendChild(instructorDiv);
-                    }
-                    
-                    // デバッグ情報
-                    console.log(`セル配置: ${day}${period} - ${course.title}`);
-                });
-            } else {
-                // 講義データがない場合は空のセル
+                row.appendChild(cell);
             }
-            
-            row.appendChild(cell);
+            tbody.appendChild(row);
         }
-        
-        tbody.appendChild(row);
-    }
-    
-    table.appendChild(tbody);
-    
-    // テーブルを表示
-    timetableDiv.appendChild(table);
-    
-    // タイトル部分に年度と学期を表示
-    const modalTitle = document.querySelector('.cs-timetable-modal .cs-tact-modal-header h2');
-    if (modalTitle) {
-        modalTitle.textContent = `時間割表示 (${year}年 ${termSelect.options[termSelect.selectedIndex].textContent})`;
-    }
+        table.appendChild(tbody);
+        timetableDiv.appendChild(table);
+        const modalTitle = document.querySelector('.cs-timetable-modal .cs-tact-modal-header h2');
+        if (modalTitle) {
+            modalTitle.textContent = `時間割表示 (${year}年 ${termSelect.options[termSelect.selectedIndex].textContent})`;
+        }
+    });
 }
 
 /**
@@ -1036,7 +1079,7 @@ function generateDummyTimetable(term: string) {
         },
         { 
             title: '英語コミュニケーション', 
-            room: '全学教育棟301', 
+            room: '全学教育棠301', 
             instructor: 'Smith教授' 
         },
         { 
