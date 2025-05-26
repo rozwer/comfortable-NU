@@ -927,33 +927,97 @@
     cursor: not-allowed;
 }
 
-/* 移動ボタンのスタイル */
-.move-btn {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 12px;
-    margin-left: 8px;
-    transition: background-color 0.2s;
+/* TACT構造コントロール部分のスタイル */
+.tact-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 15px;
 }
 
-.move-btn:hover {
-    background-color: #218838;
+.tact-controls .btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.move-btn:active {
-    background-color: #1e7e34;
+.tact-controls .btn-primary {
+  background-color: #007acc;
+  color: white;
 }
 
-/* 編集モード時のアイテムに移動ボタンを表示 */
-.edit-mode .file-item .move-btn,
-.edit-mode .folder-item .move-btn {
-    display: inline-block;
+.tact-controls .btn-primary:hover:not(:disabled) {
+  background-color: #005a9e;
+  transform: translateY(-1px);
 }
 
-.move-btn {
-    display: none;
+.tact-controls .btn-primary:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.tact-controls .btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.tact-controls .btn-secondary:hover:not(:disabled) {
+  background-color: #545b62;
+}
+
+.tact-controls .refresh-info {
+  color: #6c757d;
+  font-size: 12px;
+  font-style: italic;
+  margin-left: 8px;
+}
+
+/* フォルダzipダウンロードコントロール */
+.folder-download-controls {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.folder-select {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+    color: #495057;
+}
+
+.folder-select:focus {
+    outline: none;
+    border-color: #007acc;
+    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+}
+
+.folder-download-controls .btn {
+    white-space: nowrap;
+    min-width: 200px;
+}
+
+.folder-download-controls .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

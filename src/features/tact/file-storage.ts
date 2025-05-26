@@ -128,6 +128,16 @@ export class FileStorage {
     }
 
     /**
+     * 指定したノードの子ノードを取得
+     */
+    getChildNodes(parentId: string): FileSystemNode[] {
+        const parentNode = this.nodes.get(parentId);
+        if (!parentNode) return [];
+        
+        return parentNode.children.map(childId => this.nodes.get(childId)).filter(node => node !== undefined) as FileSystemNode[];
+    }
+
+    /**
      * ローカルストレージから読み込み
      */
     loadFromStorage(): void {

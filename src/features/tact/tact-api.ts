@@ -365,4 +365,18 @@ export class TactApiClient {
         
         return `📊 Total: ${items.length} items (${folders} folders, ${files} files)`;
     }
+
+    /**
+     * 現在のサイトのストレージをクリア
+     */
+    clearCurrentSiteStorage(): void {
+        this.fileStorage.clearStorage();
+    }
+
+    /**
+     * 全サイトのストレージをクリア
+     */
+    clearAllStorage(): void {
+        this.fileStorage.clearAllStorage();
+    }
 }

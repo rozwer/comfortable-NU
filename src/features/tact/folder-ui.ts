@@ -1,5 +1,4 @@
 import { TactApiClient } from './tact-api';
-import JSZip from 'jszip';
 
 export class FolderUI {
     private container: HTMLElement;
@@ -14,6 +13,8 @@ export class FolderUI {
 
     private init() {
         this.render();
+        // ボタンのイベントリスナーを追加
+        this.addRefreshButtonListener();
         // 初期化時に自動読み込み
         this.loadTactStructure();
     }
@@ -35,6 +36,12 @@ export class FolderUI {
         return `
             <div class="folder-section">
                 <h3>TACT講義構造</h3>
+                <div class="tact-controls">
+                    <button id="refresh-tact-data" class="btn btn-primary">
+                        🔄 API再実行
+                    </button>
+                    <span class="refresh-info">最新のデータを取得します</span>
+                </div>
                 <div class="tact-structure-container" id="tact-structure-container">
                     <p class="loading-message">🔄 TACT APIから構造を読み込み中...</p>
                 </div>
@@ -45,7 +52,7 @@ export class FolderUI {
     /**
      * TACT APIから講義構造を読み込み
      */
-    private async loadTactStructure(): Promise<void> {
+    private async loadTactStructure(forceRefresh: boolean = false): Promise<void> {
         const containerElement = this.container.querySelector('#tact-structure-container');
         if (!containerElement) return;
 
@@ -72,7 +79,13 @@ export class FolderUI {
             }
 
             // APIからデータを取得（ローカルデータがない場合、または強制更新の場合）
-            const items = await this.tactApiClient.fetchSiteContent(siteId);
+            let items: any[];
+            if (!hasStoredData || forceRefresh) {
+                items = await this.tactApiClient.fetchSiteContent(siteId);
+            } else {
+                // ローカルデータから取得（統計のために空配列を使用）
+                items = [];
+            }
             
             // 統計情報を生成
             const statistics = this.tactApiClient.generateStatistics(items);
@@ -122,6 +135,36 @@ export class FolderUI {
                     <p>💡 ログインしているか、正しい講義ページにいるかを確認してください</p>
                 </div>
             `;
+        }
+    }
+
+    /**
+     * API再実行ボタンのイベントリスナーを追加
+     */
+    private addRefreshButtonListener(): void {
+        const refreshButton = this.container.querySelector('#refresh-tact-data') as HTMLButtonElement;
+        
+        if (refreshButton) {
+            refreshButton.addEventListener('click', async () => {
+                refreshButton.disabled = true;
+                refreshButton.textContent = '🔄 実行中...';
+                
+                try {
+                    // 新しいデータを取得して追加
+                    console.log('API再実行: 最新データを取得しています...');
+                    
+                    // 強制的にAPIから再取得（ストレージはクリアしない）
+                    await this.loadTactStructure(true);
+                    
+                    console.log('API再実行完了: 最新データを取得して追加しました');
+                } catch (error) {
+                    console.error('API再実行エラー:', error);
+                    alert('データの再取得中にエラーが発生しました。ネットワーク接続を確認してください。');
+                } finally {
+                    refreshButton.disabled = false;
+                    refreshButton.textContent = '🔄 API再実行';
+                }
+            });
         }
     }
 
