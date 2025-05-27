@@ -50,17 +50,6 @@ export function SettingsTab(props: { onSettingsChange: (change: SettingsChange) 
             />
 
             <TranslatedBooleanItem
-                descriptionTag="settings_color_checked_item"
-                value={settings.miniSakaiOption.showCompletedEntry}
-                onChange={(v) =>
-                    props.onSettingsChange({
-                        type: "boolean",
-                        id: "miniSakaiOption.showCompletedEntry",
-                        newValue: v
-                    })
-                }
-            />
-            <TranslatedBooleanItem
                 descriptionTag="settings_display_late_submit_assignment"
                 value={settings.miniSakaiOption.showLateAcceptedEntry}
                 onChange={(v) =>

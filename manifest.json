@@ -4,6 +4,7 @@
   "version": "----",
   "manifest_version": 3,
   "default_locale": "en",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkca9UfFV6F4uKnQH+E4p0/b8PSX6qNA78xLVp9Y4OgxFzJLFw/o7gDau2XtvfDvkJhLCKi6GXACxWjY/funYXlWb8sMzL4gNH275VmlDz83DMtdzcjlEMoipzpUBCY13ZMMzzWA+zw90ajuvW/ee81mcW+8RVUvLV/5TQNlTxfPwZ9VS2GNCifAm7XyB5RQ3KSa6+Qz+eP9wKQQlH3oxeMX2MIfulPRdOvy1RPXDNLZsKtcsGio+tf4mfhfF3Nt+IjkBpcTksD7lr8YY6VcK9+hhvnn8+kbDSExoQL4ayz9Drvyn8SC6AbrISo0GadYYQ59nyikSiBiVEuMw5Dx49QIDAQAB",
   "icons": {
     "16": "img/icon16.png",
     "48": "img/icon48.png",
@@ -40,7 +41,7 @@
     "notifications"
   ],
   "oauth2": {
-    "client_id": "320934121909-lq2b2rifnilm51m5m4pn25qld2htavkg.apps.googleusercontent.com",
+    "client_id": "320934121909-vh9k1ce4ev83rg3kqq3voj9s9ffghekv.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/calendar",
       "https://www.googleapis.com/auth/userinfo.email",

@@ -97,20 +97,11 @@ export class FolderUI {
             // 結果を表示
             containerElement.innerHTML = `
                 <div class="tact-structure-results">
-                    <div class="tact-statistics">
-                        <h4>📊 統計情報</h4>
-                        <p>${statistics}</p>
-                        <p>🔍 サイトID: ${siteId}</p>
-                    </div>
                     <div class="tact-tree">
                         <h4>🌲 フォルダ構造</h4>
                         <div class="tree-display">${treeHTML || '<p>構造が見つかりませんでした</p>'}</div>
                     </div>
                     <div class="tact-raw-data" style="margin-top: 20px;">
-                        <details>
-                            <summary>📄 生データ (JSON)</summary>
-                            <pre class="json-display">${JSON.stringify(items, null, 2)}</pre>
-                        </details>
                     </div>
                 </div>
             `;
