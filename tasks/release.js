@@ -13,11 +13,11 @@ const version = packageJSON.version;
  * -----------------------------------------------------------------
  * Modified by: roz
  * Date       : 2025-05-28
- * Changes    : リリースファイル名をcomfortable-sakaiからcomfortable-ishiiに変更
+ * Changes    : リリースファイル名をcomfortable-sakaiからcomfortable-NUに変更
  * Category   : リリース設定
  * -----------------------------------------------------------------
  */
-const output = fs.createWriteStream(`./dist/release/comfortable-ishii-${browser}-v${version}.zip`);
+const output = fs.createWriteStream(`./dist/release/comfortable-NU-${browser}-v${version}.zip`);
 const archive = archiver("zip", {
     zlib: { level: 9 }
 });
@@ -34,11 +34,11 @@ switch (browser) {
          * -----------------------------------------------------------------
          * Modified by: roz
          * Date       : 2025-05-28
-         * Changes    : Chromeリリース用ディレクトリ名をcomfortable-sakaiからcomfortable-ishiiに変更
+         * Changes    : Chromeリリース用ディレクトリ名をcomfortable-sakaiからcomfortable-NUに変更
          * Category   : リリース設定
          * -----------------------------------------------------------------
          */
-        archive.directory(`./dist/source/${browser}`, `comfortable-ishii-v${version}`);
+        archive.directory(`./dist/source/${browser}`, `comfortable-NU-v${version}`);
         break;
     case "firefox":
         archive.directory(`./dist/source/${browser}`, ``);

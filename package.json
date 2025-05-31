@@ -1,14 +1,14 @@
 {
-  "name": "comfortable-ishii",
+  "name": "comfortable-NU",
   "version": "1.0.0",
-  "description": "Comfortable Ishii is a Web browser extension for managing assignments and quizzes on Sakai LMS.",
+  "description": "Comfortable NU is a Web browser extension for managing assignments and quizzes on Sakai LMS.",
   "main": "index.ts",
   "scripts": {
     "test": "jest",
     "build:chrome": "NODE_ENV=production webpack --config tasks/webpack.config.chrome.js && node tasks/release chrome",
     "build:firefox": "NODE_ENV=production webpack --config tasks/webpack.config.firefox.js && node tasks/release firefox",
     "build:safari": "NODE_ENV=production webpack --config tasks/webpack.config.safari.js && node tasks/release safari",
-    "convert:safari": "NODE_ENV=production npm run build:safari && xcrun safari-web-extension-converter dist/source/safari --project-location dist/source/safari-proj --app-name \"Comfortable-Ishii\" --bundle-identifier \"com.das08.ComfortableIshii.Safari\" --force\n",
+    "convert:safari": "NODE_ENV=production npm run build:safari && xcrun safari-web-extension-converter dist/source/safari --project-location dist/source/safari-proj --app-name \"Comfortable-NU\" --bundle-identifier \"com.das08.ComfortableNU.Safari\" --force\n",
     "build:all": "npm run build:chrome && npm run build:firefox && npm run build:safari"
   },
   "author": "Kazuki Takeda, Shoji Kajita(Kyoto University)",
