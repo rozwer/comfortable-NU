@@ -1,3 +1,7 @@
+/**
+ * 授業資料追加・編集用のダイアログコンポーネント
+ * 授業資料の名前とURLを入力・編集するモーダルUI
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { Material } from '../features/entity/material/types';
 

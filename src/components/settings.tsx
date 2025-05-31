@@ -1,3 +1,11 @@
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : 未公開課題を非表示にする設定オプションを追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
 import React from "react";
 import { useTranslation, useTranslationArgsDeps, useTranslationDeps } from "./helper";
 import { Settings } from "../features/setting/types";
@@ -35,6 +43,11 @@ export function SettingsTab(props: { onSettingsChange: (change: SettingsChange) 
     const miniColorSuccessDesc = useTranslationArgsDeps("settings_colors_day", ["miniSakai", "14"], []);
     const miniColorOtherDesc = useTranslationArgsDeps("settings_colors_day_more", ["miniSakai", "14"], []);
 
+    const timetableColorDangerDesc = useTranslationArgsDeps("settings_colors_hour", ["時間割", "24"], []);
+    const timetableColorWarningDesc = useTranslationArgsDeps("settings_colors_day", ["時間割", "5"], []);
+    const timetableColorSuccessDesc = useTranslationArgsDeps("settings_colors_day", ["時間割", "14"], []);
+    const timetableColorOtherDesc = useTranslationArgsDeps("settings_colors_day_more", ["時間割", "14"], []);
+
     return (
         <div className="cs-settings-tab">
             <TranslatedBooleanItem
@@ -60,6 +73,14 @@ export function SettingsTab(props: { onSettingsChange: (change: SettingsChange) 
                     })
                 }
             />
+            {/**
+             * -----------------------------------------------------------------
+             * Modified by: roz
+             * Date       : 2025-05-28
+             * Changes    : 未公開課題を非表示にする設定オプションを追加
+             * Category   : 機能拡張
+             * -----------------------------------------------------------------
+             */}
             <TranslatedBooleanItem
                 descriptionTag="settings_hide_unpublished_assignments"
                 value={settings.miniSakaiOption.hideUnpublishedAssignments}
@@ -184,6 +205,51 @@ export function SettingsTab(props: { onSettingsChange: (change: SettingsChange) 
                 }
             />
 
+            <StringItem
+                description={timetableColorDangerDesc}
+                value={settings.color.timetableDanger}
+                onChange={(v) =>
+                    props.onSettingsChange({
+                        type: "string",
+                        id: "color.timetableDanger",
+                        newValue: v
+                    })
+                }
+            />
+            <StringItem
+                description={timetableColorWarningDesc}
+                value={settings.color.timetableWarning}
+                onChange={(v) =>
+                    props.onSettingsChange({
+                        type: "string",
+                        id: "color.timetableWarning",
+                        newValue: v
+                    })
+                }
+            />
+            <StringItem
+                description={timetableColorSuccessDesc}
+                value={settings.color.timetableSuccess}
+                onChange={(v) =>
+                    props.onSettingsChange({
+                        type: "string",
+                        id: "color.timetableSuccess",
+                        newValue: v
+                    })
+                }
+            />
+            <StringItem
+                description={timetableColorOtherDesc}
+                value={settings.color.timetableOther}
+                onChange={(v) =>
+                    props.onSettingsChange({
+                        type: "string",
+                        id: "color.timetableOther",
+                        newValue: v
+                    })
+                }
+            />
+
             <ResetColorButton
                 onClick={() =>
                     props.onSettingsChange({
@@ -220,7 +286,7 @@ function BooleanItem(props: {
     return (
         <SettingsItem description={props.description} display={props.display ?? true} labelClass="cs-toggle-btn">
             <input type="checkbox" checked={props.value} onChange={(ev) => props.onChange(ev.target.checked)}></input>
-            <span className="cs-toggle-slider round"></span>
+            <span className="cs-settings-toggle-slider round"></span>
         </SettingsItem>
     );
 }

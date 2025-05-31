@@ -1,10 +1,9 @@
 {
   "name": "Comfortable Ishii",
   "description": "__MSG_EXTENSION_DESCRIPTION__",
-  "version": "----",
+  "version": "1.0.0",
   "manifest_version": 3,
   "default_locale": "en",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkca9UfFV6F4uKnQH+E4p0/b8PSX6qNA78xLVp9Y4OgxFzJLFw/o7gDau2XtvfDvkJhLCKi6GXACxWjY/funYXlWb8sMzL4gNH275VmlDz83DMtdzcjlEMoipzpUBCY13ZMMzzWA+zw90ajuvW/ee81mcW+8RVUvLV/5TQNlTxfPwZ9VS2GNCifAm7XyB5RQ3KSa6+Qz+eP9wKQQlH3oxeMX2MIfulPRdOvy1RPXDNLZsKtcsGio+tf4mfhfF3Nt+IjkBpcTksD7lr8YY6VcK9+hhvnn8+kbDSExoQL4ayz9Drvyn8SC6AbrISo0GadYYQ59nyikSiBiVEuMw5Dx49QIDAQAB",
   "icons": {
     "16": "img/icon16.png",
     "48": "img/icon48.png",
@@ -41,7 +40,7 @@
     "notifications"
   ],
   "oauth2": {
-    "client_id": "320934121909-vh9k1ce4ev83rg3kqq3voj9s9ffghekv.apps.googleusercontent.com",
+    "client_id": "320934121909-3mo570972bcc19chatsu8pcp6bevj7fm.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/calendar",
       "https://www.googleapis.com/auth/userinfo.email",
@@ -59,6 +58,9 @@
         "css/date-picker.css",
         "css/calendar-sync.css",
         "css/memo-styles.css",
+        "css/folder-styles-new.css",
+        "css/folder-styles-old.css",
+        "css/folder-styles.css",
         "img/logo.png",
         "img/noAssignment.png",
         "img/miniSakaiBtn.png",

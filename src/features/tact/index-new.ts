@@ -1,4 +1,8 @@
 /**
+ * TACT新機能統合モジュール
+ * メモ機能とフォルダ機能をTACTポータルに統合
+ */
+/**
  * TACT Portal extension features
  * このモジュールはTACTポータルに新しい機能を追加します
  */
@@ -137,9 +141,9 @@ function loadCSS(href: string): void {
  * フォルダ機能タブを追加
  */
 export const addFolderTab = (): void => {
-    // フォルダ機能用のCSSを読み込み
-    const cssPath = chrome.runtime.getURL('css/folder-styles-new.css');
-    loadCSS(cssPath);
+    // フォルダ機能用のCSSを読み込み（無効化）
+    // const cssPath = chrome.runtime.getURL('css/folder-styles-new.css');
+    // loadCSS(cssPath);
 
     // フォルダタブを追加
     addCustomToolTab(

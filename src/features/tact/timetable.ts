@@ -1,4 +1,8 @@
 /**
+ * TACT時間割管理機能
+ * 時間割の取得・表示・管理を行う統合モジュール
+ */
+/**
  * 時間割表示機能
  * このモジュールはTACTポータルに時間割表示機能を追加します
  */
@@ -6,6 +10,7 @@
 import { MaxTimestamp, TimetableYearStorage, TimetableTermStorage } from "../../constant";
 import { courseColorInfo } from "../../components/favoritesBar";
 import { fromStorage, toStorage } from "../storage";
+import { getStoredSettings } from "../setting/getSetting";
 
 // 講義情報を格納する型
 interface CourseInfo {
@@ -277,38 +282,30 @@ export const showTimetableModal = (): void => {
     
     // 現在のホスト名を取得
     const currentHostname = window.location.hostname;
-    
-    // 講義情報の事前取得を試みる
-    setTimeout(() => {
-        if (!cachedCourses) {
-            try {
-                // 通常の取得方法を試す
-                let courses = fetchCoursesFromPortal();
-                
-                // 取得できなかった場合は代替手段を試す
-                if (!courses || courses.length === 0) {
-                    courses = extractCoursesFromPage();
-                }
-                
-                if (courses && courses.length > 0) {
-                    cachedCourses = courses;
-                    console.log('講義情報をキャッシュしました:', cachedCourses);
-                    
-                    // モーダルが表示されていたら更新
-                    const timetableDiv = document.getElementById('cs-timetable');
-                    if (timetableDiv) {
-                        updateTimetable();
-                    }
-                }
-            } catch (error) {
-                console.error('講義情報取得エラー:', error);
-            }
-        }
-    }, 0);
 
     // モーダルコンテナを作成
     const modalContainer = document.createElement('div');
     modalContainer.className = 'cs-tact-modal cs-timetable-modal';
+    
+    // 色設定を時間割モーダルに適用
+    const applyTimetableColors = async () => {
+        try {
+            const settings = await getStoredSettings(currentHostname);
+            for (const colorName of Object.getOwnPropertyNames(settings.color)) {
+                // @ts-ignore
+                const color = settings.color[colorName];
+                modalContainer.style.setProperty(`--${colorName}`, color);
+            }
+            modalContainer.style.setProperty("--textColor", settings.getTextColor());
+            modalContainer.style.setProperty("--bgColor", settings.getBgColor());
+            modalContainer.style.setProperty("--dateColor", settings.getDateColor());
+            console.log('時間割モーダルに色設定を適用しました');
+        } catch (error) {
+            console.error('時間割モーダルへの色設定適用に失敗しました:', error);
+        }
+    };
+    
+    applyTimetableColors();
     
     // モーダルのヘッダー
     const modalHeader = document.createElement('div');
@@ -429,6 +426,35 @@ export const showTimetableModal = (): void => {
                 }
             }
         }
+        
+        // セレクトボックス設定完了後に初期表示を実行
+        console.log('初期時間割表示を開始します');
+        
+        // 講義情報の事前取得を試みる
+        if (!cachedCourses) {
+            try {
+                // 通常の取得方法を試す
+                let courses = fetchCoursesFromPortal();
+                
+                // 取得できなかった場合は代替手段を試す
+                if (!courses || courses.length === 0) {
+                    courses = extractCoursesFromPage();
+                }
+                
+                if (courses && courses.length > 0) {
+                    cachedCourses = courses;
+                    console.log('講義情報をキャッシュしました:', cachedCourses);
+                }
+            } catch (error) {
+                console.error('講義情報取得エラー:', error);
+            }
+        }
+        
+        updateTimetable();
+    }).catch(error => {
+        console.error('設定読み込みエラー:', error);
+        // エラーの場合でもデフォルト表示を実行
+        updateTimetable();
     });
     
     // イベントリスナー設定
@@ -454,6 +480,16 @@ export const showTimetableModal = (): void => {
     // 時間割表示部分
     const timetableDiv = document.createElement('div');
     timetableDiv.id = 'cs-timetable';
+    
+    // 初期ロード中表示
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'cs-timetable-loading';
+    loadingDiv.style.textAlign = 'center';
+    loadingDiv.style.padding = '40px 20px';
+    loadingDiv.style.color = '#666';
+    loadingDiv.innerHTML = '<p>時間割を読み込み中...</p>';
+    timetableDiv.appendChild(loadingDiv);
+    
     timetableContainer.appendChild(timetableDiv);
     
     modalContent.appendChild(timetableContainer);
@@ -464,14 +500,6 @@ export const showTimetableModal = (): void => {
     
     // ページにモーダルを追加
     document.body.appendChild(modalContainer);
-    
-    // 保存された設定を読み込んでから初期表示
-    console.log('時間割モーダルを初期化します');
-    const siteHostname = window.location.hostname;
-    loadTimetableSettings(siteHostname).then(settings => {
-        // ロードした後にyearSelectとtermSelectを更新した後で初期表示
-        updateTimetable();
-    });
     
     // 年度・学期選択のデバッグ表示
     yearSelect.addEventListener('change', () => {
@@ -775,8 +803,6 @@ function extractCourseCategories(): Map<string, string> {
             
             // コース名とカテゴリをマップに追加
             courseCategoryMap.set(courseName, category);
-            
-            console.log(`コース情報抽出: ${courseName} -> カテゴリ: ${category}`);
         }
     }
     
@@ -795,12 +821,37 @@ async function updateTimetable() {
     const term = termSelect.value;
     const currentSiteHostname = window.location.hostname;
     saveTimetableSettings(currentSiteHostname, year, term);
+    
+    // ロード表示を削除してクリア
     timetableDiv.innerHTML = '';
-    if (courseColorInfo) {
-        console.log("コース色情報が利用可能です");
-    } else {
-        console.log("利用可能なコース色情報がありません");
+    
+    // 更新中表示を追加
+    const updatingDiv = document.createElement('div');
+    updatingDiv.className = 'cs-timetable-updating';
+    updatingDiv.style.textAlign = 'center';
+    updatingDiv.style.padding = '20px';
+    updatingDiv.style.color = '#666';
+    updatingDiv.innerHTML = '<p>時間割を更新中...</p>';
+    timetableDiv.appendChild(updatingDiv);
+    
+    // 時間割更新時にも色設定を再適用
+    const modal = document.querySelector('.cs-timetable-modal') as HTMLElement;
+    if (modal) {
+        try {
+            const settings = await getStoredSettings(currentSiteHostname);
+            for (const colorName of Object.getOwnPropertyNames(settings.color)) {
+                // @ts-ignore
+                const color = settings.color[colorName];
+                modal.style.setProperty(`--${colorName}`, color);
+            }
+            modal.style.setProperty("--textColor", settings.getTextColor());
+            modal.style.setProperty("--bgColor", settings.getBgColor());
+            modal.style.setProperty("--dateColor", settings.getDateColor());
+        } catch (error) {
+            console.error('時間割更新時の色設定適用に失敗しました:', error);
+        }
     }
+    
     const days = ['', '月', '火', '水', '木', '金'];
     const periods = 6;
     let courses: CourseInfo[] = [];
@@ -932,16 +983,12 @@ async function updateTimetable() {
                     const category = courseCategoryMap.get(shortTitle);
                     if (category && category !== 'passed') {
                         if (category === 'due24h') {
-                            cell.style.backgroundColor = 'rgba(255, 82, 82, 0.1)';
                             cell.dataset.category = 'due24h';
                         } else if (category === 'due5d') {
-                            cell.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
                             cell.dataset.category = 'due5d';
                         } else if (category === 'due14d') {
-                            cell.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
                             cell.dataset.category = 'due14d';
                         } else if (category === 'dueOver14d') {
-                            cell.style.backgroundColor = 'rgba(224, 224, 224, 0.3)';
                             cell.dataset.category = 'dueOver14d';
                         }
                     }
@@ -1052,7 +1099,11 @@ async function updateTimetable() {
             tbody.appendChild(row);
         }
         table.appendChild(tbody);
+        
+        // 更新中表示を削除してテーブルを追加
+        timetableDiv.innerHTML = '';
         timetableDiv.appendChild(table);
+        
         const modalTitle = document.querySelector('.cs-timetable-modal .cs-tact-modal-header h2');
         if (modalTitle) {
             modalTitle.textContent = `時間割表示 (${year}年 ${termSelect.options[termSelect.selectedIndex].textContent})`;

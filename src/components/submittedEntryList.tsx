@@ -1,4 +1,8 @@
 /**
+ * 提出済み課題リスト表示コンポーネント
+ * 提出済み課題の一覧表示と管理機能
+ */
+/**
  * -----------------------------------------------------------------
  * Created by: roz
  * Date       : 2025-05-20
@@ -6,7 +10,7 @@
  * Category   : UI追加
  * -----------------------------------------------------------------
  */
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Course } from "../features/course/types";
 import { AssignmentEntry } from "../features/entity/assignment/types";
 import { EntryUnion, MemoAddInfo } from "./entryTab";
@@ -43,7 +47,15 @@ function SubmittedAddMemoBox(props: {
     const formatDueDate = (timestamp?: number): string => {
         if (!timestamp) return defaultDueDate();
         const date = new Date(timestamp * 1000); // UnixタイムスタンプをJSの日付に変換
-        return date.toISOString().substr(0, 16);
+        
+        // 日本時間（JST）でdatetime-local形式に変換
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
     const courseName = useTranslation("todo_box_course_name");
@@ -54,6 +66,19 @@ function SubmittedAddMemoBox(props: {
     const [selectedCourseID, setSelectedCourseID] = useState(props.initialCourseId || props.courses[0]?.id || "");
     const [todoContent, setTodoContent] = useState(props.initialContent || "");
     const [todoDue, setTodoDue] = useState(formatDueDate(props.initialDueTime));
+
+    // propsが変更されたときに状態を更新
+    useEffect(() => {
+        if (props.initialCourseId) {
+            setSelectedCourseID(props.initialCourseId);
+        }
+        if (props.initialContent) {
+            setTodoContent(props.initialContent);
+        }
+        if (props.initialDueTime) {
+            setTodoDue(formatDueDate(props.initialDueTime));
+        }
+    }, [props.initialCourseId, props.initialContent, props.initialDueTime]);
 
     const options = useMemo(() => {
         return props.courses.map((course) => {
@@ -198,12 +223,21 @@ export function SubmittedEntryList(props: {
     showMemoBox?: boolean;
     onMemoAdd?: (memo: { course: Course; content: string; due: number }) => void;
     onToggleMemoBox?: (show: boolean) => void;
+    selectedEntry?: EntryUnion;
+    selectedCourse?: Course;
 }) {
     const className = "cs-minisakai-list cs-minisakai-list-submitted";
     
     // クリックされた課題情報を状態として管理
     const [selectedEntry, setSelectedEntry] = useState<EntryUnion | null>(null);
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+
+    // メモボックスが表示される際に初期値をリセット
+    useEffect(() => {
+        if (props.showMemoBox && selectedEntry && selectedCourse) {
+            // メモボックスの初期値が正しく設定されるように状態を保持
+        }
+    }, [props.showMemoBox, selectedEntry, selectedCourse]);
 
     // エントリをコース別にグループ化
     let courseIdMap = new Map<string, EntryUnion[]>();
@@ -254,15 +288,15 @@ export function SubmittedEntryList(props: {
                 isSubset={props.isSubset}
                 entries={entries.sort(sortEntries)}
                 onToggleMemoBox={(entry) => {
-                    // クリックされた課題を保存
-                    setSelectedEntry(entry);
-                    
                     // 課題に対応するコースを見つける
                     const course = props.entriesWithCourse.find(item => item.entry.id === entry.id)?.course || null;
+                    
+                    // 状態を即座に更新
+                    setSelectedEntry(entry);
                     setSelectedCourse(course);
                     
-                    // メモボックスの表示を切り替え
-                    props.onToggleMemoBox && props.onToggleMemoBox(!props.showMemoBox);
+                    // メモボックスを表示
+                    props.onToggleMemoBox && props.onToggleMemoBox(true);
                 }}
             />
         );
@@ -270,14 +304,19 @@ export function SubmittedEntryList(props: {
 
     return (
         <>
-            {!props.isSubset && props.showMemoBox ? (                    <SubmittedAddMemoBox
+            {!props.isSubset && props.showMemoBox ? (
+                <SubmittedAddMemoBox
                     shown={!props.isSubset && Boolean(props.showMemoBox)}
                     courses={getSakaiCourses()}
                     onMemoAdd={(memo) => props.onMemoAdd && props.onMemoAdd(memo)}
                     onClose={() => props.onToggleMemoBox && props.onToggleMemoBox(false)}
-                    initialContent={selectedEntry ? `[提出済課題] ${selectedEntry.title}` : ""}
-                    initialCourseId={selectedCourse?.id}
-                    initialDueTime={selectedEntry ? selectedEntry.dueTime : undefined}
+                    initialContent={(props.selectedEntry || selectedEntry) ? `[提出済課題] ${(props.selectedEntry || selectedEntry)?.title}` : ""}
+                    initialCourseId={(props.selectedCourse || selectedCourse)?.id}
+                    initialDueTime={(() => {
+                        const entry = props.selectedEntry || selectedEntry;
+                        const course = props.selectedCourse || selectedCourse;
+                        return entry ? entry.dueTime : undefined;
+                    })()}
                 />
             ) : null}
             <div className={className}>{courses}</div>

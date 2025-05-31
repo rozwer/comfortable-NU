@@ -1,4 +1,9 @@
 #!/bin/bash
+# Windows環境への拡張機能同期スクリプト
+# Linux開発環境からWindows環境への拡張機能同期自動化
+#!/bin/bash
+# Windows環境への拡張機能同期スクリプト
+# ビルド後の拡張機能をWindows側のフォルダに同期
 
 # ビルドを実行
 npm run build:chrome

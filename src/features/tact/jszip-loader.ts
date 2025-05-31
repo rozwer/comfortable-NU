@@ -1,4 +1,8 @@
 /**
+ * JSZipライブラリ動的ローダー
+ * ファイル圧縮・解凍機能のためのJSZipライブラリを動的に読み込む
+ */
+/**
  * JSZipライブラリの動的読み込み機能
  */
 export class JSZipLoader {

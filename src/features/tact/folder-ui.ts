@@ -1,3 +1,7 @@
+/**
+ * TACTフォルダ機能のUI管理
+ * フォルダ表示・編集・操作のユーザーインターフェース
+ */
 import { TactApiClient } from './tact-api';
 
 export class FolderUI {

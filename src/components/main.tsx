@@ -357,6 +357,10 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                 this.setState({
                     settings: newSettings
                 });
+                // 色設定をリセット後に適用
+                applyColorSettings(newSettings, this.props.subset);
+                // 時間割モーダルにも色設定を適用
+                this.applyColorsToTimetableModal(newSettings);
             });
             return;
         }
@@ -366,7 +370,29 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
             this.setState({
                 settings: newSettings
             });
+            // 設定変更後に色設定を適用
+            applyColorSettings(newSettings, this.props.subset);
+            // 時間割モーダルにも色設定を適用
+            this.applyColorsToTimetableModal(newSettings);
         });
+    }
+
+    /**
+     * 時間割モーダルに色設定を適用する
+     */
+    private applyColorsToTimetableModal(settings: Settings) {
+        const timetableModal = document.querySelector('.cs-timetable-modal') as HTMLElement;
+        if (timetableModal) {
+            for (const colorName of Object.getOwnPropertyNames(settings.color)) {
+                // @ts-ignore
+                const color = settings.color[colorName];
+                timetableModal.style.setProperty(`--${colorName}`, color);
+            }
+            timetableModal.style.setProperty("--textColor", settings.getTextColor());
+            timetableModal.style.setProperty("--bgColor", settings.getBgColor());
+            timetableModal.style.setProperty("--dateColor", settings.getDateColor());
+            console.log('時間割モーダルの色設定を更新しました');
+        }
     }
 
     componentDidUpdate(prevProps: MiniSakaiRootProps, prevState: MiniSakaiRootState) {

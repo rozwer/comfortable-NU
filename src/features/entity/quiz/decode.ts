@@ -3,6 +3,15 @@ import { Course } from "../../course/types";
 import { CurrentTime, MaxTimestamp } from "../../../constant";
 
 /**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : クイズエントリー生成時にチェックタイムスタンプを追加
+ * Category   : データ処理
+ * -----------------------------------------------------------------
+ */
+
+/**
  * Decode Quiz data from Sakai REST API to QuizEntry array.
  * @param data - Data from Sakai REST API.
  * @returns {Array<QuizEntry>} - Decoded QuizEntry array.

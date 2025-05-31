@@ -1,3 +1,7 @@
+/**
+ * TACTフォルダ機能のコア実装
+ * フォルダ構造の管理と操作機能
+ */
 export interface FolderItem {
     id: string;
     name: string;

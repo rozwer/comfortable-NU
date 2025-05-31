@@ -1,3 +1,12 @@
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : z-indexの調整、新しいボタンスタイル、バッジスタイルの改良
+ * Category   : スタイル改善
+ * -----------------------------------------------------------------
+ */
+
 .cs-tab-danger {
     background: var(--topDanger) !important;
     color: #333435 !important;
@@ -584,14 +593,15 @@
 }
 
 .cs-badge-late {
-    color: #fff !important;
-    background-color: #dc3545 !important;
+    color: #666 !important;
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
     position: relative;
     z-index: 2;
-    font-weight: bold;
-    border: 2px solid #c82333;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    text-shadow: 0 0 1px rgba(0,0,0,0.5);
+    font-weight: normal;
+    box-shadow: none;
+    text-shadow: none;
+    opacity: 0.8;
     /* アニメーション効果を無効化 */
     transition: none !important;
 }
@@ -630,6 +640,34 @@
     text-shadow: 0 0 1px rgba(255,255,255,0.5);
     /* アニメーション効果を無効化 */
     transition: none !important;
+}
+
+.cs-badge-resubmit-disabled {
+    color: #fff !important;
+    background-color: #dc3545 !important;
+    display: inline-block;
+    margin-top: 3px;
+    margin-left: 5px;
+    font-size: 70%;
+    font-weight: bold;
+    z-index: 1;
+    position: relative;
+    border: 2px solid #c82333;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    text-shadow: 0 0 1px rgba(0,0,0,0.5);
+    /* アニメーション効果を無効化 */
+    transition: none !important;
+}
+
+.cs-assignment-badges {
+    margin-top: 5px;
+    margin-bottom: 3px;
+    line-height: 1.4;
+}
+
+.cs-assignment-badges .cs-badge {
+    margin-right: 5px;
+    margin-bottom: 2px;
 }
 
 .cs-dummy-btn {
@@ -855,50 +893,77 @@
     color: var(--textColor);
 }
 
+.cs-course-search-container {
+    margin-bottom: 8px;
+}
+
+.cs-course-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #495057;
+    background-color: #fff;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+.cs-course-search-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.cs-course-search-input::placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
 .cs-toggle-btn {
     position: relative;
     display: inline-flex;
-    width: 60px;
-    height: 20px;
+    width: 44px;
+    height: 24px;
+    align-items: center;
 }
 
 .cs-toggle-btn input {
     opacity: 0;
     width: 0;
     height: 0;
+    position: absolute;
 }
 
-.cs-toggle-slider {
+.cs-settings-toggle-slider {
     cursor: pointer;
-    text-indent: -9999px;
-    margin-left: -15px;
-    width: 40px;
-    height: 20px;
-    background: grey;
-    display: block;
-    border-radius: 100px;
     position: relative;
+    width: 44px;
+    height: 24px;
+    background: #ccc;
+    border-radius: 24px;
+    transition: background-color 0.3s ease;
 }
 
-.cs-toggle-slider:after {
+.cs-settings-toggle-slider:after {
     content: '';
     position: absolute;
-    top: 5px;
-    left: 5px;
-    width: 10px;
-    height: 10px;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
     background: #fff;
-    border-radius: 90px;
-    transition: 0.3s;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-input:checked + .cs-toggle-slider {
+input:checked + .cs-settings-toggle-slider {
     background-color: #2196F3;
 }
 
-input:checked + .cs-toggle-slider:after {
-    left: calc(100% - 5px);
-    transform: translateX(-100%);
+input:checked + .cs-settings-toggle-slider:after {
+    transform: translateX(20px);
 }
 
 /**

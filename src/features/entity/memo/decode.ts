@@ -3,6 +3,15 @@ import { Course } from "../../course/types";
 import { CurrentTime } from "../../../constant";
 
 /**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : メモエントリー生成時にチェックタイムスタンプを追加
+ * Category   : データ処理
+ * -----------------------------------------------------------------
+ */
+
+/**
  * Decode Memo data from Storage to Memo array.
  * @param data - Data from Storage.
  * @returns {Array<Memo>} - Decoded Memo array.

@@ -1,4 +1,8 @@
 /**
+ * 非表示課題リスト表示コンポーネント
+ * 非表示に設定された課題の一覧表示と管理機能
+ */
+/**
  * -----------------------------------------------------------------
  * Created by: roz
  * Date       : 2025-05-20
@@ -44,7 +48,15 @@ function DismissedAddMemoBox(props: {
     const formatDueDate = (timestamp?: number): string => {
         if (!timestamp) return defaultDueDate();
         const date = new Date(timestamp * 1000); // UnixタイムスタンプをJSの日付に変換
-        return date.toISOString().substr(0, 16);
+        
+        // 日本時間（JST）でdatetime-local形式に変換
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
     const courseName = useTranslation("todo_box_course_name");

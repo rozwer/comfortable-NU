@@ -1,4 +1,13 @@
-import React, { useMemo, useState } from "react";
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : 課題ステータス判定ロジック拡張と表示制御機能改善
+ * Category   : ロジック拡張
+ * -----------------------------------------------------------------
+ */
+// filepath: /home/rozwer/sakai/comfortable-sakai/src/components/entryTab.tsx
+import React, { useMemo, useState, useEffect } from "react";
 import { Assignment, AssignmentEntry } from "../features/entity/assignment/types";
 import { Course } from "../features/course/types";
 import { Memo, MemoEntry } from "../features/entity/memo/types";
@@ -60,7 +69,7 @@ function MiniSakaiCourse(props: {
                         key={entry.getID()}
                         isSubset={props.isSubset}
                         memo={entry}
-                        onCheck={(checked) => props.onCheck(entry, checked)}
+                        onCheck={(checked, requestDate) => props.onCheck(entry, checked, requestDate)}
                         onDelete={() => props.onDelete(entry)}
                     />
                 );
@@ -265,19 +274,43 @@ function AddMemoBox(props: { shown: boolean; courses: Course[]; onMemoAdd: (memo
     const dueDate = useTranslation("todo_box_due_date");
     const addBtnLabel = useTranslation("todo_box_add");
 
-    const [selectedCourseID, setSelectedCourseID] = useState(props.courses[0].id ?? "");
+    const [selectedCourseID, setSelectedCourseID] = useState(props.courses[0]?.id ?? "");
     const [todoContent, setTodoContent] = useState("");
     const [todoDue, setTodoDue] = useState(defaultDueDate);
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const filteredCourses = useMemo(() => {
+        if (!searchQuery.trim()) {
+            return props.courses;
+        }
+        return props.courses.filter(course => 
+            course.name?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [props.courses, searchQuery]);
+
+    // 検索クエリが変更されたときに、選択されたコースIDが現在フィルタリングされたリストに存在しない場合は最初のコースに設定
+    useEffect(() => {
+        if (filteredCourses.length > 0 && !filteredCourses.some(course => course.id === selectedCourseID)) {
+            setSelectedCourseID(filteredCourses[0].id);
+        }
+    }, [filteredCourses, selectedCourseID]);
 
     const options = useMemo(() => {
-        return props.courses.map((course) => {
+        if (filteredCourses.length === 0) {
+            return [
+                <option value="" key="no-courses" disabled>
+                    検索結果がありません
+                </option>
+            ];
+        }
+        return filteredCourses.map((course) => {
             return (
                 <option value={course.id} key={`memo-option-${course.id}`}>
                     {course.name}
                 </option>
             );
         });
-    }, [props.courses]);
+    }, [filteredCourses]);
 
     if (!props.shown) {
         return <div></div>;
@@ -287,6 +320,15 @@ function AddMemoBox(props: { shown: boolean; courses: Course[]; onMemoAdd: (memo
         <div className='cs-memo-box addMemoBox'>
             <div className='cs-memo-item'>
                 <p>{courseName}</p>
+                <div className='cs-course-search-container'>
+                    <input
+                        type='text'
+                        className='cs-course-search-input'
+                        placeholder='講義名で検索...'
+                        value={searchQuery}
+                        onChange={(ev) => setSearchQuery(ev.target.value)}
+                    />
+                </div>
                 <label>
                     <select
                         className='todoLecName'

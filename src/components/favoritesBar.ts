@@ -1,16 +1,33 @@
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : 新しい課題ステータスタイプのマッピング追加とコース色情報管理機能を追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
+// filepath: /home/rozwer/sakai/comfortable-sakai/src/components/favoritesBar.ts
 import { DueCategory, getClosestTime, getDaysUntil } from "../utils";
 import { Settings } from "../features/setting/types";
 import { EntityProtocol, EntryProtocol } from "../features/entity/type";
 import { MaxTimestamp } from "../constant";
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : コース色情報を他のモジュールと共有するためのグローバル変数を追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
 // コース色情報を共有するためのグローバル変数
 export let courseColorInfo: string = "";
 
 /**
  * -----------------------------------------------------------------
  * Modified by: roz
- * Date       : 2025-05-19
- * Changes    : 新しい課題ステータスタイプに対応するマッピングを追加
+ * Date       : 2025-05-28
+ * Changes    : 新しい課題ステータスタイプ（submitted, notPublished, dismissed）に対応するマッピングを追加
  * Category   : 機能拡張
  * -----------------------------------------------------------------
  */
@@ -25,6 +42,14 @@ const dueCategoryClassMap: { [key in DueCategory]: string } = {
     dismissed: "cs-tab-default"
 };
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : 色のクラス名から人間が読みやすい色の名前に変換する関数を追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
 /**
  * 色のクラス名から人間が読みやすい色の名前に変換する
  */
@@ -65,8 +90,8 @@ const createCourseMap = (entities: EntityProtocol[]): CourseMap => {
 /**
  * -----------------------------------------------------------------
  * Modified by: roz
- * Date       : 2025-05-19
- * Changes    : 課題の提出状態と公開日情報を考慮したカテゴリマッピングを追加
+ * Date       : 2025-05-28
+ * Changes    : 課題の提出状態、公開日情報、チェックタイムスタンプを考慮したカテゴリマッピングに変更
  * Category   : ロジック拡張
  * -----------------------------------------------------------------
  */
@@ -151,6 +176,14 @@ export async function createFavoritesBar(settings: Settings, entities: EntityPro
     const courseMap = createCourseMap(entities);
     const dueMap = createDueMap(settings, courseMap);
     
+    /**
+     * -----------------------------------------------------------------
+     * Modified by: roz
+     * Date       : 2025-05-28
+     * Changes    : コース名と色の対応を保存する配列を追加してデバッグ情報を出力
+     * Category   : 機能拡張
+     * -----------------------------------------------------------------
+     */
     // コース名と色の対応を保存する配列
     const courseColorMapping: { courseName: string; courseId: string; color: string; category: DueCategory }[] = [];
 
@@ -189,26 +222,36 @@ export async function createFavoritesBar(settings: Settings, entities: EntityPro
         }
     }
     
-    // コンソールに色の割り当て情報を出力
-    console.group("コース別色の割り当て");
-    
+    /**
+     * -----------------------------------------------------------------
+     * Modified by: roz
+     * Date       : 2025-05-28
+     * Changes    : コース別の色割り当て情報をグローバル変数に保存
+     * Category   : デバッグ機能
+     * -----------------------------------------------------------------
+     */
     // コース色情報を文字列として保存
     let colorInfoText = "";
     
     courseColorMapping.forEach(item => {
         const colorName = getColorName(item.color);
         const logText = `コース: ${item.courseName} (${item.courseId}) - 色: ${colorName} (カテゴリ: ${item.category})`;
-        console.log(logText);
         colorInfoText += logText + "\n";
     });
     
     // グローバル変数に保存して他のモジュールからアクセス可能にする
     courseColorInfo = colorInfoText;
-    
-    console.groupEnd();
 }
 
 export const resetFavoritesBar = (): void => {
+    /**
+     * -----------------------------------------------------------------
+     * Modified by: roz
+     * Date       : 2025-05-28
+     * Changes    : cs-tab-defaultクラスをリセット対象に追加
+     * Category   : バグ修正
+     * -----------------------------------------------------------------
+     */
     const classList = ["cs-notification-badge", "cs-tab-danger", "cs-tab-warning", "cs-tab-success", "cs-tab-other", "cs-tab-default"];
     for (const c of classList) {
         const q = document.querySelectorAll(`.${c}`);

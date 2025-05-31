@@ -1,6 +1,23 @@
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : TACT機能の初期化とカレンダー自動同期機能を追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
+// filepath: /home/rozwer/sakai/comfortable-sakai/src/content_script.ts
 import { saveHostName } from "./features/storage";
 import { createMiniSakai, addMiniSakaiBtn } from "./minisakai";
 import { isLoggedIn, miniSakaiReady } from "./utils";
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : TACT機能とカレンダー同期に必要なインポートを追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
 import { isTactPortal, initializeTactFeatures } from "./features/tact/index-new";
 import { fetchCourse } from "./features/api/fetch";
 import { getAssignments } from "./features/entity/assignment/getAssignment";
@@ -20,10 +37,26 @@ async function main() {
         miniSakaiReady();
         await saveHostName(hostname);
         
+        /**
+         * -----------------------------------------------------------------
+         * Modified by: roz
+         * Date       : 2025-05-28
+         * Changes    : カレンダー自動同期のチェック機能を追加
+         * Category   : 機能拡張
+         * -----------------------------------------------------------------
+         */
         // 自動同期チェックを設定
         setupAutoSyncCheck();
     }
     
+    /**
+     * -----------------------------------------------------------------
+     * Modified by: roz
+     * Date       : 2025-05-28
+     * Changes    : TACTポータル用の機能初期化を追加
+     * Category   : 機能拡張
+     * -----------------------------------------------------------------
+     */
     // TACTポータル用の機能を追加
     if (isTactPortal()) {
         // DOMが完全にロードされてから実行
@@ -35,6 +68,14 @@ async function main() {
     }
 }
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : TACTポータル用の機能を初期化する関数を追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
 /**
  * TACTポータル用の機能を初期化
  */
@@ -51,6 +92,14 @@ function initTactFeatures() {
     }, 500);
 }
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : カレンダー自動同期のメッセージリスナーとチェック機能を追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
 // TACTポータルでメッセージリスナーを設定
 function setupAutoSyncCheck() {
     // バックグラウンドからの同期リクエストのリスナーを追加
@@ -94,6 +143,14 @@ async function checkAndSyncIfNeeded() {
     });
 }
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : 自動同期実行機能を追加（課題・クイズデータの取得とカレンダー同期）
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
 // 自動同期を実行
 async function performAutoSync() {
     try {
@@ -172,6 +229,14 @@ async function getSakaiDataForSync(): Promise<any> {
     };
 }
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : カレンダー同期結果のUI通知表示機能を追加
+ * Category   : UI機能
+ * -----------------------------------------------------------------
+ */
 // UI通知を表示する関数
 function showSyncNotification(result: { assignments: number, quizzes: number, errors?: number }) {
     // 通知要素が既に存在する場合は削除

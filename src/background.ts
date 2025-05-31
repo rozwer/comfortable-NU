@@ -1,3 +1,11 @@
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : カレンダー同期機能とGoogle OAuth認証システムの実装
+ * Category   : バックグラウンド処理
+ * -----------------------------------------------------------------
+ */
 // For debugging
 
 // カレンダー同期用のアラーム名 
@@ -23,15 +31,25 @@ function init() {
 
 // カレンダー同期用のアラームをセットアップ
 async function setupCalendarSyncAlarm() {
-  // 保存されている同期間隔を取得
-  const interval = await getSyncInterval();
-  // 既存のアラームをクリア
-  chrome.alarms.clear(CALENDAR_SYNC_ALARM_NAME, () => {
-    // 新しいアラームを作成（分単位）
-    chrome.alarms.create(CALENDAR_SYNC_ALARM_NAME, {
-      periodInMinutes: interval
+  return new Promise<void>((resolve) => {
+    chrome.storage.local.get(['calendarSyncInterval', 'autoSyncEnabled'], (result) => {
+      const autoSyncEnabled = result.autoSyncEnabled !== false; // デフォルトはtrue
+      
+      // 既存のアラームをクリア
+      chrome.alarms.clear(CALENDAR_SYNC_ALARM_NAME, () => {
+        if (autoSyncEnabled) {
+          // 自動同期が有効な場合のみアラームを作成
+          const interval = result.calendarSyncInterval || 60; // デフォルト60分
+          chrome.alarms.create(CALENDAR_SYNC_ALARM_NAME, {
+            periodInMinutes: interval
+          });
+          console.log(`カレンダー同期アラームをセット: ${interval}分間隔`);
+        } else {
+          console.log('自動同期が無効のため、アラームをクリアしました');
+        }
+        resolve();
+      });
     });
-    console.log(`カレンダー同期アラームをセット: ${interval}分間隔`);
   });
 }
 
@@ -82,6 +100,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true });
           break;
         }
+        case 'setAutoSyncEnabled': {
+          // 自動同期の有効/無効設定
+          const enabled = request.enabled;
+          chrome.storage.local.set({ autoSyncEnabled: enabled });
+          await setupCalendarSyncAlarm(); // アラームを更新
+          sendResponse({ success: true });
+          break;
+        }
         default:
           sendResponse({ success: false, error: 'Unknown action' });
       }
@@ -104,7 +130,14 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // 最後の同期から設定間隔以上経過しているかチェック
 async function shouldAutoSync(): Promise<boolean> {
   return new Promise((resolve) => {
-    chrome.storage.local.get(['lastSyncTime', 'calendarSyncInterval'], (result) => {
+    chrome.storage.local.get(['lastSyncTime', 'calendarSyncInterval', 'autoSyncEnabled'], (result) => {
+      // 自動同期が無効化されている場合は同期しない
+      const autoSyncEnabled = result.autoSyncEnabled !== false; // デフォルトはtrue
+      if (!autoSyncEnabled) {
+        resolve(false);
+        return;
+      }
+
       const lastSyncTime = result.lastSyncTime || 0;
       // デフォルト60分、ミリ秒に変換
       const interval = (result.calendarSyncInterval || 60) * 60 * 1000;

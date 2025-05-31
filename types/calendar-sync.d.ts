@@ -1,3 +1,11 @@
+/**
+ * Google Calendarとの同期機能用型定義
+ * 課題・クイズデータのカレンダー同期に関するインターフェース
+ */
+/**
+ * Google Calendar同期機能の型定義
+ * カレンダー同期に関するインターフェースとデータ型
+ */
 // Type definitions for Google Calendar sync functionality
 
 export interface GoogleAccount {

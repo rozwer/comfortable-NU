@@ -1,4 +1,12 @@
 /**
+ * 提出済み課題エントリー表示コンポーネント
+ * 提出済みの課題を専用UIで表示する機能
+ */
+/**
+ * 提出済み課題エントリー表示コンポーネント
+ * 提出済みの課題を専用UIで表示
+ */
+/**
  * -----------------------------------------------------------------
  * Created by: roz
  * Date       : 2025-05-20
@@ -56,7 +64,14 @@ export default function SubmittedEntryView(props: {
     const dummyId = useId();
     
     const isAssignment = entry instanceof AssignmentEntry;
-    const allowResubmit = isAssignment && entry.allowResubmitNumber && entry.allowResubmitNumber !== "-1";
+    const hasUnlimitedResubmit = isAssignment && entry.allowResubmitNumber === "-1";
+    const isResubmitDisabled = isAssignment && entry.allowResubmitNumber === "0";
+    const hasLimitedResubmit = isAssignment && 
+                               entry.allowResubmitNumber && 
+                               entry.allowResubmitNumber !== "-1" && 
+                               entry.allowResubmitNumber !== "0" &&
+                               !isNaN(parseInt(entry.allowResubmitNumber)) &&
+                               parseInt(entry.allowResubmitNumber) > 0;
 
     return (
         <>
@@ -80,12 +95,24 @@ export default function SubmittedEntryView(props: {
                     <span className="cs-badge cs-badge-late" style={{ opacity: 1, position: "relative", zIndex: 2 }}>{lateBadge}</span>
                 )}
                 <span style={{ color: "#464646", opacity: 1 }}>{entry.title}</span>
-                {allowResubmit && (
+            </p>
+            <div className="cs-assignment-badges" style={{ color: "#464646", opacity: 1 }}>
+                {hasUnlimitedResubmit && (
                     <span className="cs-badge cs-badge-resubmit" style={{ opacity: 1, position: "relative", zIndex: 2 }}>
-                        再提出可能回数: {(entry as AssignmentEntry).allowResubmitNumber}
+                        再提出可能: 無制限
                     </span>
                 )}
-            </p>
+                {isResubmitDisabled && (
+                    <span className="cs-badge cs-badge-resubmit-disabled" style={{ opacity: 1, position: "relative", zIndex: 2 }}>
+                        再提出不可
+                    </span>
+                )}
+                {hasLimitedResubmit && (
+                    <span className="cs-badge cs-badge-resubmit" style={{ opacity: 1, position: "relative", zIndex: 2 }}>
+                        再提出可能: {(entry as AssignmentEntry).allowResubmitNumber}回
+                    </span>
+                )}
+            </div>
         </>
     );
 }

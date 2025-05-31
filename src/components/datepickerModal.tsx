@@ -1,3 +1,7 @@
+/**
+ * 日付選択モーダルコンポーネント
+ * 課題完了時の日時入力用UI
+ */
 import React, { useState } from 'react';
 
 interface DatepickerModalProps {

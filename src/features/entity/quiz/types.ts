@@ -2,6 +2,14 @@ import { Course } from "../../course/types";
 import { EntityProtocol, EntryProtocol } from "../type";
 import { saveQuizEntry } from "./saveQuiz";
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : クイズエントリークラスにチェックタイムスタンプ追加とメソッドシグネチャ統一
+ * Category   : クラス拡張
+ * -----------------------------------------------------------------
+ */
 export class QuizEntry implements EntryProtocol {
     constructor(public id: string, public title: string, public dueTime: number, public hasFinished: boolean, public checkTimestamp?: string) {}
 

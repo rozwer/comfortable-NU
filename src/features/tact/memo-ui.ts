@@ -1,4 +1,8 @@
 /**
+ * TACTメモ機能のUIコンポーネント
+ * 講義ごとのメモ作成・編集・管理インターフェース
+ */
+/**
  * TACT Portal Memo UI Components
  * TACTポータル用のメモ機能UIを提供します
  */
@@ -98,7 +102,6 @@ export class MemoUI {
         const tabs = [
             { id: 'current', label: '現在の講義', icon: '📖' },
             { id: 'all', label: 'すべてのメモ', icon: '📚' },
-            { id: 'links', label: '保存したリンク', icon: '🔗' },
             { id: 'search', label: '検索', icon: '🔍' }
         ];
 
@@ -138,9 +141,6 @@ export class MemoUI {
                 break;
             case 'all':
                 this.showAllNotes(contentArea);
-                break;
-            case 'links':
-                this.showSavedLinks(contentArea);
                 break;
             case 'search':
                 this.showSearchInterface(contentArea);

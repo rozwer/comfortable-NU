@@ -1,3 +1,7 @@
+/**
+ * 授業資料管理用スタイルシート
+ * 授業資料追加・編集モーダルとUIのスタイル定義
+ */
 /* 授業資料追加・編集モーダル用スタイル */
 .cs-material-dialog-overlay {
   position: fixed;

@@ -1,3 +1,12 @@
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : 課題ステータス分類ロジックの拡張とチェックタイムスタンプ対応を追加
+ * Category   : ロジック拡張
+ * -----------------------------------------------------------------
+ */
+// filepath: /home/rozwer/sakai/comfortable-sakai/src/utils.ts
 import { FetchTime, Settings } from "./features/setting/types";
 import { Course } from "./features/course/types";
 import { Assignment } from "./features/entity/assignment/types";
@@ -15,7 +24,7 @@ import {i18nMessage} from "./features/chrome";
 /**
  * -----------------------------------------------------------------
  * Modified by: roz
- * Date       : 2025-05-19
+ * Date       : 2025-05-28
  * Changes    : 新しい課題ステータスタイプ（notPublished、submitted、dismissed）を追加
  * Category   : タイプ定義
  * -----------------------------------------------------------------
@@ -89,8 +98,8 @@ export async function getFetchTime(hostname: string): Promise<FetchTime> {
 /**
  * -----------------------------------------------------------------
  * Modified by: roz
- * Date       : 2025-05-19
- * Changes    : 課題の提出状態と公開日時に基づいた分類ロジックを追加
+ * Date       : 2025-05-28
+ * Changes    : 課題の提出状態、公開日時、チェックタイムスタンプに基づいた分類ロジックを追加
  * Category   : ロジック拡張
  * -----------------------------------------------------------------
  */
@@ -186,6 +195,14 @@ export const getClosestTime = (settings: Settings, entries: Array<EntryProtocol>
         .filter((e) => {
             // Check if user chose to hide completed Entry
             if (!option.showCompletedEntry) {
+                /**
+                 * -----------------------------------------------------------------
+                 * Modified by: roz
+                 * Date       : 2025-05-28
+                 * Changes    : チェックタイムスタンプを考慮した完了判定ロジックに変更
+                 * Category   : ロジック変更
+                 * -----------------------------------------------------------------
+                 */
                 // 完了したエントリーかどうかは、チェックタイムスタンプの日付が現在時刻よりも後であるかどうかで判断する
                 const checkTimestamp = (e as any).checkTimestamp;
                 if (checkTimestamp) {

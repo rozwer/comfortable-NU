@@ -37,6 +37,12 @@ export const decodeAssignmentFromAPI = (data: Record<string, any>): Array<Assign
                 }
             }
             
+            // allowResubmissionフィールドをチェック
+            // allowResubmissionがfalseの場合は再提出不可として0に設定
+            if (json.allowResubmission === false) {
+                allowResubmitNumber = "0";
+            }
+            
             return new AssignmentEntry(
                 json.id,
                 json.title,

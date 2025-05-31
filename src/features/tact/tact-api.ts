@@ -1,4 +1,8 @@
 /**
+ * TACT APIとの統合機能
+ * コンテンツ構造の解析とフォルダ管理API
+ */
+/**
  * TACT API integration for content structure analysis
  */
 import { FileStorage, FileSystemNode } from './file-storage';

@@ -269,6 +269,14 @@ describe("Asssignment", () => {
         expect(mergedAssignments).toStrictEqual(expectAssignments);
     });
 
+    /**
+     * -----------------------------------------------------------------
+     * Modified by: roz
+     * Date       : 2025-05-28
+     * Changes    : checkTimestamp保持テストを追加
+     * Category   : テスト
+     * -----------------------------------------------------------------
+     */
     test("checkTimestamp preservation during merge", () => {
         const oldAssignments = [
             new Assignment(

@@ -1,3 +1,7 @@
+/**
+ * TACTポータル拡張機能用スタイルシート
+ * メモ機能とフォルダ機能のUI用CSS
+ */
 /* TACT Portal 拡張用のスタイル */
 
 /* カスタムタブのスタイル */
@@ -54,9 +58,9 @@
   left: 50%;
   transform: translate(-50%, -50%);
   background: white;
-  width: 80%;
-  max-width: 800px;
-  max-height: 80vh;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   z-index: 10000;
@@ -309,8 +313,8 @@
 
 /* 時間割表示用のスタイル */
 .cs-timetable-modal {
-  width: 95%;
-  max-width: 950px;
+  width: 90%;
+  max-width: 1000px;
   max-height: 90vh; /* 画面の90%の高さに制限 */
 }
 
@@ -388,25 +392,54 @@
   transition: all 0.2s ease;
 }
 
+/* 時間割セル背景色のCSS変数（透明度付き） */
+.cs-timetable-cell[data-category="due24h"] {
+  background-color: rgba(232, 85, 85, 0.1) !important; /* フォールバック */
+  background-color: color-mix(in srgb, var(--timetableDanger, #e85555) 30%, transparent) !important;
+}
+
+.cs-timetable-cell[data-category="due5d"] {
+  background-color: rgba(215, 170, 87, 0.1) !important; /* フォールバック */
+  background-color: color-mix(in srgb, var(--timetableWarning, #d7aa57) 30%, transparent) !important;
+}
+
+.cs-timetable-cell[data-category="due14d"] {
+  background-color: rgba(98, 182, 101, 0.1) !important; /* フォールバック */
+  background-color: color-mix(in srgb, var(--timetableSuccess, #62b665) 30%, transparent) !important;
+}
+
+.cs-timetable-cell[data-category="dueOver14d"] {
+  background-color: rgba(119, 119, 119, 0.3) !important; /* フォールバック */
+  background-color: color-mix(in srgb, var(--timetableOther, #777777) 30%, transparent) !important;
+}
+
 /* カテゴリ別のホバーエフェクト */
 .cs-timetable-cell[data-category="due24h"]:hover {
-  background-color: rgba(255, 82, 82, 0.2) !important; /* より濃い赤 */
-  box-shadow: 0 1px 5px rgba(255, 82, 82, 0.4);
+  background-color: rgba(232, 85, 85, 0.2) !important; /* フォールバック */
+  background-color: color-mix(in srgb, var(--timetableDanger, #e85555) 30%, transparent) !important;
+  box-shadow: 0 1px 5px rgba(232, 85, 85, 0.4); /* フォールバック */
+  box-shadow: 0 1px 5px color-mix(in srgb, var(--timetableDanger, #e85555) 40%, transparent);
 }
 
 .cs-timetable-cell[data-category="due5d"]:hover {
-  background-color: rgba(255, 215, 0, 0.2) !important; /* より濃い黄色 */
-  box-shadow: 0 1px 5px rgba(255, 215, 0, 0.4);
+  background-color: rgba(215, 170, 87, 0.2) !important; /* フォールバック */
+  background-color: color-mix(in srgb, var(--timetableWarning, #d7aa57) 30%, transparent) !important;
+  box-shadow: 0 1px 5px rgba(215, 170, 87, 0.4); /* フォールバック */
+  box-shadow: 0 1px 5px color-mix(in srgb, var(--timetableWarning, #d7aa57) 40%, transparent);
 }
 
 .cs-timetable-cell[data-category="due14d"]:hover {
-  background-color: rgba(76, 175, 80, 0.2) !important; /* より濃い緑 */
-  box-shadow: 0 1px 5px rgba(76, 175, 80, 0.4);
+  background-color: rgba(98, 182, 101, 0.2) !important; /* フォールバック */
+  background-color: color-mix(in srgb, var(--timetableSuccess, #62b665) 30%, transparent) !important;
+  box-shadow: 0 1px 5px rgba(98, 182, 101, 0.4); /* フォールバック */
+  box-shadow: 0 1px 5px color-mix(in srgb, var(--timetableSuccess, #62b665) 40%, transparent);
 }
 
 .cs-timetable-cell[data-category="dueOver14d"]:hover {
-  background-color: rgba(224, 224, 224, 0.4) !important; /* より濃いグレー */
-  box-shadow: 0 1px 5px rgba(224, 224, 224, 0.6);
+  background-color: rgba(119, 119, 119, 0.4) !important; /* フォールバック */
+  background-color: color-mix(in srgb, var(--timetableOther, #777777) 30%, transparent) !important;
+  box-shadow: 0 1px 5px rgba(119, 119, 119, 0.6); /* フォールバック */
+  box-shadow: 0 1px 5px color-mix(in srgb, var(--timetableOther, #777777) 60%, transparent);
 }
 
 .cs-timetable-title {
@@ -515,7 +548,7 @@
 
 /* 時間割のカテゴリラベルスタイル */
 .cs-timetable-category-danger {
-  background-color: var(--miniDanger, #e85555);
+  background-color: var(--timetableDanger, #e85555);
   color: white;
   font-size: 10px;
   padding: 2px 5px;
@@ -534,7 +567,7 @@
 }
 
 .cs-timetable-category-warning {
-  background-color: var(--miniWarning, #d7aa57);
+  background-color: var(--timetableWarning, #d7aa57);
   color: white;
   font-size: 10px;
   padding: 2px 5px;
@@ -553,7 +586,7 @@
 }
 
 .cs-timetable-category-success {
-  background-color: var(--miniSuccess, #62b665);
+  background-color: var(--timetableSuccess, #62b665);
   color: white;
   font-size: 10px;
   padding: 2px 5px;
@@ -572,7 +605,7 @@
 }
 
 .cs-timetable-category-other {
-  background-color: var(--miniOther, #777777);
+  background-color: var(--timetableOther, #777777);
   color: white;
   font-size: 10px;
   padding: 2px 5px;

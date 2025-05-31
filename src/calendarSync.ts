@@ -1,3 +1,7 @@
+/**
+ * Google Calendarとの同期機能を提供
+ * 課題とクイズの情報をGoogle Calendarに同期する
+ */
 // Google Calendar sync functionality
 import { getAssignments } from './features/entity/assignment/getAssignment';
 import { getQuizzes } from './features/entity/quiz/getQuiz';
@@ -67,6 +71,16 @@ function getSyncInterval(): Promise<number> {
     });
   });
 }
+function setAutoSyncEnabled(enabled: boolean) {
+  chrome.storage.local.set({ autoSyncEnabled: enabled });
+}
+function getAutoSyncEnabled(): Promise<boolean> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['autoSyncEnabled'], (result) => {
+      resolve(result.autoSyncEnabled !== false); // デフォルトはtrue
+    });
+  });
+}
 function setLastSyncTime(time: number) {
   chrome.storage.local.set({ lastSyncTime: time });
 }
@@ -110,17 +124,23 @@ export function createSyncModal(): HTMLElement {
             クイズを同期
           </label>
         </div>
+        <div class="cs-sync-auto-settings">
+          <label class="cs-auto-sync-toggle">
+            <input type="checkbox" id="autoSyncEnabled" checked>
+            <span class="cs-toggle-slider"></span>
+            自動同期を有効にする
+          </label>
+          <div class="cs-sync-interval-settings" id="syncIntervalSettings">
+            <label>同期間隔(分): <input type="number" id="syncIntervalInput" min="240" max="1440" value="240" style="width:60px;"> </label>
+          </div>
+        </div>
         <div class="cs-sync-settings">
-          <label>同期間隔(分): <input type="number" id="syncIntervalInput" min="240" max="1440" value="240" style="width:60px;"> </label>
           <span id="lastSyncTimeLabel">最終同期: ---</span>
           <button id="refreshLastSyncBtn" class="cs-sync-btn cs-sync-btn-secondary" style="margin-left:8px;">再取得</button>
         </div>
         <div class="cs-sync-actions">
           <button class="cs-sync-btn cs-sync-btn-primary" id="syncButton">
             同期開始
-          </button>
-          <button class="cs-sync-btn cs-sync-btn-secondary" id="forceSyncButton">
-            強制同期
           </button>
           <button class="cs-sync-btn cs-sync-btn-danger" id="clearSentBtn">
             送信済み履歴クリア
@@ -233,7 +253,6 @@ function showSyncStatus(modal: HTMLElement, message: string, type: 'info' | 'suc
 // Perform sync
 async function performSync(modal: HTMLElement, forceSync: boolean = false) {
   const syncButton = modal.querySelector('#syncButton') as HTMLButtonElement;
-  const forceSyncButton = modal.querySelector('#forceSyncButton') as HTMLButtonElement;
   const syncAssignments = (modal.querySelector('#syncAssignments') as HTMLInputElement)?.checked;
   const syncQuizzes = (modal.querySelector('#syncQuizzes') as HTMLInputElement)?.checked;
 
@@ -244,7 +263,6 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
 
   // Disable buttons during sync
   if (syncButton) syncButton.disabled = true;
-  if (forceSyncButton) forceSyncButton.disabled = true;
 
   try {
     showSyncStatus(modal, '同期を開始しています...', 'info');
@@ -308,7 +326,6 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
   } finally {
     // Re-enable buttons
     if (syncButton) syncButton.disabled = false;
-    if (forceSyncButton) forceSyncButton.disabled = false;
   }
 }
 
@@ -327,9 +344,45 @@ export function showSyncModal() {
   loadGoogleAccounts(modal);
   // 設定値・最終同期時刻の反映
   const syncIntervalInput = modal.querySelector('#syncIntervalInput') as HTMLInputElement;
+  const autoSyncCheckbox = modal.querySelector('#autoSyncEnabled') as HTMLInputElement;
+  const syncIntervalSettings = modal.querySelector('#syncIntervalSettings') as HTMLElement;
   const lastSyncTimeLabel = modal.querySelector('#lastSyncTimeLabel') as HTMLElement;
+  
   getSyncInterval().then(val => { syncIntervalInput.value = String(val); });
-  getLastSyncTime().then(ts => { lastSyncTimeLabel.textContent = '最終同期: ' + formatDateTime(ts); });
+  getAutoSyncEnabled().then(enabled => { 
+    autoSyncCheckbox.checked = enabled;
+    // 自動同期が無効の場合は間隔設定を無効化
+    if (syncIntervalSettings) {
+      syncIntervalSettings.style.opacity = enabled ? '1' : '0.5';
+      syncIntervalInput.disabled = !enabled;
+    }
+  });
+  getLastSyncTime().then(ts => { 
+    lastSyncTimeLabel.textContent = '最終同期: ' + formatDateTime(ts); 
+  });
+
+  // 自動同期切り替えのイベントハンドラー
+  autoSyncCheckbox?.addEventListener('change', async () => {
+    const enabled = autoSyncCheckbox.checked;
+    await setAutoSyncEnabled(enabled);
+    
+    // 間隔設定の有効/無効化
+    if (syncIntervalSettings) {
+      syncIntervalSettings.style.opacity = enabled ? '1' : '0.5';
+      syncIntervalInput.disabled = !enabled;
+    }
+    
+    // バックグラウンドスクリプトのアラームも更新
+    try {
+      await sendMessage('updateSyncInterval');
+      console.log(`自動同期を${enabled ? '有効' : '無効'}にしました`);
+      showSyncStatus(modal, `自動同期を${enabled ? '有効' : '無効'}にしました`, 'success');
+    } catch (error) {
+      console.error('自動同期設定の更新に失敗:', error);
+    }
+  });
+
+  // 同期間隔変更のイベントハンドラー
   syncIntervalInput?.addEventListener('change', async () => {
     const v = Math.max(240, Math.min(1440, Number(syncIntervalInput.value)));
     await setSyncInterval(v);
@@ -358,12 +411,22 @@ export function showSyncModal() {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.lastSyncTime && document.body.contains(modal)) {
       lastSyncTimeLabel.textContent = '最終同期: ' + formatDateTime(changes.lastSyncTime.newValue);
+      
+      // 同期開始ボタンの状態を更新
+      if (syncButton) {
+        (syncButton as HTMLButtonElement).disabled = changes.lastSyncTime.newValue !== null;
+      }
     }
   });
   // Setup sync button handlers
   const syncButton = modal.querySelector('#syncButton');
-  const forceSyncButton = modal.querySelector('#forceSyncButton');
+
+  // 同期開始ボタンの制御：最終同期時刻がnullの場合のみ有効
+  getLastSyncTime().then(lastSyncTime => {
+    if (syncButton) {
+      (syncButton as HTMLButtonElement).disabled = lastSyncTime !== null;
+    }
+  });
 
   syncButton?.addEventListener('click', () => performSync(modal, false));
-  forceSyncButton?.addEventListener('click', () => performSync(modal, true));
 }

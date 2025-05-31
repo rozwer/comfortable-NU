@@ -1,3 +1,12 @@
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : 時間割ボタンとカレンダー同期ボタンをヘッダーに追加
+ * Category   : UI機能拡張
+ * -----------------------------------------------------------------
+ */
+// filepath: /home/rozwer/sakai/comfortable-sakai/src/minisakai.tsx
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { MiniSakaiRoot } from "./components/main";
@@ -37,6 +46,14 @@ export const hamburger = document.createElement("button");
 hamburger.className = "cs-loading";
 hamburger.addEventListener("click", toggleMiniSakai);
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : 時間割表示ボタンを追加（TACTポータル用）
+ * Category   : UI機能拡張
+ * -----------------------------------------------------------------
+ */
 // 時間割ボタンの作成
 export const scheduleButton = document.createElement("button");
 scheduleButton.className = "cs-header-btn cs-schedule-btn";
@@ -48,6 +65,14 @@ scheduleButton.addEventListener("click", () => {
     });
 });
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : カレンダー同期ボタンを追加（Googleカレンダー連携用）
+ * Category   : UI機能拡張
+ * -----------------------------------------------------------------
+ */
 // お気に入りボタンの作成
 export const favoriteButton = document.createElement("button");
 favoriteButton.className = "cs-header-btn cs-favorite-btn";
@@ -65,6 +90,14 @@ favoriteButton.addEventListener("click", () => {
 export function addMiniSakaiBtn(): void {
     const topbar = document.getElementById("mastLogin");
     try {
+        /**
+         * -----------------------------------------------------------------
+         * Modified by: roz
+         * Date       : 2025-05-28
+         * Changes    : 新しいボタン（カレンダー同期・時間割）をヘッダーに追加
+         * Category   : UI機能拡張
+         * -----------------------------------------------------------------
+         */
         // お気に入りボタンを追加
         topbar?.appendChild(favoriteButton);
         // 時間割ボタンを追加

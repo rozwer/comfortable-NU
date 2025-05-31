@@ -1,5 +1,14 @@
 import { EntityProtocol, EntryProtocol } from "../entity/type";
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : エントリーマージ時にcheckTimestampフィールドを保持
+ * Category   : データ処理
+ * -----------------------------------------------------------------
+ */
+
 const getEntitiesMap = <Entity extends EntityProtocol>(entities: Array<Entity>): Map<string, Entity> => {
     return entities.reduce((map, entity) => {
         return map.set(entity.course.id, entity);

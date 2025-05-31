@@ -20,6 +20,14 @@ jest.mock("../constant", () => ({
 describe("getFetchTime(showCompleted)", () => {
     test("All greater than or equal to currentTime", () => {
         const settings = new Settings();
+        /**
+         * -----------------------------------------------------------------
+         * Modified by: roz
+         * Date       : 2025-05-28
+         * Changes    : 未公開課題の非表示オプションを追加
+         * Category   : テスト設定
+         * -----------------------------------------------------------------
+         */
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: false,
@@ -37,6 +45,14 @@ describe("getFetchTime(showCompleted)", () => {
 
     test("All greater than or equal to currentTime(showLate)", () => {
         const settings = new Settings();
+        /**
+         * -----------------------------------------------------------------
+         * Modified by: roz
+         * Date       : 2025-05-28
+         * Changes    : 未公開課題の非表示オプションを追加
+         * Category   : テスト設定
+         * -----------------------------------------------------------------
+         */
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: true,
@@ -54,6 +70,14 @@ describe("getFetchTime(showCompleted)", () => {
 
     test("Some older than currentTime", () => {
         const settings = new Settings();
+        /**
+         * -----------------------------------------------------------------
+         * Modified by: roz
+         * Date       : 2025-05-28
+         * Changes    : 未公開課題の非表示オプションを追加
+         * Category   : テスト設定
+         * -----------------------------------------------------------------
+         */
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: false,
@@ -71,6 +95,14 @@ describe("getFetchTime(showCompleted)", () => {
 
     test("Some older than currentTime(showLate)", () => {
         const settings = new Settings();
+        /**
+         * -----------------------------------------------------------------
+         * Modified by: roz
+         * Date       : 2025-05-28
+         * Changes    : 未公開課題の非表示オプションを追加
+         * Category   : テスト設定
+         * -----------------------------------------------------------------
+         */
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: true,
@@ -88,6 +120,14 @@ describe("getFetchTime(showCompleted)", () => {
 
     test("All older than currentTime", () => {
         const settings = new Settings();
+        /**
+         * -----------------------------------------------------------------
+         * Modified by: roz
+         * Date       : 2025-05-28
+         * Changes    : 未公開課題の非表示オプションを追加
+         * Category   : テスト設定
+         * -----------------------------------------------------------------
+         */
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: false,
@@ -105,6 +145,14 @@ describe("getFetchTime(showCompleted)", () => {
 
     test("All older than currentTime(showLate)", () => {
         const settings = new Settings();
+        /**
+         * -----------------------------------------------------------------
+         * Modified by: roz
+         * Date       : 2025-05-28
+         * Changes    : 未公開課題の非表示オプションを追加
+         * Category   : テスト設定
+         * -----------------------------------------------------------------
+         */
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: true,
@@ -122,6 +170,14 @@ describe("getFetchTime(showCompleted)", () => {
 
     test("All older than currentTime(show Late)", () => {
         const settings = new Settings();
+        /**
+         * -----------------------------------------------------------------
+         * Modified by: roz
+         * Date       : 2025-05-28
+         * Changes    : 未公開課題の非表示オプションを追加
+         * Category   : テスト設定
+         * -----------------------------------------------------------------
+         */
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: true,

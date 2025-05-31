@@ -2,6 +2,14 @@ import { Course } from "../../course/types";
 import { EntityProtocol, EntryProtocol } from "../type";
 import { saveMemoEntry } from "./saveMemo";
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-05-28
+ * Changes    : メモエントリークラスにチェックタイムスタンプ追加とメソッドシグネチャ統一
+ * Category   : クラス拡張
+ * -----------------------------------------------------------------
+ */
 export class MemoEntry implements EntryProtocol {
     constructor(public id: string, public title: string, public dueTime: number, public hasFinished: boolean, public checkTimestamp?: string) {
     }

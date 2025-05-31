@@ -31,6 +31,18 @@ type DisplayOption = {
     hideUnpublishedAssignments: boolean;
 };
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-01-27
+ * Changes    : カレンダー自動同期のon/off設定オプションを追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
+type CalendarSyncOption = {
+    autoSyncEnabled: boolean;
+};
+
 type CSColor = {
     topDanger: string;
     topWarning: string;
@@ -40,6 +52,10 @@ type CSColor = {
     miniWarning: string;
     miniSuccess: string;
     miniOther: string;
+    timetableDanger: string;
+    timetableWarning: string;
+    timetableSuccess: string;
+    timetableOther: string;
 };
 
 const CSTheme = {
@@ -67,6 +83,9 @@ export class Settings {
         showLateAcceptedEntry: false,
         hideUnpublishedAssignments: true
     };
+    calendarSyncOption: CalendarSyncOption = {
+        autoSyncEnabled: true
+    };
     color: CSColor = {
         topDanger: "#f78989",
         topWarning: "#fdd783",
@@ -75,7 +94,11 @@ export class Settings {
         miniDanger: "#e85555",
         miniWarning: "#d7aa57",
         miniSuccess: "#62b665",
-        miniOther: "#777777"
+        miniOther: "#777777",
+        timetableDanger: "#e85555",
+        timetableWarning: "#d7aa57",
+        timetableSuccess: "#62b665",
+        timetableOther: "#777777"
     };
 
     setFetchtime(fetchTime: FetchTime) {
