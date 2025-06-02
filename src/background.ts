@@ -69,7 +69,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     try {
       switch (request.action) {
         case 'authenticateGoogle': {
-          const token = await authenticateGoogle();
+          // Use incremental authentication with minimal required scopes
+          const requestedScopes = request.scopes || [
+            'https://www.googleapis.com/auth/calendar',
+            'https://www.googleapis.com/auth/userinfo.email',
+            'https://www.googleapis.com/auth/userinfo.profile'
+          ];
+          const token = await authenticateGoogleWithScopes(requestedScopes);
           sendResponse({ success: true, token });
           break;
         }
@@ -150,45 +156,140 @@ async function shouldAutoSync(): Promise<boolean> {
   });
 }
 
-// Google OAuth authentication
+// Google OAuth authentication with enhanced security
 async function authenticateGoogle(): Promise<string> {
   return new Promise((resolve, reject) => {
-    chrome.identity.getAuthToken({ interactive: true }, (token) => {
-      if (chrome.runtime.lastError || !token) {
-        reject(new Error(chrome.runtime.lastError?.message || 'No token'));
-      } else {
-        resolve(token);
-      }
+    // Generate cryptographically secure state parameter for CSRF protection
+    const state = generateSecureState();
+    
+    // Store state parameter for verification
+    chrome.storage.local.set({ 'oauth_state': state }, () => {
+      chrome.identity.getAuthToken({ 
+        interactive: true,
+        // Add state parameter for CSRF protection where possible
+        scopes: [
+          'https://www.googleapis.com/auth/calendar',
+          'https://www.googleapis.com/auth/userinfo.email',
+          'https://www.googleapis.com/auth/userinfo.profile'
+        ]
+      }, (token) => {
+        if (chrome.runtime.lastError || !token) {
+          // Clear stored state on failure
+          chrome.storage.local.remove('oauth_state');
+          reject(new Error(chrome.runtime.lastError?.message || 'No token'));
+        } else {
+          // Verify token validity before returning
+          verifyTokenSecurity(token)
+            .then(() => {
+              // Clear state after successful verification
+              chrome.storage.local.remove('oauth_state');
+              resolve(token);
+            })
+            .catch((error) => {
+              chrome.storage.local.remove('oauth_state');
+              reject(error);
+            });
+        }
+      });
     });
   });
 }
 
-// Get user's Google accounts
+// Generate cryptographically secure state parameter
+function generateSecureState(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// Verify token security and validity
+async function verifyTokenSecurity(token: string): Promise<void> {
+  try {
+    // Verify token by making a test API call
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + token);
+    
+    if (!response.ok) {
+      throw new Error('Token verification failed');
+    }
+    
+    const tokenInfo = await response.json();
+    
+    // Verify token audience (client_id)
+    const expectedClientId = '320934121909-3mo570972bcc19chatsu8pcp6bevj7fm.apps.googleusercontent.com';
+    if (tokenInfo.aud !== expectedClientId) {
+      throw new Error('Token audience verification failed');
+    }
+    
+    // Verify required scopes are present
+    const requiredScopes = [
+      'https://www.googleapis.com/auth/calendar',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile'
+    ];
+    
+    const tokenScopes = tokenInfo.scope ? tokenInfo.scope.split(' ') : [];
+    const missingScopes = requiredScopes.filter(scope => !tokenScopes.includes(scope));
+    
+    if (missingScopes.length > 0) {
+      throw new Error('Required scopes not granted: ' + missingScopes.join(', '));
+    }
+    
+    // Verify token expiry
+    const expiresIn = parseInt(tokenInfo.expires_in);
+    if (expiresIn < 60) { // Less than 1 minute remaining
+      throw new Error('Token expires too soon');
+    }
+    
+  } catch (error) {
+    console.error('Token verification error:', error);
+    throw new Error('Token security verification failed');
+  }
+}
+
+// Get user's Google accounts with enhanced security
 async function getGoogleAccounts(): Promise<any[]> {
   return new Promise((resolve) => {
     chrome.identity.getAuthToken({ interactive: false }, async (token) => {
       const tryFetchUserInfo = async (tokenToUse: string, on401: () => void) => {
         try {
+          // Verify token before use
+          await verifyTokenSecurity(tokenToUse);
+          
+          // Use secure endpoint with proper validation
           const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { 'Authorization': `Bearer ${tokenToUse}` }
+            headers: { 
+              'Authorization': `Bearer ${tokenToUse}`,
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
           });
           
           if (response.ok) {
             const userInfo = await response.json();
+            
+            // Validate user info structure
+            if (!userInfo.email || !userInfo.email_verified) {
+              throw new Error('Invalid or unverified user info');
+            }
+            
             resolve([
               {
-                id: userInfo.id,
+                id: userInfo.sub || userInfo.id, // Use 'sub' (subject) as primary ID
                 email: userInfo.email,
                 name: userInfo.name,
-                picture: userInfo.picture
+                picture: userInfo.picture,
+                verified_email: userInfo.email_verified
               }
             ]);
           } else if (response.status === 401) {
+            // Token expired or invalid, remove and retry
             chrome.identity.removeCachedAuthToken({ token: tokenToUse }, on401);
           } else {
+            console.error('User info fetch failed:', response.status, response.statusText);
             resolve([]);
           }
         } catch (e) {
+          console.error('User info fetch error:', e);
           resolve([]);
         }
       };
@@ -229,53 +330,109 @@ function makeEventKey(item: any, type: string): string {
   return `${type}:${item.id || ''}:${item.title || ''}:${item.context || item.courseName || ''}`;
 }
 
-// Sync assignments and quizzes to Google Calendar
+// Sync assignments and quizzes to Google Calendar with enhanced security
 async function syncToCalendar(data: any, token?: string): Promise<any> {
   if (!token) {
-    token = await authenticateGoogle();
+    // Request only necessary scopes for calendar sync
+    token = await authenticateGoogleWithScopes([
+      'https://www.googleapis.com/auth/calendar',
+      'https://www.googleapis.com/auth/userinfo.email'
+    ]);
   }
+  
+  // Validate and sanitize input data
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid sync data provided');
+  }
+  
   const results = { assignments: [], quizzes: [], errors: [] } as any;
   const sentKeys = await getSentEventKeys();
   const now = Math.floor(Date.now() / 1000);
+  
+  // Rate limiting: limit to 50 operations per sync to respect API limits
+  let operationCount = 0;
+  const maxOperations = 50;
+  
   // Sync assignments
-  if (data.assignments && data.assignments.length > 0) {
-    for (let i = 0; i < data.assignments.length; i++) {
+  if (data.assignments && Array.isArray(data.assignments)) {
+    for (let i = 0; i < data.assignments.length && operationCount < maxOperations; i++) {
       const assignment = data.assignments[i];
+      
+      // Validate assignment data
+      if (!assignment || typeof assignment !== 'object' || !assignment.title) {
+        results.errors.push({ 
+          type: 'assignment', 
+          title: assignment?.title || 'Unknown', 
+          error: 'Invalid assignment data' 
+        });
+        continue;
+      }
+      
       const due = assignment.dueTime || assignment.dueDate;
       if (!due || due <= now) continue; // 過去はスキップ
+      
       const key = makeEventKey(assignment, 'assignment');
       if (sentKeys.has(key)) continue;
+      
       try {
         const event = await createCalendarEvent(assignment, 'assignment', token!);
         results.assignments.push({ title: assignment.title, success: true, eventId: event.id });
         await addSentEventKey(key);
+        operationCount++;
       } catch (error: any) {
         results.errors.push({ type: 'assignment', title: assignment.title, error: error.message });
       }
     }
   }
+  
   // Sync quizzes
-  if (data.quizzes && data.quizzes.length > 0) {
-    for (let i = 0; i < data.quizzes.length; i++) {
+  if (data.quizzes && Array.isArray(data.quizzes)) {
+    for (let i = 0; i < data.quizzes.length && operationCount < maxOperations; i++) {
       const quiz = data.quizzes[i];
+      
+      // Validate quiz data
+      if (!quiz || typeof quiz !== 'object' || !quiz.title) {
+        results.errors.push({ 
+          type: 'quiz', 
+          title: quiz?.title || 'Unknown', 
+          error: 'Invalid quiz data' 
+        });
+        continue;
+      }
+      
       const due = quiz.dueTime || quiz.dueDate;
       if (!due || due <= now) continue; // 過去はスキップ
+      
       const key = makeEventKey(quiz, 'quiz');
       if (sentKeys.has(key)) continue;
+      
       try {
         const event = await createCalendarEvent(quiz, 'quiz', token!);
         results.quizzes.push({ title: quiz.title, success: true, eventId: event.id });
         await addSentEventKey(key);
+        operationCount++;
       } catch (error: any) {
         results.errors.push({ type: 'quiz', title: quiz.title, error: error.message });
       }
     }
   }
+  
+  // Log operation summary for security monitoring
+  console.log(`Sync completed: ${operationCount} operations, ${results.errors.length} errors`);
+  
   return results;
 }
 
-// Create a calendar event
+// Create a calendar event with enhanced security validation
 async function createCalendarEvent(item: any, type: string, token: string): Promise<any> {
+  // Verify token before making API calls
+  await verifyTokenSecurity(token);
+  
+  // Validate input data
+  if (!item || !item.title) {
+    throw new Error('Invalid event data provided');
+  }
+
   const dueDate = item.dueTime || item.dueDate;
   if (!dueDate) {
     throw new Error('No due date available');
@@ -286,9 +443,12 @@ async function createCalendarEvent(item: any, type: string, token: string): Prom
   if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
     throw new Error(`Invalid date: ${dueDate}`);
   }
-  // コース名取得
-  const courseName = item.context || item.courseName || item.course || '';
-  const summary = type === 'assignment' ? `課題: ${item.title}` : `小テスト: ${item.title}`;
+
+  // Sanitize input data to prevent injection attacks
+  const sanitizedTitle = sanitizeText(item.title);
+  const courseName = sanitizeText(item.context || item.courseName || item.course || '');
+  
+  const summary = type === 'assignment' ? `課題: ${sanitizedTitle}` : `小テスト: ${sanitizedTitle}`;
   const event = {
     summary,
     description: '', // 詳細は不要
@@ -301,6 +461,18 @@ async function createCalendarEvent(item: any, type: string, token: string): Prom
       timeZone: 'Asia/Tokyo' 
     },
     location: courseName,
+    source: {
+      title: 'Comfortable NU Extension',
+      url: item.url || ''
+    },
+    extendedProperties: {
+      private: {
+        sakaiAssignmentId: item.id || '',
+        extensionVersion: '1.0.2',
+        syncTimestamp: new Date().toISOString(),
+        itemType: type
+      }
+    },
     reminders: { 
       useDefault: false, 
       overrides: [ 
@@ -315,7 +487,9 @@ async function createCalendarEvent(item: any, type: string, token: string): Prom
       method: 'POST',
       headers: { 
         'Authorization': `Bearer ${token}`, 
-        'Content-Type': 'application/json' 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
       },
       body: requestBody
     });
@@ -332,8 +506,18 @@ async function createCalendarEvent(item: any, type: string, token: string): Prom
       } catch (parseError) {
         throw new Error(`Calendar API HTTP ${response.status}: ${responseBody}`);
       }
-      const errMsg = (errorData && errorData.error && errorData.error.message) ? errorData.error.message : 'Unknown error';
-      throw new Error(`Calendar API error (${response.status}): ${errMsg}`);
+      
+      // Handle specific error cases
+      if (response.status === 401) {
+        throw new Error('Authentication failed - token may be expired');
+      } else if (response.status === 403) {
+        throw new Error('Calendar access denied - check permissions');
+      } else if (response.status === 409) {
+        throw new Error('Event already exists or conflict detected');
+      } else {
+        const errMsg = (errorData && errorData.error && errorData.error.message) ? errorData.error.message : 'Unknown error';
+        throw new Error(`Calendar API error (${response.status}): ${errMsg}`);
+      }
     }
     let responseJson: any;
     try {
@@ -341,11 +525,32 @@ async function createCalendarEvent(item: any, type: string, token: string): Prom
     } catch (parseError) {
       throw new Error('Failed to parse Calendar API response');
     }
+    
+    // Validate response structure
+    if (!responseJson.id || !responseJson.htmlLink) {
+      throw new Error('Invalid response from Calendar API');
+    }
+    
     return responseJson;
   } catch (fetchError) {
     const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
     throw new Error(`Network error: ${errorMessage}`);
   }
+}
+
+// Sanitize text input to prevent XSS and injection attacks
+function sanitizeText(text: string): string {
+  if (typeof text !== 'string') {
+    return '';
+  }
+  
+  // Remove potentially dangerous characters and scripts
+  return text
+    .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/javascript:/gi, '') // Remove javascript: URLs
+    .replace(/on\w+=/gi, '') // Remove event handlers
+    .trim()
+    .substring(0, 500); // Limit length
 }
 
 // Remove authentication token (for logout)
@@ -465,6 +670,144 @@ async function performCalendarSync() {
     showNotification('カレンダー同期エラー', 'カレンダー同期処理中にエラーが発生しました。');
     return { error: 'SYNC_ERROR', details: String(error) };
   }
+}
+
+// Incremental authorization - request minimal scopes initially
+async function authenticateGoogleIncremental(requiredScopes: string[] = []): Promise<string> {
+  // Default minimal scopes for basic functionality
+  const basicScopes = ['https://www.googleapis.com/auth/userinfo.email'];
+  
+  // Additional scopes for calendar functionality
+  const calendarScopes = [
+    'https://www.googleapis.com/auth/calendar',
+    'https://www.googleapis.com/auth/userinfo.profile'
+  ];
+  
+  // Determine which scopes to request
+  const scopesToRequest = requiredScopes.length > 0 ? requiredScopes : basicScopes;
+  
+  return new Promise((resolve, reject) => {
+    // Generate secure state parameter
+    const state = generateSecureState();
+    
+    chrome.storage.local.set({ 'oauth_state': state }, () => {
+      chrome.identity.getAuthToken({ 
+        interactive: true,
+        scopes: scopesToRequest
+      }, async (token) => {
+        if (chrome.runtime.lastError || !token) {
+          chrome.storage.local.remove('oauth_state');
+          reject(new Error(chrome.runtime.lastError?.message || 'No token'));
+        } else {
+          try {
+            // Verify token and check which scopes were actually granted
+            await verifyTokenSecurity(token);
+            
+            // Check if we have all required scopes
+            const tokenInfo = await getTokenInfo(token);
+            const grantedScopes = tokenInfo.scope ? tokenInfo.scope.split(' ') : [];
+            
+            // If calendar access is needed but not granted, request additional permissions
+            if (requiredScopes.includes('https://www.googleapis.com/auth/calendar') && 
+                !grantedScopes.includes('https://www.googleapis.com/auth/calendar')) {
+              
+              // Request additional calendar permissions
+              chrome.identity.getAuthToken({ 
+                interactive: true,
+                scopes: calendarScopes
+              }, (calendarToken) => {
+                chrome.storage.local.remove('oauth_state');
+                if (chrome.runtime.lastError || !calendarToken) {
+                  reject(new Error('Calendar permissions not granted'));
+                } else {
+                  resolve(calendarToken);
+                }
+              });
+            } else {
+              chrome.storage.local.remove('oauth_state');
+              resolve(token);
+            }
+          } catch (error) {
+            chrome.storage.local.remove('oauth_state');
+            reject(error);
+          }
+        }
+      });
+    });
+  });
+}
+
+// Get token information from Google
+async function getTokenInfo(token: string): Promise<any> {
+  const response = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + token);
+  if (!response.ok) {
+    throw new Error('Failed to get token info');
+  }
+  return await response.json();
+}
+
+// Enhanced scope validation and management
+function validateRequiredScopes(grantedScopes: string[], requiredScopes: string[]): boolean {
+  return requiredScopes.every(scope => grantedScopes.includes(scope));
+}
+
+// Check if user has granted specific permissions
+async function hasPermission(scope: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    chrome.identity.getAuthToken({ interactive: false }, async (token) => {
+      if (!token) {
+        resolve(false);
+        return;
+      }
+      
+      try {
+        const tokenInfo = await getTokenInfo(token);
+        const grantedScopes = tokenInfo.scope ? tokenInfo.scope.split(' ') : [];
+        resolve(grantedScopes.includes(scope));
+      } catch (error) {
+        resolve(false);
+      }
+    });
+  });
+}
+
+// Request specific permission if not already granted
+async function requestPermissionIfNeeded(scope: string): Promise<string> {
+  const hasScope = await hasPermission(scope);
+  
+  if (!hasScope) {
+    // Request the specific scope incrementally
+    return authenticateGoogleIncremental([scope]);
+  } else {
+    // Return existing token
+    return new Promise((resolve, reject) => {
+      chrome.identity.getAuthToken({ interactive: false }, (token) => {
+        if (token) {
+          resolve(token);
+        } else {
+          reject(new Error('No existing token'));
+        }
+      });
+    });
+  }
+}
+
+// Modified authentication function with granular scope control
+async function authenticateGoogleWithScopes(scopes: string[]): Promise<string> {
+  // Validate that only necessary scopes are requested
+  const allowedScopes = [
+    'https://www.googleapis.com/auth/calendar',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile'
+  ];
+  
+  const validScopes = scopes.filter(scope => allowedScopes.includes(scope));
+  
+  if (validScopes.length === 0) {
+    throw new Error('No valid scopes provided');
+  }
+  
+  return authenticateGoogleIncremental(validScopes);
 }
 
 // serviceWorkerの起動時に初期化

@@ -1,7 +1,7 @@
 {
   "name": "Comfortable NU",
   "description": "__MSG_EXTENSION_DESCRIPTION__",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "manifest_version": 3,
   "default_locale": "en",
   "icons": {
@@ -47,8 +47,12 @@
       "https://www.googleapis.com/auth/userinfo.profile"
     ]
   },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://www.googleapis.com https://accounts.google.com; frame-src 'none';"
+  },
   "host_permissions": [
-    "https://tact.ac.thers.ac.jp/*"
+    "https://tact.ac.thers.ac.jp/*",
+    "https://www.googleapis.com/*"
   ],
   "web_accessible_resources": [
     {
