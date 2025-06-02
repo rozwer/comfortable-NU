@@ -14,6 +14,7 @@
 // メモ機能のインポート
 import { MemoManager } from './memo';
 import { MemoUI } from './memo-ui';
+import { i18nMessage } from '../chrome/index';
 
 /**
  * 講義メモのデータ構造
@@ -199,10 +200,10 @@ export const addSampleCustomTabs = (): void => {
                 
                 // メモUIを表示
                 const memoContainer = memoUI.createMemoTabContent();
-                showTabContent('講義メモ管理', memoContainer);
+                showTabContent(i18nMessage('memo_ui_title').replace('📝 ', ''), memoContainer);
             } catch (error) {
                 console.error('メモ機能の初期化に失敗しました:', error);
-                showTabContent('講義メモ管理', '<p>メモ機能の読み込みに失敗しました。ページを再読み込みしてください。</p>');
+                showTabContent(i18nMessage('memo_ui_title').replace('📝 ', ''), '<p>メモ機能の読み込みに失敗しました。ページを再読み込みしてください。</p>');
             }
         }
     );
@@ -211,7 +212,7 @@ export const addSampleCustomTabs = (): void => {
     addCustomToolTab(
         '掲示板',
         'icon-sakai--sakai-forums cs-custom-icon',
-        'カスタム掲示板(開発中)',
+        i18nMessage('tact_forum_title'),
         () => {
             // 掲示板のコンテンツ
             const forumContainer = document.createElement('div');
@@ -221,14 +222,14 @@ export const addSampleCustomTabs = (): void => {
             forumHeader.className = 'cs-forum-header';
             
             const forumTitle = document.createElement('h3');
-            forumTitle.textContent = 'カスタム掲示板(開発中)';
+            forumTitle.textContent = i18nMessage('tact_forum_title');
             forumHeader.appendChild(forumTitle);
             
             const newPostButton = document.createElement('button');
-            newPostButton.textContent = '新規投稿';
+            newPostButton.textContent = i18nMessage('tact_forum_new_post');
             newPostButton.className = 'cs-forum-new-post-btn';
             newPostButton.addEventListener('click', () => {
-                alert('新規投稿機能は現在開発中です');
+                alert(i18nMessage('tact_forum_new_post_development'));
             });
             
             forumHeader.appendChild(newPostButton);
@@ -236,17 +237,24 @@ export const addSampleCustomTabs = (): void => {
 
             // 掲示板の説明
             const forumDescription = document.createElement('p');
-            forumDescription.textContent = '学生同士の情報交換や質問のための掲示板です';
+            forumDescription.textContent = i18nMessage('tact_forum_description');
             forumContainer.appendChild(forumDescription);
             
             // カテゴリータブ
             const forumCategoryTabs = document.createElement('div');
             forumCategoryTabs.className = 'cs-forum-category-tabs';
             
-            ['一般', '授業関連', '課題質問', 'キャンパスライフ'].forEach(category => {
+            const categories = [
+                { key: 'tact_forum_category_general', default: '一般' },
+                { key: 'tact_forum_category_class', default: '授業関連' },
+                { key: 'tact_forum_category_assignment', default: '課題質問' },
+                { key: 'tact_forum_category_campus', default: 'キャンパスライフ' }
+            ];
+            
+            categories.forEach((category, index) => {
                 const tab = document.createElement('button');
-                tab.className = category === '一般' ? 'cs-forum-category-tab active' : 'cs-forum-category-tab';
-                tab.textContent = category;
+                tab.className = index === 0 ? 'cs-forum-category-tab active' : 'cs-forum-category-tab';
+                tab.textContent = i18nMessage(category.key);
                 tab.addEventListener('click', (e) => {
                     document.querySelectorAll('.cs-forum-category-tab').forEach(t => 
                         t.classList.remove('active'));
@@ -300,7 +308,7 @@ export const addSampleCustomTabs = (): void => {
                 
                 const postMeta = document.createElement('div');
                 postMeta.className = 'cs-forum-post-meta';
-                postMeta.innerHTML = `投稿者: ${post.author} | 日付: ${post.date} | 返信: ${post.replies}`;
+                postMeta.innerHTML = `${i18nMessage('tact_forum_post_by')}${post.author} | ${i18nMessage('tact_forum_post_date')}${post.date} | ${i18nMessage('tact_forum_post_replies')}${post.replies}`;
                 
                 postHeader.appendChild(postTitle);
                 postHeader.appendChild(postMeta);
@@ -314,9 +322,9 @@ export const addSampleCustomTabs = (): void => {
                 
                 const replyButton = document.createElement('button');
                 replyButton.className = 'cs-forum-reply-btn';
-                replyButton.textContent = '返信する';
+                replyButton.textContent = i18nMessage('tact_forum_reply');
                 replyButton.addEventListener('click', () => {
-                    alert('返信機能は現在開発中です');
+                    alert(i18nMessage('tact_forum_reply_development'));
                 });
                 
                 postActions.appendChild(replyButton);
@@ -330,7 +338,7 @@ export const addSampleCustomTabs = (): void => {
             
             forumContainer.appendChild(postList);
             
-            showTabContent('カスタム掲示板(開発中)', forumContainer);
+            showTabContent(i18nMessage('tact_forum_title'), forumContainer);
         }
     );
 };

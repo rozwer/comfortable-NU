@@ -33,6 +33,9 @@ module.exports = class MergeManifestWebpackPlugin {
                     mergeManifestJson = { ...JSON.parse(manifestV2Json) };
                     mergeManifestJson.content_scripts[0].matches[0] = "https://*/*";
                     break;
+                case "edge":
+                    mergeManifestJson = { ...JSON.parse(manifestJson) };
+                    break;
             }
             mergeManifestJson.version = JSON.parse(packageJson).version;
             await fs.writeFile(savePath, JSON.stringify(mergeManifestJson, null, 1));

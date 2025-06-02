@@ -18,6 +18,7 @@ import { removeMemoEntry, saveNewMemoEntry } from "../features/entity/memo/saveM
 import { createFavoritesBar, resetFavoritesBar } from "./favoritesBar";
 import { getSakaiCourses } from "../features/course/getCourse";
 import { DatepickerModal } from "./datepickerModal";
+import { i18nMessage } from "../features/chrome/index";
 
 export const MiniSakaiContext = React.createContext<{
     settings: Settings;
@@ -391,7 +392,7 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
             timetableModal.style.setProperty("--textColor", settings.getTextColor());
             timetableModal.style.setProperty("--bgColor", settings.getBgColor());
             timetableModal.style.setProperty("--dateColor", settings.getDateColor());
-            console.log('時間割モーダルの色設定を更新しました');
+            console.log(i18nMessage('color_settings_updated'));
         }
     }
 
@@ -587,8 +588,8 @@ function MiniSakaiTabs(props: {
 }) {
     const assignmentTab = useTranslation("tab_assignments");
     const settingsTab = useTranslation("tab_settings");
-    const submittedTab = "提出済み"; // 新規追加：提出済みタブ
-    const dismissedTab = "非表示"; // 新規追加：非表示タブ
+    const submittedTab = useTranslation("tab_submitted");
+    const dismissedTab = useTranslation("tab_dismissed");
     const assignmentChecked = props.selection === "assignment";
     const submittedChecked = props.selection === "submitted";
     const dismissedChecked = props.selection === "dismissed";
@@ -621,7 +622,7 @@ function MiniSakaiTabs(props: {
                 onClick={() => {
                     // タブを切り替える際に呼び出される関数
                     const event = new CustomEvent('submittedTabClick', {
-                        detail: { message: 'タブがクリックされました' }
+                        detail: { message: i18nMessage('custom_tab_click_message') }
                     });
                     document.dispatchEvent(event);
                 }}
@@ -637,7 +638,7 @@ function MiniSakaiTabs(props: {
                 onClick={() => {
                     // タブを切り替える際に呼び出される関数
                     const event = new CustomEvent('dismissedTabClick', {
-                        detail: { message: 'タブがクリックされました' }
+                        detail: { message: i18nMessage('custom_tab_click_message') }
                     });
                     document.dispatchEvent(event);
                 }}

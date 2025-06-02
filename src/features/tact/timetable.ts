@@ -11,9 +11,10 @@ import { MaxTimestamp, TimetableYearStorage, TimetableTermStorage } from "../../
 import { courseColorInfo } from "../../components/favoritesBar";
 import { fromStorage, toStorage } from "../storage";
 import { getStoredSettings } from "../setting/getSetting";
+import { i18nMessage } from '../chrome/index';
 
 // 講義情報を格納する型
-interface CourseInfo {
+export interface CourseInfo {
     title: string;
     term: string;
     academicYear?: string; // 年度情報を明示的に保持
@@ -299,9 +300,9 @@ export const showTimetableModal = (): void => {
             modalContainer.style.setProperty("--textColor", settings.getTextColor());
             modalContainer.style.setProperty("--bgColor", settings.getBgColor());
             modalContainer.style.setProperty("--dateColor", settings.getDateColor());
-            console.log('時間割モーダルに色設定を適用しました');
+            console.log(i18nMessage('color_settings_applied'));
         } catch (error) {
-            console.error('時間割モーダルへの色設定適用に失敗しました:', error);
+            console.error(i18nMessage('color_settings_apply_failed'), error);
         }
     };
     
@@ -338,7 +339,7 @@ export const showTimetableModal = (): void => {
     yearSelector.className = 'cs-timetable-selector';
     
     const yearLabel = document.createElement('label');
-    yearLabel.textContent = '年度: ';
+    yearLabel.textContent = i18nMessage('timetable_year');
     yearSelector.appendChild(yearLabel);
     
     const yearSelect = document.createElement('select');
@@ -358,19 +359,19 @@ export const showTimetableModal = (): void => {
     termSelector.className = 'cs-timetable-selector';
     
     const termLabel = document.createElement('label');
-    termLabel.textContent = '学期: ';
+    termLabel.textContent = i18nMessage('timetable_semester');
     termSelector.appendChild(termLabel);
     
     const termSelect = document.createElement('select');
     termSelect.id = 'cs-timetable-term';
     
     const terms = [
-        { value: 'spring', text: '春学期' },
-        { value: 'spring-1', text: '春学期Ⅰ' },
-        { value: 'spring-2', text: '春学期Ⅱ' },
-        { value: 'fall', text: '秋学期' },
-        { value: 'fall-1', text: '秋学期Ⅰ' },
-        { value: 'fall-2', text: '秋学期Ⅱ' }
+        { value: 'spring', text: i18nMessage('timetable_semester_spring') },
+        { value: 'spring-1', text: i18nMessage('timetable_semester_spring_1') },
+        { value: 'spring-2', text: i18nMessage('timetable_semester_spring_2') },
+        { value: 'fall', text: i18nMessage('timetable_semester_fall') },
+        { value: 'fall-1', text: i18nMessage('timetable_semester_fall_1') },
+        { value: 'fall-2', text: i18nMessage('timetable_semester_fall_2') }
     ];
     
     terms.forEach(term => {
@@ -474,6 +475,49 @@ export const showTimetableModal = (): void => {
     classroomEditBtn.style.marginLeft = '12px';
     classroomEditBtn.onclick = showClassroomEditModal;
     selectors.appendChild(classroomEditBtn);
+
+    // エクスポートボタン追加
+    const exportBtn = document.createElement('button');
+    exportBtn.textContent = 'エクスポート';
+    exportBtn.className = 'cs-btn cs-btn-primary';
+    exportBtn.style.marginLeft = '12px';
+    exportBtn.onclick = () => {
+        const year = yearSelect.value;
+        const term = termSelect.value;
+        const courses = cachedCourses || SAMPLE_COURSES;
+        // フィルタリングされた講義リストを取得
+        const filteredCourses = courses.filter(course => {
+            let courseYear = course.academicYear || "";
+            if (!courseYear) {
+                const yearRegexMatch = course.title.match(/\((\d{4})年度/);
+                if (yearRegexMatch && yearRegexMatch[1]) {
+                    courseYear = yearRegexMatch[1];
+                }
+            }
+            let isYearMatching = courseYear === year;
+            if (!courseYear) {
+                isYearMatching = true;
+            }
+            const normalizedCourseTerm = normalizeTerm(course.term);
+            const normalizedSelectedTerm = term;
+            const courseTermBase = normalizedCourseTerm.split('-')[0];
+            const selectedTermBase = normalizedSelectedTerm.split('-')[0];
+            let termMatch = false;
+            if (normalizedCourseTerm === normalizedSelectedTerm) {
+                termMatch = true;
+            } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
+                termMatch = true;
+            } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
+                termMatch = true;
+            }
+            return isYearMatching && termMatch;
+        });
+        
+        import('./timetable-export').then(({ showTimetableExportModal }) => {
+            showTimetableExportModal(filteredCourses, year, term);
+        });
+    };
+    selectors.appendChild(exportBtn);
     
     timetableContainer.appendChild(selectors);
     
@@ -749,7 +793,7 @@ function extractCoursesFromPage(): CourseInfo[] {
 /**
  * 学期の表記を標準化
  */
-function normalizeTerm(term: string): string {
+export function normalizeTerm(term: string): string {
     // 空白とカタカナ、ひらがなの違いを無視して比較するため小文字に変換
     const normalizedTerm = term.toLowerCase();
     

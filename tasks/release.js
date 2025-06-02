@@ -42,6 +42,13 @@ switch (browser) {
         break;
     case "firefox":
         archive.directory(`./dist/source/${browser}`, ``);
+        break;
+    case "edge":
+        archive.directory(`./dist/source/${browser}`, `comfortable-NU-v${version}`);
+        break;
+    case "safari":
+        archive.directory(`./dist/source/${browser}`, `comfortable-NU-v${version}`);
+        break;
 }
 
 archive.finalize();

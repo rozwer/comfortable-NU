@@ -8,6 +8,7 @@
  */
 
 import { MemoManager, LinkManager, LectureNote, LinkItem } from './memo';
+import { i18nMessage } from '../chrome';
 
 /**
  * メモUIマネージャークラス
@@ -58,7 +59,7 @@ export class MemoUI {
         header.className = 'cs-memo-header';
 
         const title = document.createElement('h3');
-        title.textContent = '📝 講義メモ管理';
+        title.textContent = i18nMessage('memo_ui_title');
         title.className = 'cs-memo-title';
 
         const actions = document.createElement('div');
@@ -66,19 +67,19 @@ export class MemoUI {
 
         // 新規メモボタン
         const newMemoBtn = document.createElement('button');
-        newMemoBtn.textContent = '+ 新規メモ';
+        newMemoBtn.textContent = i18nMessage('memo_ui_new_memo');
         newMemoBtn.className = 'cs-btn cs-btn-primary';
         newMemoBtn.addEventListener('click', () => this.showNewMemoDialog());
 
         // エクスポートボタン
         const exportBtn = document.createElement('button');
-        exportBtn.textContent = '📤 エクスポート';
+        exportBtn.textContent = i18nMessage('memo_ui_export');
         exportBtn.className = 'cs-btn cs-btn-secondary';
         exportBtn.addEventListener('click', () => this.exportNotes());
 
         // インポートボタン
         const importBtn = document.createElement('button');
-        importBtn.textContent = '📥 インポート';
+        importBtn.textContent = i18nMessage('memo_ui_import');
         importBtn.className = 'cs-btn cs-btn-secondary';
         importBtn.addEventListener('click', () => this.showImportDialog());
 
@@ -100,9 +101,9 @@ export class MemoUI {
         tabNav.className = 'cs-memo-tab-nav';
 
         const tabs = [
-            { id: 'current', label: '現在の講義', icon: '📖' },
-            { id: 'all', label: 'すべてのメモ', icon: '📚' },
-            { id: 'search', label: '検索', icon: '🔍' }
+            { id: 'current', label: i18nMessage('memo_ui_tab_current'), icon: '📖' },
+            { id: 'all', label: i18nMessage('memo_ui_tab_all'), icon: '📚' },
+            { id: 'search', label: i18nMessage('memo_ui_tab_search'), icon: '🔍' }
         ];
 
         tabs.forEach((tab, index) => {
@@ -179,7 +180,7 @@ export class MemoUI {
         if (lectureList.length === 0) {
             contentArea.innerHTML = `
                 <div class="cs-memo-empty">
-                    <p>📚 まだメモがありません</p>
+                    <p>${i18nMessage('memo_ui_no_memos')}</p>
                 </div>
             `;
             return;
@@ -196,7 +197,7 @@ export class MemoUI {
             lectureHeader.className = 'cs-lecture-header';
             lectureHeader.innerHTML = `
                 <h4>${lecture.lectureName}</h4>
-                <span class="cs-note-count">${lecture.noteCount}件のメモ</span>
+                <span class="cs-note-count">${chrome.i18n.getMessage('memo_ui_memo_count', [lecture.noteCount.toString()])}</span>
             `;
 
             const toggleBtn = document.createElement('button');
@@ -238,9 +239,9 @@ export class MemoUI {
         if (links.length === 0) {
             contentArea.innerHTML = `
                 <div class="cs-memo-empty">
-                    <p>🔗 保存されたリンクがありません</p>
+                    <p>${i18nMessage('memo_ui_no_links')}</p>
                     <button class="cs-btn cs-btn-primary" onclick="this.addNewLink()">
-                        リンクを追加
+                        ${i18nMessage('memo_ui_add_link')}
                     </button>
                 </div>
             `;
@@ -252,7 +253,7 @@ export class MemoUI {
 
         // 新規リンク追加ボタン
         const addLinkBtn = document.createElement('button');
-        addLinkBtn.textContent = '+ リンクを追加';
+        addLinkBtn.textContent = i18nMessage('memo_ui_add_link_button');
         addLinkBtn.className = 'cs-btn cs-btn-primary cs-add-link-btn';
         addLinkBtn.addEventListener('click', () => this.showNewLinkDialog());
         linksContainer.appendChild(addLinkBtn);
@@ -283,7 +284,7 @@ export class MemoUI {
 
         const searchInput = document.createElement('input');
         searchInput.type = 'text';
-        searchInput.placeholder = 'メモを検索...';
+        searchInput.placeholder = i18nMessage('memo_ui_search_placeholder');
         searchInput.className = 'cs-search-input';
 
         const searchBtn = document.createElement('button');
@@ -297,13 +298,13 @@ export class MemoUI {
         const performSearch = () => {
             const query = searchInput.value.trim();
             if (query.length < 2) {
-                searchResults.innerHTML = '<p>2文字以上入力してください</p>';
+                searchResults.innerHTML = `<p>${i18nMessage('memo_ui_search_min_chars')}</p>`;
                 return;
             }
 
             const results = this.memoManager.searchNotes(query);
             if (results.length === 0) {
-                searchResults.innerHTML = '<p>検索結果がありません</p>';
+                searchResults.innerHTML = `<p>${i18nMessage('memo_ui_search_no_results')}</p>`;
                 return;
             }
 
@@ -501,22 +502,22 @@ export class MemoUI {
         dialogContent.className = 'cs-memo-dialog';
 
         const title = document.createElement('h3');
-        title.textContent = note ? 'メモを編集' : '新規メモ作成';
+        title.textContent = note ? i18nMessage('memo_ui_memo_dialog_edit') : i18nMessage('memo_ui_memo_dialog_new');
 
         const textarea = document.createElement('textarea');
         textarea.className = 'cs-memo-textarea';
-        textarea.placeholder = 'メモを入力してください...';
+        textarea.placeholder = i18nMessage('memo_ui_memo_dialog_placeholder');
         textarea.value = note ? note.note : '';
 
         const linksContainer = document.createElement('div');
         linksContainer.className = 'cs-memo-links-container';
         
         const linksLabel = document.createElement('label');
-        linksLabel.textContent = '関連リンク（1行に1つのURLを入力）:';
+        linksLabel.textContent = i18nMessage('memo_ui_memo_dialog_links_label');
         
         const linksTextarea = document.createElement('textarea');
         linksTextarea.className = 'cs-memo-links-textarea';
-        linksTextarea.placeholder = 'https://example.com タイトル1\nhttps://another-link.com タイトル2\n\nまたは\n\nhttps://example.com';
+        linksTextarea.placeholder = i18nMessage('memo_ui_memo_dialog_links_placeholder');
         
         // 既存のリンクを表示用の形式に変換
         let linksText = '';
@@ -531,17 +532,17 @@ export class MemoUI {
         actions.className = 'cs-memo-dialog-actions';
 
         const saveBtn = document.createElement('button');
-        saveBtn.textContent = '💾 保存';
+        saveBtn.textContent = i18nMessage('memo_ui_memo_dialog_save');
         saveBtn.className = 'cs-btn cs-btn-primary';
 
         const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = '❌ キャンセル';
+        cancelBtn.textContent = i18nMessage('memo_ui_memo_dialog_cancel');
         cancelBtn.className = 'cs-btn cs-btn-secondary';
 
         saveBtn.addEventListener('click', () => {
             const noteContent = textarea.value.trim();
             if (!noteContent) {
-                alert('メモを入力してください');
+                alert(i18nMessage('memo_ui_memo_dialog_empty_error'));
                 return;
             }
 
@@ -573,7 +574,7 @@ export class MemoUI {
                 dialog.remove();
                 this.refreshCurrentView();
             } catch (error) {
-                alert('メモの保存に失敗しました: ' + error);
+                alert(i18nMessage('memo_ui_save_error') + error);
             }
         });
 
@@ -609,32 +610,32 @@ export class MemoUI {
         dialogContent.className = 'cs-memo-dialog';
 
         const title = document.createElement('h3');
-        title.textContent = 'リンクを追加';
+        title.textContent = i18nMessage('memo_ui_link_dialog_title');
 
         const urlInput = document.createElement('input');
         urlInput.type = 'url';
         urlInput.className = 'cs-memo-input';
-        urlInput.placeholder = 'https://example.com';
+        urlInput.placeholder = i18nMessage('memo_ui_link_dialog_url_placeholder');
 
         const titleInput = document.createElement('input');
         titleInput.type = 'text';
         titleInput.className = 'cs-memo-input';
-        titleInput.placeholder = 'タイトル';
+        titleInput.placeholder = i18nMessage('memo_ui_link_dialog_title_placeholder');
 
         const descInput = document.createElement('textarea');
         descInput.className = 'cs-memo-textarea';
-        descInput.placeholder = '説明（任意）';
+        descInput.placeholder = i18nMessage('memo_ui_link_dialog_desc_placeholder');
         descInput.rows = 3;
 
         const actions = document.createElement('div');
         actions.className = 'cs-memo-dialog-actions';
 
         const saveBtn = document.createElement('button');
-        saveBtn.textContent = '💾 保存';
+        saveBtn.textContent = i18nMessage('memo_ui_memo_dialog_save');
         saveBtn.className = 'cs-btn cs-btn-primary';
 
         const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = '❌ キャンセル';
+        cancelBtn.textContent = i18nMessage('memo_ui_memo_dialog_cancel');
         cancelBtn.className = 'cs-btn cs-btn-secondary';
 
         saveBtn.addEventListener('click', () => {
@@ -642,7 +643,7 @@ export class MemoUI {
             const titleValue = titleInput.value.trim();
             
             if (!url) {
-                alert('URLを入力してください');
+                alert(i18nMessage('memo_ui_link_dialog_url_required'));
                 return;
             }
 
@@ -675,7 +676,7 @@ export class MemoUI {
      * メモを削除
      */
     private deleteNote(noteId: string): void {
-        if (confirm('このメモを削除しますか？')) {
+        if (confirm(i18nMessage('memo_ui_delete_note_confirm'))) {
             this.memoManager.deleteNote(noteId);
             this.refreshCurrentView();
         }
@@ -685,7 +686,7 @@ export class MemoUI {
      * リンクを削除
      */
     private deleteLink(linkId: string): void {
-        if (confirm('このリンクを削除しますか？')) {
+        if (confirm(i18nMessage('memo_ui_delete_link_confirm'))) {
             this.linkManager.deleteLink(linkId);
             this.refreshCurrentView();
         }
@@ -716,7 +717,7 @@ export class MemoUI {
         dialogContent.className = 'cs-memo-dialog';
 
         const title = document.createElement('h3');
-        title.textContent = 'メモをインポート';
+        title.textContent = i18nMessage('memo_ui_import_dialog_title');
 
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
@@ -727,17 +728,17 @@ export class MemoUI {
         actions.className = 'cs-memo-dialog-actions';
 
         const importBtn = document.createElement('button');
-        importBtn.textContent = '📥 インポート';
+        importBtn.textContent = i18nMessage('memo_ui_import');
         importBtn.className = 'cs-btn cs-btn-primary';
 
         const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = '❌ キャンセル';
+        cancelBtn.textContent = i18nMessage('memo_ui_memo_dialog_cancel');
         cancelBtn.className = 'cs-btn cs-btn-secondary';
 
         importBtn.addEventListener('click', () => {
             const file = fileInput.files?.[0];
             if (!file) {
-                alert('ファイルを選択してください');
+                alert(i18nMessage('memo_ui_import_dialog_file_required'));
                 return;
             }
 
@@ -746,14 +747,14 @@ export class MemoUI {
                 try {
                     const content = e.target?.result as string;
                     if (this.memoManager.importNotes(content)) {
-                        alert('インポートが完了しました');
+                        alert(i18nMessage('memo_ui_import_success'));
                         dialog.remove();
                         this.refreshCurrentView();
                     } else {
-                        alert('インポートに失敗しました');
+                        alert(i18nMessage('memo_ui_import_failed'));
                     }
                 } catch (error) {
-                    alert('ファイルの読み込みに失敗しました');
+                    alert(i18nMessage('memo_ui_file_read_failed'));
                 }
             };
             reader.readAsText(file);
@@ -801,7 +802,7 @@ export class MemoUI {
         dialogContent.className = 'cs-memo-dialog-content';
 
         const title = document.createElement('h3');
-        title.textContent = 'リンクを選択してください';
+        title.textContent = i18nMessage('memo_ui_link_selection_title');
 
         const linkList = document.createElement('div');
         linkList.className = 'cs-link-selection-list';
@@ -839,7 +840,7 @@ export class MemoUI {
         actions.className = 'cs-memo-dialog-actions';
 
         const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = 'キャンセル';
+        cancelBtn.textContent = i18nMessage('memo_ui_cancel');
         cancelBtn.className = 'cs-btn cs-btn-secondary';
         cancelBtn.addEventListener('click', () => {
             dialog.remove();

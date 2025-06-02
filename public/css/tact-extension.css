@@ -1091,3 +1091,140 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* 時間割エクスポート関連のスタイル */
+.cs-timetable-export-modal {
+    max-width: 1200px;
+    width: 95vw;
+}
+
+.cs-export-settings {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.cs-export-settings h3,
+.cs-export-settings h4 {
+    color: #495057;
+    margin-top: 0;
+}
+
+.cs-export-color-grid {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.cs-course-color-input {
+    cursor: pointer;
+}
+
+.cs-course-color-input:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+.cs-export-preview {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.cs-export-buttons {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.cs-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.cs-btn:hover {
+    transform: translateY(-1px);
+}
+
+.cs-btn:active {
+    transform: translateY(0);
+}
+
+.cs-btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.cs-btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.cs-btn-primary:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.cs-btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.cs-btn-secondary:hover {
+    background-color: #545b62;
+}
+
+/* エクスポート用時間割テーブルスタイル */
+.export-timetable {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.export-timetable table {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.export-timetable th,
+.export-timetable td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.export-timetable .course-cell {
+    border-radius: 6px;
+    margin: 2px;
+    padding: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* プレビューコンテナのスクロール */
+#cs-export-preview-container {
+    position: relative;
+}
+
+#cs-export-preview-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#cs-export-preview-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#cs-export-preview-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+#cs-export-preview-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

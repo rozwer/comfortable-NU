@@ -3,6 +3,7 @@
  * 課題完了時の日時入力用UI
  */
 import React, { useState } from 'react';
+import { useTranslation } from './helper';
 
 interface DatepickerModalProps {
   isOpen: boolean;
@@ -16,6 +17,17 @@ interface DatepickerModalProps {
  * 年月日時を選択できるUIを提供します
  */
 export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClose, onSave, initialDate }) => {
+  // 多言語対応
+  const title = useTranslation('datepicker_modal_title');
+  const permanentLabel = useTranslation('datepicker_modal_permanent');
+  const yearLabel = useTranslation('datepicker_modal_year');
+  const monthLabel = useTranslation('datepicker_modal_month');
+  const dayLabel = useTranslation('datepicker_modal_day');
+  const hourLabel = useTranslation('datepicker_modal_hour');
+  const permanentInfo = useTranslation('datepicker_modal_permanent_info');
+  const cancelText = useTranslation('datepicker_modal_cancel');
+  const saveText = useTranslation('datepicker_modal_save');
+  
   // 現在時刻から初期値を設定
   const now = new Date();
   const initDate = initialDate ? new Date(initialDate.replace(/\//g, '-')) : now;
@@ -70,7 +82,7 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
     <div className="cs-datepicker-overlay" onClick={handleOutsideClick}>
       <div className="cs-datepicker-modal">
         <div className="cs-datepicker-header">
-          <h3>課題の非表示期間を設定</h3>
+          <h3>{title}</h3>
           <button className="cs-datepicker-close-button" onClick={onClose}>✕</button>
         </div>
         
@@ -84,7 +96,7 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
                 onChange={(e) => setIsPermanent(e.target.checked)}
                 className="cs-datepicker-permanent-checkbox"
               />
-              永久に非表示にする（1年後まで設定）
+              {permanentLabel}
             </label>
           </div>
           
@@ -92,7 +104,7 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
           {!isPermanent && (
             <div className="cs-datepicker-row">
               <div className="cs-datepicker-field">
-                <label>年</label>
+                <label>{yearLabel}</label>
                 <select 
                   value={year} 
                   onChange={(e) => setYear(parseInt(e.target.value))}
@@ -104,7 +116,7 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
               </div>
               
               <div className="cs-datepicker-field">
-                <label>月</label>
+                <label>{monthLabel}</label>
                 <select 
                   value={month} 
                   onChange={(e) => setMonth(parseInt(e.target.value))}
@@ -116,7 +128,7 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
               </div>
               
               <div className="cs-datepicker-field">
-                <label>日</label>
+                <label>{dayLabel}</label>
                 <select 
                   value={day}
                   onChange={(e) => setDay(parseInt(e.target.value))}
@@ -128,7 +140,7 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
               </div>
               
               <div className="cs-datepicker-field">
-                <label>時</label>
+                <label>{hourLabel}</label>
                 <select 
                   value={hour} 
                   onChange={(e) => setHour(parseInt(e.target.value))}
@@ -144,14 +156,14 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
           {/* 永久オプションが選択された場合の説明 */}
           {isPermanent && (
             <div className="cs-datepicker-permanent-info">
-              <p>課題が永久に非表示になります。非表示タブから再表示できます。</p>
+              <p>{permanentInfo}</p>
             </div>
           )}
         </div>
         
         <div className="cs-datepicker-footer">
-          <button className="cs-datepicker-cancel-button" onClick={onClose}>キャンセル</button>
-          <button className="cs-datepicker-save-button" onClick={handleSave}>保存</button>
+          <button className="cs-datepicker-cancel-button" onClick={onClose}>{cancelText}</button>
+          <button className="cs-datepicker-save-button" onClick={handleSave}>{saveText}</button>
         </div>
       </div>
     </div>
