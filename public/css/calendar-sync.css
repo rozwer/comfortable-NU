@@ -146,6 +146,61 @@
   font-style: italic;
 }
 
+/* Authentication notice styles */
+.cs-auth-notice {
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.cs-auth-notice h4 {
+  margin: 0 0 8px 0;
+  color: #374151;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cs-auth-notice p {
+  margin: 8px 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cs-auth-notice small {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* Connected account styles */
+.cs-connected-account-section {
+  margin-bottom: 16px;
+}
+
+.cs-connected-account {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f0f9ff;
+  border: 2px solid #bfdbfe;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.cs-connected-label {
+  background: #10b981;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
 .cs-sync-options {
   margin-bottom: 24px;
 }

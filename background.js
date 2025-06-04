@@ -63,13 +63,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         try {
             switch (request.action) {
                 case 'authenticateGoogle': {
+                    console.log('[DEBUG] authenticateGoogle action received');
                     // Use incremental authentication with minimal required scopes
                     const requestedScopes = request.scopes || [
                         'https://www.googleapis.com/auth/calendar',
                         'https://www.googleapis.com/auth/userinfo.email',
                         'https://www.googleapis.com/auth/userinfo.profile'
                     ];
-                    const token = await authenticateGoogleWithScopes(requestedScopes);
+                    console.log('[DEBUG] Requested scopes:', requestedScopes);
+                    const token = await authenticateGoogle();
+                    console.log('[DEBUG] Authentication completed, token received:', !!token);
                     sendResponse({ success: true, token });
                     break;
                 }
@@ -79,13 +82,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     break;
                 }
                 case 'getGoogleAccounts': {
+                    console.log('[DEBUG] getGoogleAccounts action received');
                     const accounts = await getGoogleAccounts();
+                    console.log('[DEBUG] Retrieved accounts:', accounts.length, 'accounts');
                     sendResponse({ success: true, accounts });
                     break;
                 }
                 case 'logout': {
-                    await logoutGoogle();
-                    sendResponse({ success: true });
+                    console.log('🔧 [LOGOUT DEBUG] Logout action received');
+                    try {
+                        await logoutGoogle();
+                        console.log('🔧 [LOGOUT DEBUG] Logout completed successfully');
+                        // Notify user of successful logout
+                        showNotification('ログアウト完了', 'Googleアカウントからログアウトしました。再度同期するには再認証が必要です。');
+                        sendResponse({ success: true, message: 'Complete logout successful' });
+                    }
+                    catch (error) {
+                        console.error('🔧 [LOGOUT DEBUG] Logout failed:', error);
+                        sendResponse({ success: false, error: error.message });
+                    }
                     break;
                 }
                 case 'checkAutoSync': {
@@ -148,11 +163,25 @@ async function shouldAutoSync() {
 }
 // Google OAuth authentication with enhanced security
 async function authenticateGoogle() {
+    console.log('[DEBUG] authenticateGoogle function started');
+    // 既存トークンを削除してから新規認証を行う
+    await new Promise((resolve) => {
+        chrome.identity.getAuthToken({ interactive: false }, (token) => {
+            if (token) {
+                chrome.identity.removeCachedAuthToken({ token }, () => resolve());
+            }
+            else {
+                resolve();
+            }
+        });
+    });
     return new Promise((resolve, reject) => {
         // Generate cryptographically secure state parameter for CSRF protection
         const state = generateSecureState();
+        console.log('[DEBUG] Generated CSRF state');
         // Store state parameter for verification
         chrome.storage.local.set({ 'oauth_state': state }, () => {
+            console.log('[DEBUG] Stored OAuth state, starting getAuthToken...');
             chrome.identity.getAuthToken({
                 interactive: true,
                 // Add state parameter for CSRF protection where possible
@@ -162,22 +191,41 @@ async function authenticateGoogle() {
                     'https://www.googleapis.com/auth/userinfo.profile'
                 ]
             }, (token) => {
+                console.log('[DEBUG] getAuthToken callback executed');
+                console.log('[DEBUG] Chrome runtime error:', chrome.runtime.lastError);
+                console.log('[DEBUG] Token received:', !!token);
                 if (chrome.runtime.lastError || !token) {
+                    console.log('[DEBUG] Authentication failed:', chrome.runtime.lastError?.message);
                     // Clear stored state on failure
                     chrome.storage.local.remove('oauth_state');
                     reject(new Error(chrome.runtime.lastError?.message || 'No token'));
                 }
                 else {
+                    console.log('[DEBUG] Token received, verifying security...');
                     // Verify token validity before returning
                     verifyTokenSecurity(token)
                         .then(() => {
+                        console.log('[DEBUG] Token security verified');
                         // Clear state after successful verification
                         chrome.storage.local.remove('oauth_state');
-                        resolve(token);
+                        // Mark that user has explicitly authenticated
+                        chrome.storage.local.set({ 'userAuthenticatedExplicitly': true }, () => {
+                            console.log('[DEBUG] User authentication flag set');
+                            resolve(token);
+                        });
                     })
                         .catch((error) => {
+                        console.log('[DEBUG] Token security verification failed:', error);
+                        console.log('[DEBUG] Clearing authentication and retrying...');
                         chrome.storage.local.remove('oauth_state');
-                        reject(error);
+                        // Clear the failed token and try fresh authentication
+                        chrome.identity.removeCachedAuthToken({ token }, () => {
+                            console.log('[DEBUG] Cached token cleared, attempting fresh authentication...');
+                            // Recursive call for fresh authentication (only once to avoid infinite loop)
+                            clearAuthenticationAndReauth()
+                                .then(resolve)
+                                .catch(reject);
+                        });
                     });
                 }
             });
@@ -192,18 +240,27 @@ function generateSecureState() {
 }
 // Verify token security and validity
 async function verifyTokenSecurity(token) {
+    console.log('🔧 [TOKEN DEBUG] Starting token security verification...');
     try {
         // Verify token by making a test API call
         const response = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + token);
+        console.log('🔧 [TOKEN DEBUG] Token info response status:', response.status);
         if (!response.ok) {
             throw new Error('Token verification failed');
         }
         const tokenInfo = await response.json();
+        console.log('🔧 [TOKEN DEBUG] Token info received:', {
+            aud: tokenInfo.aud,
+            scope: tokenInfo.scope,
+            expires_in: tokenInfo.expires_in
+        });
         // Verify token audience (client_id)
         const expectedClientId = '320934121909-3mo570972bcc19chatsu8pcp6bevj7fm.apps.googleusercontent.com';
         if (tokenInfo.aud !== expectedClientId) {
+            console.error('🔧 [TOKEN DEBUG] Client ID mismatch:', tokenInfo.aud, 'vs expected:', expectedClientId);
             throw new Error('Token audience verification failed');
         }
+        console.log('🔧 [TOKEN DEBUG] Client ID verification passed');
         // Verify required scopes are present
         const requiredScopes = [
             'https://www.googleapis.com/auth/calendar',
@@ -212,77 +269,109 @@ async function verifyTokenSecurity(token) {
         ];
         const tokenScopes = tokenInfo.scope ? tokenInfo.scope.split(' ') : [];
         const missingScopes = requiredScopes.filter(scope => !tokenScopes.includes(scope));
+        console.log('🔧 [TOKEN DEBUG] Granted scopes:', tokenScopes);
+        console.log('🔧 [TOKEN DEBUG] Missing scopes:', missingScopes);
         if (missingScopes.length > 0) {
             throw new Error('Required scopes not granted: ' + missingScopes.join(', '));
         }
+        console.log('🔧 [TOKEN DEBUG] Scope verification passed');
         // Verify token expiry
         const expiresIn = parseInt(tokenInfo.expires_in);
-        if (expiresIn < 60) { // Less than 1 minute remaining
+        console.log('🔧 [TOKEN DEBUG] Token expires in:', expiresIn, 'seconds');
+        if (expiresIn < 60) // Less than 1 minute remaining
             throw new Error('Token expires too soon');
-        }
+        console.log('🔧 [TOKEN DEBUG] Token security verification completed successfully');
     }
     catch (error) {
-        console.error('Token verification error:', error);
+        console.error('🔧 [TOKEN DEBUG] Token verification error:', error);
         throw new Error('Token security verification failed');
     }
 }
-// Get user's Google accounts with enhanced security
+// Get user's Google accounts - only when explicitly requested
 async function getGoogleAccounts() {
+    console.log('🔧 [AUTH DEBUG] getGoogleAccounts function started');
     return new Promise((resolve) => {
-        // Only check for existing tokens, do not force authentication
-        chrome.identity.getAuthToken({ interactive: false }, async (token) => {
-            const tryFetchUserInfo = async (tokenToUse, on401) => {
-                try {
-                    // Verify token before use
-                    await verifyTokenSecurity(tokenToUse);
-                    // Use secure endpoint with proper validation
-                    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                        headers: {
-                            'Authorization': `Bearer ${tokenToUse}`,
-                            'Accept': 'application/json',
-                            'Cache-Control': 'no-cache'
-                        }
-                    });
-                    if (response.ok) {
-                        const userInfo = await response.json();
-                        // Validate user info structure
-                        if (!userInfo.email || !userInfo.email_verified) {
-                            throw new Error('Invalid or unverified user info');
-                        }
-                        resolve([
-                            {
-                                id: userInfo.sub || userInfo.id,
-                                email: userInfo.email,
-                                name: userInfo.name,
-                                picture: userInfo.picture,
-                                verified_email: userInfo.email_verified
-                            }
-                        ]);
-                    }
-                    else if (response.status === 401) {
-                        // Token expired or invalid, just resolve with empty array
-                        // Do not attempt automatic re-authentication
-                        console.log('Token expired, user needs to manually re-authenticate');
-                        resolve([]);
-                    }
-                    else {
-                        console.error('User info fetch failed:', response.status, response.statusText);
-                        resolve([]);
-                    }
-                }
-                catch (e) {
-                    console.error('User info fetch error:', e);
-                    resolve([]);
-                }
-            };
-            if (!token) {
-                // No existing token, return empty array without forcing authentication
+        // Check if user has explicitly authenticated
+        chrome.storage.local.get(['userAuthenticatedExplicitly'], (result) => {
+            console.log('🔧 [AUTH DEBUG] userAuthenticatedExplicitly flag:', result.userAuthenticatedExplicitly);
+            if (!result.userAuthenticatedExplicitly) {
+                console.log('🔧 [AUTH DEBUG] User has not explicitly authenticated, returning empty array');
+                // User has not explicitly authenticated, return empty array
                 resolve([]);
                 return;
             }
-            await tryFetchUserInfo(token, () => {
-                // Token is invalid, return empty array without forcing authentication
-                resolve([]);
+            console.log('🔧 [AUTH DEBUG] User has explicitly authenticated, checking for existing tokens...');
+            // Only check for existing tokens if user has explicitly authenticated
+            chrome.identity.getAuthToken({ interactive: false }, async (token) => {
+                console.log('🔧 [AUTH DEBUG] getAuthToken (non-interactive) callback executed');
+                console.log('🔧 [AUTH DEBUG] Token exists:', !!token);
+                console.log('🔧 [AUTH DEBUG] Chrome runtime error:', chrome.runtime.lastError);
+                const tryFetchUserInfo = async (tokenToUse, on401) => {
+                    try {
+                        console.log('[DEBUG] Verifying token security...');
+                        // Verify token before use
+                        await verifyTokenSecurity(tokenToUse);
+                        console.log('[DEBUG] Token security verified, fetching user info...');
+                        // Use secure endpoint with proper validation
+                        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                            headers: {
+                                'Authorization': `Bearer ${tokenToUse}`,
+                                'Accept': 'application/json',
+                                'Cache-Control': 'no-cache'
+                            }
+                        });
+                        console.log('[DEBUG] User info fetch response status:', response.status);
+                        if (response.ok) {
+                            const userInfo = await response.json();
+                            console.log('[DEBUG] User info received:', {
+                                email: userInfo.email,
+                                name: userInfo.name,
+                                verified: userInfo.email_verified
+                            });
+                            // Validate user info structure
+                            if (!userInfo.email || !userInfo.email_verified) {
+                                throw new Error('Invalid or unverified user info');
+                            }
+                            resolve([
+                                {
+                                    id: userInfo.sub || userInfo.id,
+                                    email: userInfo.email,
+                                    name: userInfo.name,
+                                    picture: userInfo.picture,
+                                    verified_email: userInfo.email_verified
+                                }
+                            ]);
+                        }
+                        else if (response.status === 401) {
+                            console.log('[DEBUG] Token expired (401), clearing auth flag');
+                            // Token expired or invalid, clear explicit auth flag and return empty array
+                            chrome.storage.local.remove('userAuthenticatedExplicitly');
+                            console.log('Token expired, user needs to manually re-authenticate');
+                            resolve([]);
+                        }
+                        else {
+                            console.error('[DEBUG] User info fetch failed:', response.status, response.statusText);
+                            resolve([]);
+                        }
+                    }
+                    catch (e) {
+                        console.error('[DEBUG] User info fetch error:', e);
+                        resolve([]);
+                    }
+                };
+                if (!token) {
+                    console.log('[DEBUG] No existing token, clearing auth flag');
+                    // No existing token, clear explicit auth flag and return empty array
+                    chrome.storage.local.remove('userAuthenticatedExplicitly');
+                    resolve([]);
+                    return;
+                }
+                await tryFetchUserInfo(token, () => {
+                    console.log('[DEBUG] Token is invalid, clearing auth flag');
+                    // Token is invalid, clear explicit auth flag and return empty array
+                    chrome.storage.local.remove('userAuthenticatedExplicitly');
+                    resolve([]);
+                });
             });
         });
     });
@@ -406,6 +495,14 @@ async function createCalendarEvent(item, type, token) {
     const sanitizedTitle = sanitizeText(item.title);
     const courseName = sanitizeText(item.context || item.courseName || item.course || '');
     const summary = type === 'assignment' ? `課題: ${sanitizedTitle}` : `小テスト: ${sanitizedTitle}`;
+    // sourceプロパティを有効なURLがある場合のみ付与
+    let source = undefined;
+    if (typeof item.url === 'string' && /^https?:\/\//.test(item.url)) {
+        source = {
+            title: 'Comfortable NU Extension',
+            url: item.url
+        };
+    }
     const event = {
         summary,
         description: '',
@@ -418,10 +515,7 @@ async function createCalendarEvent(item, type, token) {
             timeZone: 'Asia/Tokyo'
         },
         location: courseName,
-        source: {
-            title: 'Comfortable NU Extension',
-            url: item.url || ''
-        },
+        ...(source ? { source } : {}),
         extendedProperties: {
             private: {
                 sakaiAssignmentId: item.id || '',
@@ -511,17 +605,67 @@ function sanitizeText(text) {
         .trim()
         .substring(0, 500); // Limit length
 }
-// Remove authentication token (for logout)
+// Complete logout - remove all authentication data and cached tokens
 async function logoutGoogle() {
+    console.log('🔧 [LOGOUT DEBUG] Starting complete logout process...');
     return new Promise((resolve) => {
+        // Step 1: Get and remove all cached auth tokens
         chrome.identity.getAuthToken({ interactive: false }, (token) => {
+            console.log('🔧 [LOGOUT DEBUG] Found existing token:', !!token);
             if (token) {
-                chrome.identity.removeCachedAuthToken({ token }, () => resolve());
+                // Remove the cached token
+                chrome.identity.removeCachedAuthToken({ token }, () => {
+                    console.log('🔧 [LOGOUT DEBUG] Cached token removed');
+                    // Step 2: Clear all related storage data
+                    clearAllAuthenticationData(() => {
+                        console.log('🔧 [LOGOUT DEBUG] All authentication data cleared');
+                        resolve();
+                    });
+                });
             }
             else {
-                resolve();
+                // No token found, just clear storage data
+                clearAllAuthenticationData(() => {
+                    console.log('🔧 [LOGOUT DEBUG] All authentication data cleared (no token found)');
+                    resolve();
+                });
             }
         });
+    });
+}
+// Clear all authentication-related data from storage
+function clearAllAuthenticationData(callback) {
+    console.log('🔧 [LOGOUT DEBUG] Clearing all authentication storage data...');
+    const keysToRemove = [
+        'userAuthenticatedExplicitly',
+        'oauth_state',
+        'lastSyncTime',
+        'sentEventKeys',
+        'google_auth_token',
+        'google_user_info',
+        'calendar_permissions'
+    ];
+    chrome.storage.local.remove(keysToRemove, () => {
+        console.log('🔧 [LOGOUT DEBUG] Storage data cleared:', keysToRemove);
+        // Session storage is available in newer Chrome versions
+        try {
+            if (chrome.storage.session) {
+                chrome.storage.session.clear(() => {
+                    console.log('🔧 [LOGOUT DEBUG] Session storage cleared');
+                    if (callback)
+                        callback();
+                });
+            }
+            else {
+                if (callback)
+                    callback();
+            }
+        }
+        catch (error) {
+            console.log('🔧 [LOGOUT DEBUG] Session storage not available');
+            if (callback)
+                callback();
+        }
     });
 }
 // バックグラウンドからカレンダー同期を実行
@@ -646,6 +790,17 @@ async function authenticateGoogleIncremental(requiredScopes = []) {
     ];
     // Determine which scopes to request
     const scopesToRequest = requiredScopes.length > 0 ? requiredScopes : basicScopes;
+    // 既存トークンを削除してから新規認証を行う
+    await new Promise((resolve) => {
+        chrome.identity.getAuthToken({ interactive: false }, (token) => {
+            if (token) {
+                chrome.identity.removeCachedAuthToken({ token }, () => resolve());
+            }
+            else {
+                resolve();
+            }
+        });
+    });
     return new Promise((resolve, reject) => {
         // Generate secure state parameter
         const state = generateSecureState();
@@ -760,7 +915,50 @@ async function authenticateGoogleWithScopes(scopes) {
     if (validScopes.length === 0) {
         throw new Error('No valid scopes provided');
     }
+    // 既存トークンを削除してから認証を開始
+    await new Promise((resolve) => {
+        chrome.identity.getAuthToken({ interactive: false }, (token) => {
+            if (token) {
+                chrome.identity.removeCachedAuthToken({ token }, () => resolve());
+            }
+            else {
+                resolve();
+            }
+        });
+    });
     return authenticateGoogleIncremental(validScopes);
+}
+// Clear existing authentication and force re-authentication
+async function clearAuthenticationAndReauth() {
+    console.log('🔧 [AUTH CLEAR] Clearing existing authentication...');
+    // Clear stored authentication flags
+    chrome.storage.local.remove(['userAuthenticatedExplicitly', 'oauth_state']);
+    // Perform simple re-authentication without recursive verification
+    return new Promise((resolve, reject) => {
+        const state = generateSecureState();
+        chrome.storage.local.set({ 'oauth_state': state }, () => {
+            chrome.identity.getAuthToken({
+                interactive: true,
+                scopes: [
+                    'https://www.googleapis.com/auth/calendar',
+                    'https://www.googleapis.com/auth/userinfo.email',
+                    'https://www.googleapis.com/auth/userinfo.profile'
+                ]
+            }, (token) => {
+                if (chrome.runtime.lastError || !token) {
+                    chrome.storage.local.remove('oauth_state');
+                    reject(new Error(chrome.runtime.lastError?.message || 'Fresh authentication failed'));
+                }
+                else {
+                    chrome.storage.local.remove('oauth_state');
+                    chrome.storage.local.set({ 'userAuthenticatedExplicitly': true }, () => {
+                        console.log('🔧 [AUTH CLEAR] Fresh authentication successful');
+                        resolve(token);
+                    });
+                }
+            });
+        });
+    });
 }
 // serviceWorkerの起動時に初期化
 init();

@@ -36,7 +36,9 @@ export async function getGoogleAccounts(): Promise<GoogleAccount[]> {
 
 // Authenticate with Google
 export async function authenticateGoogle(): Promise<string> {
+  console.log('[DEBUG] authenticateGoogle called from UI');
   const response = await sendMessage('authenticateGoogle');
+  console.log('[DEBUG] authenticateGoogle response:', response);
   if (!response.token) {
     throw new Error('No authentication token received');
   }
@@ -180,7 +182,11 @@ async function loadGoogleAccounts(modal: HTMLElement) {
   if (!accountsContainer) return;
 
   try {
+    // Show loading state
+    accountsContainer.innerHTML = '<div class="cs-sync-loading">アカウント情報を取得中...</div>';
+    
     const accounts = await getGoogleAccounts();
+    
     // 接続中アカウント表示エリアを作成・更新
     if (!connectedContainer) {
       connectedContainer = document.createElement('div');
@@ -188,7 +194,9 @@ async function loadGoogleAccounts(modal: HTMLElement) {
       connectedContainer.className = 'cs-connected-account-section';
       accountsContainer.parentElement?.insertBefore(connectedContainer, accountsContainer);
     }
+    
     if (accounts && accounts.length > 0) {
+      // User is authenticated - show account info
       const account = accounts[0];
       connectedContainer.innerHTML = `
         <div class="cs-connected-account">
@@ -197,55 +205,67 @@ async function loadGoogleAccounts(modal: HTMLElement) {
             <div class="cs-sync-account-name">${account.name}</div>
             <div class="cs-sync-account-email">${account.email}</div>
           </div>
-          <span class="cs-connected-label">接続中</span>
+          <span class="cs-connected-label">認証済み</span>
           <button class="cs-sync-btn cs-sync-btn-secondary" id="logoutButton" title="ログアウト">
             ログアウト
           </button>
         </div>
       `;
       
+      // Clear accounts selection area since user is already authenticated
+      accountsContainer.innerHTML = '';
+      
       // ログアウトボタンのイベントハンドラを追加
       const logoutBtn = connectedContainer.querySelector('#logoutButton');
       logoutBtn?.addEventListener('click', async () => {
+        // ユーザーに確認を求める
+        const confirmed = confirm('🔐 完全ログアウトを実行しますか？\n\n・すべての認証情報が削除されます\n・同期履歴もクリアされます\n・再度同期するには再認証が必要になります');
+        
+        if (!confirmed) {
+          return;
+        }
+        
         try {
+          showSyncStatus(modal, '🔐 完全ログアウト実行中...', 'info');
+          console.log('🔧 [UI DEBUG] Starting complete logout process...');
+          
           await logoutGoogle();
+          
+          console.log('🔧 [UI DEBUG] Logout completed, reloading accounts...');
           // ログアウト後にアカウント情報を再取得
           await loadGoogleAccounts(modal);
-          showSyncStatus(modal, 'ログアウトしました', 'success');
+          
+          showSyncStatus(modal, '✅ 完全ログアウトが完了しました。再認証が必要です。', 'success');
+          console.log('🔧 [UI DEBUG] Complete logout process finished');
         } catch (error: any) {
-          showSyncStatus(modal, `ログアウトに失敗しました: ${error.message}`, 'error');
+          console.error('🔧 [UI DEBUG] Logout failed:', error);
+          showSyncStatus(modal, `❌ ログアウトに失敗しました: ${error.message}`, 'error');
         }
       });
     } else {
+      // User is not authenticated - show login interface
       connectedContainer.innerHTML = '';
-    }
-    // accounts配列が空でなければ必ずUIを描画
-    if (accounts && accounts.length > 0) {
-      accountsContainer.innerHTML = accounts.map(account => `
-        <div class="cs-sync-account" data-account-id="${account.id}">
-          <img src="${account.picture}" alt="${account.name}" class="cs-sync-account-picture">
-          <div class="cs-sync-account-info">
-            <div class="cs-sync-account-name">${account.name}</div>
-            <div class="cs-sync-account-email">${account.email}</div>
-          </div>
-          <input type="radio" name="selectedAccount" value="${account.id}" ${accounts.length === 1 ? 'checked' : ''}>
-        </div>
-      `).join('');
-    } else {
       accountsContainer.innerHTML = `
         <div class="cs-sync-no-account">
-          <p>Googleアカウントが見つかりません</p>
+          <div class="cs-auth-notice">
+            <h4>🔐 Googleアカウントでの認証が必要です</h4>
+            <p>カレンダー同期を使用するには、Googleアカウントでログインしてください。</p>
+            <p><small>※ あなたの同意なしにアカウント情報が取得されることはありません</small></p>
+          </div>
           <button class="cs-sync-btn cs-sync-btn-primary" id="loginButton">
-            Googleでログイン
+            <span>🔑</span> Googleでログイン
           </button>
         </div>
       `;
+      
       const loginBtn = accountsContainer.querySelector('#loginButton');
       loginBtn?.addEventListener('click', async () => {
         try {
+          showSyncStatus(modal, 'Googleアカウントでログイン中...', 'info');
           await authenticateGoogle();
           // 認証後に再取得
           await loadGoogleAccounts(modal);
+          showSyncStatus(modal, 'ログインが完了しました', 'success');
         } catch (error: any) {
           showSyncStatus(modal, `ログインに失敗しました: ${error.message}`, 'error');
         }
@@ -255,10 +275,18 @@ async function loadGoogleAccounts(modal: HTMLElement) {
     // エラー詳細をUIに表示
     accountsContainer.innerHTML = `
       <div class="cs-sync-error">
-        アカウント情報の取得に失敗しました: ${error.message || error}
+        <h4>⚠️ エラーが発生しました</h4>
+        <p>アカウント情報の取得に失敗しました: ${error.message || error}</p>
+        <button class="cs-sync-btn cs-sync-btn-primary" id="retryButton">
+          再試行
+        </button>
       </div>
     `;
     if (connectedContainer) connectedContainer.innerHTML = '';
+    
+    // Add retry button handler
+    const retryBtn = accountsContainer.querySelector('#retryButton');
+    retryBtn?.addEventListener('click', () => loadGoogleAccounts(modal));
   }
 }
 
@@ -286,6 +314,25 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
   if (syncButton) syncButton.disabled = true;
 
   try {
+    showSyncStatus(modal, '認証状態を確認中...', 'info');
+
+    // Check if user is authenticated before attempting sync
+    const accounts = await getGoogleAccounts();
+    if (accounts.length === 0) {
+      showSyncStatus(modal, '⚠️ Googleアカウントでの認証が必要です。「Googleでログイン」ボタンをクリックしてください。', 'error');
+      return;
+    }
+
+    // Google認証トークンを取得
+    let token: string | undefined;
+    try {
+      token = await authenticateGoogle();
+      console.log('[DEBUG] Token for syncToCalendar:', token);
+    } catch (e) {
+      showSyncStatus(modal, 'Google認証トークンの取得に失敗しました', 'error');
+      return;
+    }
+
     showSyncStatus(modal, '同期を開始しています...', 'info');
 
     // Get current site data
@@ -321,21 +368,14 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
     const totalAssignmentEntries = assignments.flatMap(assignment => assignment.entries).filter(e => (e.dueTime || e.dueDate) > now);
     const totalQuizEntries = quizzes.flatMap(quiz => quiz.entries).filter(e => (e.dueTime || e.dueDate) > now);
     if (totalAssignmentEntries.length === 0 && totalQuizEntries.length === 0) {
-      showSyncStatus(modal, '同期するデータが見つかりませんでした', 'error');
+      showSyncStatus(modal, '同期するデータが見つかりませんでした（未来の締切のある課題・クイズがありません）', 'error');
       return;
     }
 
     // Perform calendar sync
     showSyncStatus(modal, 'Googleカレンダーに同期中...', 'info');
     
-    // Check if user is authenticated before attempting sync
-    const accounts = await getGoogleAccounts();
-    if (accounts.length === 0) {
-      showSyncStatus(modal, 'Googleアカウントにログインしてください', 'error');
-      return;
-    }
-    
-    const result = await syncToCalendar(totalAssignmentEntries, totalQuizEntries);
+    const result = await syncToCalendar(totalAssignmentEntries, totalQuizEntries, token);
     // 最終同期時刻保存
     setLastSyncTime(Date.now());
     const lastSyncTimeLabel = modal.querySelector('#lastSyncTimeLabel') as HTMLElement;
@@ -345,13 +385,15 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
     const totalSuccess = result.assignments.length + result.quizzes.length;
     const totalErrors = result.errors.length;
     if (totalErrors === 0) {
-      showSyncStatus(modal, `同期完了: ${totalSuccess}件のイベントが作成されました`, 'success');
+      showSyncStatus(modal, `✅ 同期完了: ${totalSuccess}件のイベントが作成されました`, 'success');
     } else {
-      showSyncStatus(modal, `同期完了: ${totalSuccess}件成功, ${totalErrors}件失敗`, 'error');
+      showSyncStatus(modal, `⚠️ 同期完了: ${totalSuccess}件成功, ${totalErrors}件失敗`, 'error');
+      console.log('Sync errors:', result.errors);
     }
 
   } catch (error) {
-    showSyncStatus(modal, `同期に失敗しました: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    console.error('Sync error:', error);
+    showSyncStatus(modal, `❌ 同期に失敗しました: ${error instanceof Error ? error.message : String(error)}`, 'error');
   } finally {
     // Re-enable buttons
     if (syncButton) syncButton.disabled = false;
