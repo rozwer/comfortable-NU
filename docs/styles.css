@@ -347,15 +347,25 @@ body {
 }
 
 .chrome-icon {
-    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%234285f4" d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0z"/><path fill="%23ea4335" d="M12 6c-3.314 0-6 2.686-6 6s2.686 6 6 6 6-2.686 6-6-2.686-6-6-6z"/></svg>');
+    background-image: url('https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/googlechrome.svg');
+}
+
+.edge-icon {
+    background-image: url('https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/microsoftedge.svg');
+    /* Edge ブランド色 (青) */
+    filter: invert(24%) sepia(67%) saturate(1843%) hue-rotate(197deg) brightness(100%) contrast(93%);
 }
 
 .firefox-icon {
-    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23ff6611" d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0z"/></svg>');
+    background-image: url('https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/firefox.svg');
+    /* Firefox ブランド色 (オレンジ) */
+    filter: invert(35%) sepia(95%) saturate(1748%) hue-rotate(12deg) brightness(102%) contrast(102%);
 }
 
 .safari-icon {
-    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23007acc" d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0z"/></svg>');
+    background-image: url('https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/safari.svg');
+    /* Safari ブランド色 (青) */
+    filter: invert(49%) sepia(95%) saturate(1781%) hue-rotate(191deg) brightness(92%) contrast(101%);
 }
 
 .download-card h3 {
@@ -383,6 +393,17 @@ body {
 .btn-download:hover {
     background: #357abd;
     transform: translateY(-2px);
+}
+
+.btn-disabled {
+    background: #a4b0be;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.btn-disabled:hover {
+    background: #a4b0be;
+    transform: none;
 }
 
 /* スクリーンショットセクション */
