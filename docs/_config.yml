@@ -1,0 +1,28 @@
+url: "https://kyoto-u.github.io/comfortable-sakai"
+baseurl: "/comfortable-sakai"
+
+# Site settings
+title: "Comfortable Sakai"
+description: "Sakai LMSのユーザーエクスペリエンスを向上させるブラウザ拡張機能"
+author: "Kazuki Takeda, Shoji Kajita"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+# GitHub Pages settings
+plugins:
+  - jekyll-sitemap
+  - jekyll-feed
+
+# Exclude files
+exclude:
+  - README.md
+  - node_modules
+  - package.json
+  - webpack.config.js
+  - tsconfig.json
+
+# Include files
+include:
+  - _redirects
