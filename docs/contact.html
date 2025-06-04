@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お問い合わせ | Comfortable Sakai</title>
+    <meta name="description" content="Comfortable Sakaiに関するお問い合わせ - サポートとヘルプ">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="../public/img/icon16.png" type="image/png">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <img src="../public/img/icon48.png" alt="Comfortable Sakai" class="nav-logo">
+                    <span class="nav-title">Comfortable Sakai</span>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="index.html" class="nav-link">ホーム</a></li>
+                    <li><a href="privacy.html" class="nav-link">プライバシーポリシー</a></li>
+                    <li><a href="terms.html" class="nav-link">利用規約</a></li>
+                    <li><a href="contact.html" class="nav-link active">お問い合わせ</a></li>
+                </ul>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="contact-page">
+        <div class="container">
+            <div class="contact-header">
+                <h1>お問い合わせ</h1>
+                <p class="contact-subtitle">Comfortable Sakaiに関するご質問やサポートが必要な場合は、以下の方法でお問い合わせください。</p>
+            </div>
+
+            <div class="contact-content">
+                <div class="contact-grid">
+                    <div class="contact-card">
+                        <div class="contact-icon">📧</div>
+                        <h3>メールでのお問い合わせ</h3>
+                        <p>一般的なお問い合わせ、バグ報告、機能要望などはメールでご連絡ください。</p>
+                        <div class="contact-info">
+                            <strong>メールアドレス:</strong> rozwerng@gmail.com<br>
+                            <strong>回答時間:</strong> 通常7営業日以内
+                        </div>
+                        <a href="mailto:rozwerng@gmail.com?subject=Comfortable Sakai お問い合わせ" class="btn btn-primary">メールを送信</a>
+                    </div>
+
+                    <div class="contact-card">
+                        <div class="contact-icon">🐛</div>
+                        <h3>バグ報告・機能要望</h3>
+                        <p>バグの報告や新機能のリクエストは、GitHubのIssuesで受け付けています。</p>
+                        <div class="contact-info">
+                            <strong>対応内容:</strong> バグ報告、機能要望、技術的な質問<br>
+                            <strong>言語:</strong> 日本語・英語対応
+                        </div>
+                        <a href="https://github.com/kyoto-u/comfortable-sakai/issues" class="btn btn-primary" target="_blank">GitHubで報告</a>
+                    </div>
+
+                    <div class="contact-card">
+                        <div class="contact-icon">📚</div>
+                        <h3>ドキュメント・FAQ</h3>
+                        <p>よくある質問や技術的な情報は、ドキュメントサイトで確認できます。</p>
+                        <div class="contact-info">
+                            <strong>内容:</strong> インストール方法、使用方法、トラブルシューティング<br>
+                            <strong>更新頻度:</strong> 定期的に更新
+                        </div>
+                        <a href="https://das08.github.io/comfortable-sakai-document/" class="btn btn-primary" target="_blank">ドキュメントを見る</a>
+                    </div>
+                </div>
+
+                <div class="faq-section">
+                    <h2>よくある質問</h2>
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>拡張機能が動作しません</h4>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>以下の点をご確認ください：</p>
+                                <ul>
+                                    <li>拡張機能が有効になっているか確認</li>
+                                    <li>ブラウザを再起動してみる</li>
+                                    <li>Sakai LMSサイトで拡張機能が許可されているか確認</li>
+                                    <li>最新版にアップデートされているか確認</li>
+                                </ul>
+                                <p>問題が解決しない場合は、お問い合わせください。</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>Googleカレンダー連携ができません</h4>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>カレンダー連携の問題は以下をお試しください：</p>
+                                <ul>
+                                    <li>Googleアカウントにログインしているか確認</li>
+                                    <li>カレンダーAPIの権限が許可されているか確認</li>
+                                    <li>拡張機能の設定でカレンダー連携が有効になっているか確認</li>
+                                    <li>ポップアップブロッカーが無効になっているか確認</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>課題が表示されません</h4>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>課題が表示されない場合：</p>
+                                <ul>
+                                    <li>Sakai LMSサイトにログインしているか確認</li>
+                                    <li>対応しているSakaiバージョンか確認（Sakai 20, 21推奨）</li>
+                                    <li>課題が実際に公開されているか確認</li>
+                                    <li>キャッシュをクリアしてページを再読み込み</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>プライバシーは保護されますか？</h4>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>はい、プライバシーは厳重に保護されています：</p>
+                                <ul>
+                                    <li>個人データは主にローカルに保存</li>
+                                    <li>Googleカレンダー連携は利用者の明示的な許可が必要</li>
+                                    <li>第三者への情報販売は一切行いません</li>
+                                    <li>詳細は<a href="privacy.html">プライバシーポリシー</a>をご確認ください</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="support-info">
+                    <h2>サポート情報</h2>
+                    <div class="support-grid">
+                        <div class="support-item">
+                            <h4>対応ブラウザ</h4>
+                            <ul>
+                                <li>Google Chrome</li>
+                                <li>Microsoft Edge</li>
+                                <li>Mozilla Firefox</li>
+                                <li>Safari（macOS）</li>
+                            </ul>
+                        </div>
+                        <div class="support-item">
+                            <h4>対応Sakaiバージョン</h4>
+                            <ul>
+                                <li>Sakai 20（安定版）</li>
+                                <li>Sakai 21（安定版）</li>
+                                <li>Sakai 12（未検証）</li>
+                            </ul>
+                        </div>
+                        <div class="support-item">
+                            <h4>開発者情報</h4>
+                            <ul>
+                                <li>開発者: rozwer</li>
+                                <li>元開発: Kazuki Takeda, Shoji Kajita (Kyoto University)</li>
+                                <li>ライセンス: Apache-2.0</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Comfortable Sakai</h4>
+                    <p>Sakai LMSのユーザーエクスペリエンスを向上させるブラウザ拡張機能</p>
+                </div>
+                <div class="footer-section">
+                    <h4>法的情報</h4>
+                    <ul>
+                        <li><a href="privacy.html">プライバシーポリシー</a></li>
+                        <li><a href="terms.html">利用規約</a></li>
+                        <li><a href="contact.html">お問い合わせ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>リンク</h4>
+                    <ul>
+                        <li><a href="https://github.com/kyoto-u/comfortable-sakai">GitHub</a></li>
+                        <li><a href="https://das08.github.io/comfortable-sakai-document/">ドキュメント</a></li>
+                        <li><a href="https://github.com/kyoto-u/comfortable-sakai/releases">リリース</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Comfortable Sakai. Apache-2.0 License.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
