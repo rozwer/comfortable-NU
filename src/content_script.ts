@@ -154,19 +154,35 @@ async function checkAndSyncIfNeeded() {
 // 自動同期を実行
 async function performAutoSync() {
     try {
-        // 課題データを取得
+        // 課題データを取得（キャッシュを適切に使用）
         const hostname = window.location.hostname;
         const courses = fetchCourse();
-        const assignments = await getAssignments(hostname, courses, false);
-        const quizzes = await getQuizzes(hostname, courses, false);
+        const settings = new Settings();
+        const fetchTime = await getFetchTime(hostname);
+        const currentTime = Math.floor(Date.now() / 1000);
         
-        // 現在時刻取得
-        const now = Math.floor(Date.now() / 1000);
+        // キャッシュ利用判定
+        const useAssignmentCache = shouldUseCache(fetchTime.assignment, currentTime, settings.cacheInterval.assignment);
+        const useQuizCache = shouldUseCache(fetchTime.quiz, currentTime, settings.cacheInterval.quiz);
+        
+        // デバッグ情報をログ出力
+        console.log('=== キャッシュ状態確認 ===');
+        console.log('課題最終取得時刻:', fetchTime.assignment ? new Date(fetchTime.assignment * 1000).toLocaleString() : '未取得');
+        console.log('クイズ最終取得時刻:', fetchTime.quiz ? new Date(fetchTime.quiz * 1000).toLocaleString() : '未取得');
+        console.log('課題キャッシュ間隔:', settings.cacheInterval.assignment, '秒');
+        console.log('クイズキャッシュ間隔:', settings.cacheInterval.quiz, '秒');
+        console.log('課題キャッシュ使用:', useAssignmentCache);
+        console.log('クイズキャッシュ使用:', useQuizCache);
+        console.log('現在時刻:', new Date().toLocaleString());
+        
+        const assignments = await getAssignments(hostname, courses, useAssignmentCache);
+        const quizzes = await getQuizzes(hostname, courses, useQuizCache);
+        
         // 締切が今より前のものは除外
         const totalAssignmentEntries = assignments.flatMap((assignment: any) => assignment.entries)
-            .filter((e: any) => (e.dueTime || e.dueDate) > now);
+            .filter((e: any) => (e.dueTime || e.dueDate) > currentTime);
         const totalQuizEntries = quizzes.flatMap((quiz: any) => quiz.entries)
-            .filter((e: any) => (e.dueTime || e.dueDate) > now);
+            .filter((e: any) => (e.dueTime || e.dueDate) > currentTime);
         
         if (totalAssignmentEntries.length === 0 && totalQuizEntries.length === 0) {
             console.log('同期するデータが見つかりませんでした');

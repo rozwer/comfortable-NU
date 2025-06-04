@@ -43,6 +43,11 @@ export async function authenticateGoogle(): Promise<string> {
   return response.token;
 }
 
+// Logout from Google
+export async function logoutGoogle(): Promise<void> {
+  await sendMessage('logout');
+}
+
 // Sync data to Google Calendar
 export async function syncToCalendar(assignments: any[], quizzes: any[], token?: string): Promise<SyncResult> {
   const response = await sendMessage('syncToCalendar', {
@@ -193,8 +198,24 @@ async function loadGoogleAccounts(modal: HTMLElement) {
             <div class="cs-sync-account-email">${account.email}</div>
           </div>
           <span class="cs-connected-label">接続中</span>
+          <button class="cs-sync-btn cs-sync-btn-secondary" id="logoutButton" title="ログアウト">
+            ログアウト
+          </button>
         </div>
       `;
+      
+      // ログアウトボタンのイベントハンドラを追加
+      const logoutBtn = connectedContainer.querySelector('#logoutButton');
+      logoutBtn?.addEventListener('click', async () => {
+        try {
+          await logoutGoogle();
+          // ログアウト後にアカウント情報を再取得
+          await loadGoogleAccounts(modal);
+          showSyncStatus(modal, 'ログアウトしました', 'success');
+        } catch (error: any) {
+          showSyncStatus(modal, `ログアウトに失敗しました: ${error.message}`, 'error');
+        }
+      });
     } else {
       connectedContainer.innerHTML = '';
     }
@@ -306,6 +327,14 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
 
     // Perform calendar sync
     showSyncStatus(modal, 'Googleカレンダーに同期中...', 'info');
+    
+    // Check if user is authenticated before attempting sync
+    const accounts = await getGoogleAccounts();
+    if (accounts.length === 0) {
+      showSyncStatus(modal, 'Googleアカウントにログインしてください', 'error');
+      return;
+    }
+    
     const result = await syncToCalendar(totalAssignmentEntries, totalQuizEntries);
     // 最終同期時刻保存
     setLastSyncTime(Date.now());

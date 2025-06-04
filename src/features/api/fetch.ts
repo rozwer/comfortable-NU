@@ -36,10 +36,11 @@ export const fetchCourse = (): Array<Course> => {
 };
 
 /* Sakai APIから課題を取得する */
-export const fetchAssignment = (course: Course): Promise<Assignment> => {
+export const fetchAssignment = (course: Course, useCache: boolean = false): Promise<Assignment> => {
     const queryURL = getBaseURL() + "/direct/assignment/site/" + course.id + ".json";
     return new Promise((resolve, reject) => {
-        fetch(queryURL, { cache: "no-cache" })
+        const cacheOption = useCache ? "default" : "no-cache";
+        fetch(queryURL, { cache: cacheOption as RequestCache })
             .then(async (response) => {
                 if (response.ok) {
                     const data = await response.json();
@@ -54,10 +55,11 @@ export const fetchAssignment = (course: Course): Promise<Assignment> => {
 };
 
 /* Sakai APIからクイズを取得する */
-export const fetchQuiz = (course: Course): Promise<Quiz> => {
+export const fetchQuiz = (course: Course, useCache: boolean = false): Promise<Quiz> => {
     const queryURL = getBaseURL() + "/direct/sam_pub/context/" + course.id + ".json";
     return new Promise((resolve, reject) => {
-        fetch(queryURL, { cache: "no-cache" })
+        const cacheOption = useCache ? "default" : "no-cache";
+        fetch(queryURL, { cache: cacheOption as RequestCache })
             .then(async (response) => {
                 if (response.ok) {
                     const data = await response.json();

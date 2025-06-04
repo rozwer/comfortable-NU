@@ -249,6 +249,7 @@ async function verifyTokenSecurity(token: string): Promise<void> {
 // Get user's Google accounts with enhanced security
 async function getGoogleAccounts(): Promise<any[]> {
   return new Promise((resolve) => {
+    // Only check for existing tokens, do not force authentication
     chrome.identity.getAuthToken({ interactive: false }, async (token) => {
       const tryFetchUserInfo = async (tokenToUse: string, on401: () => void) => {
         try {
@@ -282,8 +283,10 @@ async function getGoogleAccounts(): Promise<any[]> {
               }
             ]);
           } else if (response.status === 401) {
-            // Token expired or invalid, remove and retry
-            chrome.identity.removeCachedAuthToken({ token: tokenToUse }, on401);
+            // Token expired or invalid, just resolve with empty array
+            // Do not attempt automatic re-authentication
+            console.log('Token expired, user needs to manually re-authenticate');
+            resolve([]);
           } else {
             console.error('User info fetch failed:', response.status, response.statusText);
             resolve([]);
@@ -295,18 +298,14 @@ async function getGoogleAccounts(): Promise<any[]> {
       };
       
       if (!token) {
-        chrome.identity.getAuthToken({ interactive: true }, (token2) => {
-          if (!token2) return resolve([]);
-          tryFetchUserInfo(token2, () => resolve([]));
-        });
+        // No existing token, return empty array without forcing authentication
+        resolve([]);
         return;
       }
       
       await tryFetchUserInfo(token, () => {
-        chrome.identity.getAuthToken({ interactive: true }, (token3) => {
-          if (!token3) return resolve([]);
-          tryFetchUserInfo(token3, () => resolve([]));
-        });
+        // Token is invalid, return empty array without forcing authentication
+        resolve([]);
       });
     });
   });
@@ -333,11 +332,8 @@ function makeEventKey(item: any, type: string): string {
 // Sync assignments and quizzes to Google Calendar with enhanced security
 async function syncToCalendar(data: any, token?: string): Promise<any> {
   if (!token) {
-    // Request only necessary scopes for calendar sync
-    token = await authenticateGoogleWithScopes([
-      'https://www.googleapis.com/auth/calendar',
-      'https://www.googleapis.com/auth/userinfo.email'
-    ]);
+    // No token provided, cannot proceed with sync
+    throw new Error('Authentication token required. Please login to Google first.');
   }
   
   // Validate and sanitize input data
@@ -623,14 +619,32 @@ async function performCalendarSync() {
       return { assignments: [], quizzes: [], errors: [] };
     }
     
-    // Googleカレンダーに同期
+    // Googleカレンダーに同期 - 既存トークンのチェックのみ
     let token;
     try {
-      token = await authenticateGoogle();
+      // 非対話的認証のみ試行（既存トークンがある場合のみ）
+      const accounts = await getGoogleAccounts();
+      if (accounts.length === 0) {
+        console.log('Googleアカウントが認証されていません。自動同期をスキップします。');
+        showNotification('カレンダー同期スキップ', 
+          'Googleアカウントにログインしてください。手動でカレンダー同期を実行してください。');
+        return { error: 'NO_AUTH_TOKEN' };
+      }
+      
+      // 既存トークンで認証を取得
+      token = await new Promise<string>((resolve, reject) => {
+        chrome.identity.getAuthToken({ interactive: false }, (token) => {
+          if (chrome.runtime.lastError || !token) {
+            reject(new Error('No valid authentication token'));
+          } else {
+            resolve(token);
+          }
+        });
+      });
     } catch (authError) {
-      console.error('Google認証に失敗:', authError);
-      showNotification('Googleカレンダー同期エラー', 
-        'Googleアカウントの認証に失敗しました。設定を確認してください。');
+      console.error('Google認証トークンが無効:', authError);
+      showNotification('カレンダー同期スキップ', 
+        'Googleアカウントの認証が必要です。手動でカレンダー同期を実行してください。');
       return { error: 'AUTH_ERROR', details: String(authError) };
     }
     

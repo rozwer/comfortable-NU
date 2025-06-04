@@ -475,49 +475,6 @@ export const showTimetableModal = (): void => {
     classroomEditBtn.style.marginLeft = '12px';
     classroomEditBtn.onclick = showClassroomEditModal;
     selectors.appendChild(classroomEditBtn);
-
-    // エクスポートボタン追加
-    const exportBtn = document.createElement('button');
-    exportBtn.textContent = 'エクスポート';
-    exportBtn.className = 'cs-btn cs-btn-primary';
-    exportBtn.style.marginLeft = '12px';
-    exportBtn.onclick = () => {
-        const year = yearSelect.value;
-        const term = termSelect.value;
-        const courses = cachedCourses || SAMPLE_COURSES;
-        // フィルタリングされた講義リストを取得
-        const filteredCourses = courses.filter(course => {
-            let courseYear = course.academicYear || "";
-            if (!courseYear) {
-                const yearRegexMatch = course.title.match(/\((\d{4})年度/);
-                if (yearRegexMatch && yearRegexMatch[1]) {
-                    courseYear = yearRegexMatch[1];
-                }
-            }
-            let isYearMatching = courseYear === year;
-            if (!courseYear) {
-                isYearMatching = true;
-            }
-            const normalizedCourseTerm = normalizeTerm(course.term);
-            const normalizedSelectedTerm = term;
-            const courseTermBase = normalizedCourseTerm.split('-')[0];
-            const selectedTermBase = normalizedSelectedTerm.split('-')[0];
-            let termMatch = false;
-            if (normalizedCourseTerm === normalizedSelectedTerm) {
-                termMatch = true;
-            } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
-                termMatch = true;
-            } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
-                termMatch = true;
-            }
-            return isYearMatching && termMatch;
-        });
-        
-        import('./timetable-export').then(({ showTimetableExportModal }) => {
-            showTimetableExportModal(filteredCourses, year, term);
-        });
-    };
-    selectors.appendChild(exportBtn);
     
     timetableContainer.appendChild(selectors);
     

@@ -315,6 +315,42 @@
   margin-left: 8px;
 }
 
+/* Connected Account Styles */
+.cs-connected-account-section {
+  margin-bottom: 16px;
+  padding: 12px 0 0 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cs-connected-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 8px 0;
+}
+
+.cs-connected-account .cs-sync-account-info {
+  flex: 1;
+}
+
+.cs-connected-account #logoutButton {
+  padding: 6px 12px;
+  font-size: 12px;
+  margin-left: auto;
+  min-width: auto;
+  flex: none;
+}
+
+.cs-connected-label {
+  background: #2563eb;
+  color: #fff;
+  font-size: 12px;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  font-weight: 500;
+}
+
 /* Responsive design */
 @media (max-width: 480px) {
   .cs-sync-modal-content {

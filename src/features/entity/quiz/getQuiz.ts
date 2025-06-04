@@ -10,13 +10,14 @@ import { QuizFetchTimeStorage, QuizzesStorage } from "../../../constant";
  * Get Quizzes from Sakai REST API.
  * @param hostname - A PRIMARY key for storage. Usually a hostname of Sakai LMS.
  * @param courses - List of Course sites.
+ * @param useCache - Whether to use browser cache for fetch requests.
  * @returns {Promise<Array<Quiz>>}
  */
-const getSakaiQuizzes = async (hostname: string, courses: Array<Course>): Promise<Array<Quiz>> => {
+const getSakaiQuizzes = async (hostname: string, courses: Array<Course>, useCache: boolean = false): Promise<Array<Quiz>> => {
     const quizzes: Array<Quiz> = [];
     const pending: Array<Promise<Quiz>> = [];
     for (const course of courses) {
-        pending.push(fetchQuiz(course));
+        pending.push(fetchQuiz(course, useCache));
     }
     const result = await (Promise as any).allSettled(pending);
     for (const quiz of result) {
@@ -47,7 +48,7 @@ const getStoredQuizzes = (hostname: string): Promise<Array<Quiz>> => {
 export const getQuizzes = async (hostname: string, courses: Array<Course>, useCache: boolean): Promise<Array<Quiz>> => {
     const storedQuizzes = await getStoredQuizzes(hostname);
     if (useCache) return storedQuizzes;
-    const sakaiQuizzes = await getSakaiQuizzes(hostname, courses);
+    const sakaiQuizzes = await getSakaiQuizzes(hostname, courses, useCache);
     const merged = mergeEntities<Quiz>(storedQuizzes, sakaiQuizzes);
     await toStorage(hostname, QuizzesStorage, merged);
     return merged;

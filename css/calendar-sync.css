@@ -322,6 +322,18 @@
   padding: 0 0 8px 0;
 }
 
+.cs-connected-account .cs-sync-account-info {
+  flex: 1;
+}
+
+.cs-connected-account #logoutButton {
+  padding: 6px 12px;
+  font-size: 12px;
+  margin-left: auto;
+  min-width: auto;
+  flex: none;
+}
+
 .cs-connected-label {
   background: #2563eb;
   color: #fff;
