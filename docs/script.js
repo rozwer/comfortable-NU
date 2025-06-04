@@ -74,6 +74,27 @@ document.addEventListener('DOMContentLoaded', function() {
         observer.observe(el);
     });
 
+    // デモタブの切り替え機能
+    window.showDemo = function(demoType) {
+        // すべてのデモコンテンツを非表示
+        const demoContents = document.querySelectorAll('.demo-content-item');
+        demoContents.forEach(content => {
+            content.style.display = 'none';
+        });
+
+        // すべてのタブから active クラスを削除
+        const demoTabs = document.querySelectorAll('.demo-tab');
+        demoTabs.forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // 選択されたデモを表示
+        document.getElementById(demoType + '-demo').style.display = 'block';
+        
+        // クリックされたタブに active クラスを追加
+        event.target.classList.add('active');
+    };
+
     // ダウンロードボタンのクリック追跡（オプション）
     const downloadButtons = document.querySelectorAll('.btn-download');
     downloadButtons.forEach(button => {
