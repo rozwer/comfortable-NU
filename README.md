@@ -1,17 +1,18 @@
-# Comfortable Sakai
+# Comfortable NU
 [![License](https://img.shields.io/github/license/kyoto-u/comfortable-sakai?color=orange)](https://github.com/kyoto-u/comfortable-sakai/blob/master/LICENSE)
 [![Release](https://img.shields.io/github/v/release/kyoto-u/comfortable-sakai?include_prereleases)](https://github.com/kyoto-u/comfortable-sakai/releases)
 [![CodeQL](https://github.com/kyoto-u/comfortable-sakai/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/kyoto-u/comfortable-sakai/actions/workflows/codeql-analysis.yml)  
 [![npm test](https://github.com/kyoto-u/comfortable-sakai/actions/workflows/npm_tests.yml/badge.svg)](https://github.com/kyoto-u/comfortable-sakai/actions/workflows/npm_tests.yml)
 
-A Web browser Extension for improving UX of Sakai LMS.  
+A Web browser Extension for managing assignments and quizzes on Sakai LMS for Nagoya University.  
 Originated from [Comfortable PandA](https://github.com/comfortable-panda/ComfortablePandATS) for Kyoto Univ.
 
 # Supported Sakai LMS versions
+- Nagoya University Sakai LMS (TACT)
 - Sakai 20, 21(Stable)
 - Sakai 12(Unverified)
 
-# How to install Comfortable Sakai
+# How to install Comfortable NU
 ## Google Chrome & Edge
 Download from [Chrome Web Store](https://chrome.google.com/webstore/detail/comfortable-sakai/dljchadmceknaijmdmnaaodjkkidhakh)
 <!--
@@ -39,10 +40,12 @@ Download from [App Store](https://apps.apple.com/jp/app/comfortable-panda/id1572
 
 # Documents
 Documentation for developers is available at GitHub pages.  
-[Comfortable Sakai Document](https://das08.github.io/comfortable-sakai-document/)
+[Comfortable NU Document](https://das08.github.io/comfortable-sakai-document/)
 
 # Features
-## Color-coded course site tabs
+
+## Enhanced Assignment Management
+### Color-coded course site tabs
 Colors course site tabs according to the assignment due date.
 - ![RED](https://user-images.githubusercontent.com/41512077/169223701-8f434e9b-554f-42f2-9e53-396f87233d5a.png)
   Due date within 1 Day
@@ -52,7 +55,28 @@ Colors course site tabs according to the assignment due date.
   Due date within 14 Days
 - ![GRAY](https://user-images.githubusercontent.com/41512077/169223714-5dc9f6af-2576-40ae-9c03-c426c4a6221b.png)
   Due date over 14 Days
+
+### Assignment Tags
+- Resubmission availability indicator
+- Late submission availability indicator
   
+### Advanced Assignment Tabs
+- **Hidden Tab**: Hide specific assignments for a set period or permanently
+- **Submitted Tab**: Automatically detect and move submitted assignments
+- **Pre-publication control**: Toggle visibility of unpublished assignments
+
+## New Features
+
+### Timetable View
+Display courses in a timetable format for easy navigation to course sites.
+
+### Google Calendar Sync
+Automatic synchronization with Google Calendar when accessing TACT.
+
+### Memo & Resource Management
+- Course-specific memo functionality
+- External link management for each course
+- Folder-style interface for browsing and bulk downloading course materials
 
 ## Notification Badge
 Tells your **unchecked** latest assignments.  
@@ -62,7 +86,7 @@ If you open a course site with the notification badge on, the badge will disappe
 
 ## miniSakai (List of assignments and quizzes)
 Click `☰` to open miniSakai.
-All available assignments as well as quizzes will be displayed.
+All available assignments as well as quizzes will be displayed with enhanced management features.
 You can add your custom assignment to miniSakai as `memo` with PLUS button located on the upper right side.
 
 Also check box is available for you to distinguish completed assignments from working assignments.

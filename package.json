@@ -1,7 +1,7 @@
 {
   "name": "comfortable-NU",
   "version": "1.0.2",
-  "description": "Comfortable NU is a Web browser extension for managing assignments and quizzes on Sakai LMS.",
+  "description": "Comfortable NU is a Web browser extension for managing assignments and quizzes on Sakai LMS for Nagoya University.",
   "main": "index.ts",
   "scripts": {
     "test": "jest",
@@ -12,7 +12,7 @@
     "convert:safari": "NODE_ENV=production npm run build:safari && xcrun safari-web-extension-converter dist/source/safari --project-location dist/source/safari-proj --app-name \"Comfortable-NU\" --bundle-identifier \"com.das08.ComfortableNU.Safari\" --force\n",
     "build:all": "npm run build:chrome && npm run build:firefox && npm run build:safari && npm run build:edge"
   },
-  "author": "Kazuki Takeda, Shoji Kajita(Kyoto University)",
+  "author": "Kazuki Takeda, Shoji Kajita(Kyoto University), rozwer(Nagoya University)",
   "license": "Apache-2.0",
   "dependencies": {
     "@types/chrome": "^0.0.178",

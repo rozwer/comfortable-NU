@@ -10,7 +10,7 @@
     "128": "img/icon128.png"
   },
   "action": {
-    "default_title": "Comfortable Sakai",
+    "default_title": "Comfortable NU",
     "default_popup": "subsakai.html"
   },
   "content_scripts": [

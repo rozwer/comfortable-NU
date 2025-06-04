@@ -1,6 +1,6 @@
-# Comfortable Sakai Website
+# Comfortable NU Website
 
-This directory contains the static website for Comfortable Sakai extension.
+This directory contains the static website for Comfortable NU extension.
 
 ## Files
 
