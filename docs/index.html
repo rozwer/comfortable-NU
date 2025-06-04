@@ -7,6 +7,7 @@
     <meta name="description" content="名古屋大学のSakai LMS（TACT）のユーザーエクスペリエンスを向上させるブラウザ拡張機能">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="demo-styles.css">
+    <link rel="stylesheet" href="demofiles/image-fix.css">
     <link rel="icon" href="Image/128.png" type="image/png">
 </head>
 <body>
@@ -144,91 +145,7 @@
             <div class="demo-content">
                 <!-- miniSakai デモ -->
                 <div id="minisakai-demo" class="demo-content-item">
-                    <div id="miniSakai" class="cs-minisakai cs-tab cs-show">
-                        <img class="cs-minisakai-logo" alt="logo" src="Image/128.png">
-                        <p class="cs-version">Version 1.0.2</p>
-                        <button type="button" class="closebtn q">
-                            <img src="Image/128.png" alt="close">
-                        </button>
-                        <input id="assignmentTab" type="radio" name="cs-tab" checked="">
-                        <label for="assignmentTab"> 課題一覧 </label>
-                        <input id="submittedTab" type="radio" name="cs-tab">
-                        <label for="submittedTab"> 提出済み </label>
-                        <input id="dismissedTab" type="radio" name="cs-tab">
-                        <label for="dismissedTab"> 非表示 </label>
-                        <input id="settingsTab" type="radio" name="cs-tab">
-                        <label for="settingsTab"> 詳細設定 </label>
-                        <button id="cs-add-memo-btn">+</button>
-                        <div class="cs-assignment-time">
-                            <p class="cs-assignment-time-text">課題取得日時: </p>
-                            <p class="cs-assignment-time-text">2025/6/4 16:31:44</p>
-                        </div>
-                        <div class="cs-quiz-time">
-                            <p class="cs-assignment-time-text">クイズ取得日時: </p>
-                            <p class="cs-assignment-time-text">2025/6/4 16:28:13</p>
-                        </div>
-                        <div class="cs-minisakai-list cs-minisakai-list-success">
-                            <div class="cs-assignment-success">
-                                <a class="cs-course-success cs-course-name" href="#">アルゴリズムとデータ構造(2025年度春/金１限)</a>
-                                <div class="cs-minus-button"></div>
-                                <p class="cs-assignment-date">2025/6/13 8:00</p>
-                                <span class="cs-assignment-time-remain">あと8日15時間27分</span>
-                                <p class="cs-assignment-title"><span class="cs-badge cs-badge-quiz">クイズ</span>第8回確認テスト(5/30)</p>
-                            </div>
-                            <div class="cs-assignment-success">
-                                <a class="cs-course-success cs-course-name" href="#">真空電子工学(2025年度春/月２限)</a>
-                                <div class="cs-minus-button"></div>
-                                <p class="cs-assignment-date">2025/6/14 23:55</p>
-                                <span class="cs-assignment-time-remain">あと10日7時間22分</span>
-                                <p class="cs-assignment-title">6/9講義レポート</p>
-                                <div class="cs-assignment-badges">
-                                    <span class="cs-badge cs-badge-resubmit-disabled">再提出不可</span>
-                                </div>
-                            </div>
-                            <div class="cs-assignment-success">
-                                <a class="cs-course-success cs-course-name" href="#">制御工学(2025年度春/金２限)</a>
-                                <div class="cs-minus-button"></div>
-                                <p class="cs-assignment-date">2025/6/17 23:55</p>
-                                <span class="cs-assignment-time-remain">あと13日7時間22分</span>
-                                <p class="cs-assignment-title">「第六章1節」の講義予習動画を見たら行う課題</p>
-                                <div class="cs-assignment-badges">
-                                    <span class="cs-badge cs-badge-resubmit-disabled">再提出不可</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="cs-minisakai-list cs-minisakai-list-other">
-                            <div class="cs-assignment-other">
-                                <a class="cs-course-other cs-course-name" href="#">ディジタル信号処理(2025年度春/木２限)</a>
-                                <div class="cs-minus-button"></div>
-                                <p class="cs-assignment-date">2025/6/19 10:30</p>
-                                <span class="cs-assignment-time-remain">あと14日17時間57分</span>
-                                <p class="cs-assignment-title">レポート3</p>
-                                <div class="cs-assignment-badges">
-                                    <span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span>
-                                </div>
-                            </div>
-                            <div class="cs-assignment-other">
-                                <a class="cs-course-other cs-course-name" href="#">真空電子工学(2025年度春/月２限)</a>
-                                <div class="cs-minus-button"></div>
-                                <p class="cs-assignment-date">2025/6/28 23:55</p>
-                                <span class="cs-assignment-time-remain">あと24日7時間22分</span>
-                                <p class="cs-assignment-title">第4-9回課題</p>
-                                <div class="cs-assignment-badges">
-                                    <span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span>
-                                </div>
-                            </div>
-                            <div class="cs-assignment-other">
-                                <a class="cs-course-other cs-course-name" href="#">電気電子情報工学実験第１(2025年度春/火・水)</a>
-                                <div class="cs-minus-button"></div>
-                                <p class="cs-assignment-date">2025/6/30 23:55</p>
-                                <span class="cs-assignment-time-remain">あと26日7時間22分</span>
-                                <p class="cs-assignment-title">B5　光通信</p>
-                                <div class="cs-assignment-badges">
-                                    <span class="cs-badge cs-badge-resubmit-disabled">再提出不可</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <div id="miniSakai" class="cs-minisakai cs-tab cs-show"><img class="cs-minisakai-logo" alt="logo" src="chrome-extension://adajbdapblogpigfidemhaddanpodbij/img/logo.png"><p class="cs-version">Version 1.0.2</p><button type="button" class="closebtn q"><img src="chrome-extension://adajbdapblogpigfidemhaddanpodbij/img/closeBtn.svg" alt="close"></button><input id="assignmentTab" type="radio" name="cs-tab" checked=""><label for="assignmentTab"> 課題一覧 </label><input id="submittedTab" type="radio" name="cs-tab"><label for="submittedTab"> 提出済み </label><input id="dismissedTab" type="radio" name="cs-tab"><label for="dismissedTab"> 非表示 </label><input id="settingsTab" type="radio" name="cs-tab"><label for="settingsTab"> 詳細設定 </label><button id="cs-add-memo-btn">+</button><div class="cs-assignment-time"><p class="cs-assignment-time-text">課題取得日時: </p><p class="cs-assignment-time-text">2025/6/4 16:31:44</p></div><div class="cs-quiz-time"><p class="cs-assignment-time-text">クイズ取得日時: </p><p class="cs-assignment-time-text">2025/6/4 16:28:13</p></div><div></div><div class="cs-minisakai-list cs-minisakai-list-success"><div class="cs-assignment-success"><a class="cs-course-success cs-course-name" href="https://tact.ac.thers.ac.jp/portal/site/n_2025_0846280">アルゴリズムとデータ構造(2025年度春/金１限)</a><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/6/13 8:00</p><span class="cs-assignment-time-remain">あと8日15時間27分</span><p class="cs-assignment-title"><span class="cs-badge cs-badge-quiz">クイズ</span>第8回確認テスト(5/30)</p></div><div class="cs-assignment-success"><a class="cs-course-success cs-course-name" href="https://tact.ac.thers.ac.jp/portal/site/n_2025_0846270">真空電子工学(2025年度春/月２限)</a><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/6/14 23:55</p><span class="cs-assignment-time-remain">あと10日7時間22分</span><p class="cs-assignment-title">6/9講義レポート</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit-disabled">再提出不可</span></div></div><div class="cs-assignment-success"><a class="cs-course-success cs-course-name" href="https://tact.ac.thers.ac.jp/portal/site/n_2025_0846230">制御工学(2025年度春/金２限)</a><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/6/17 23:55</p><span class="cs-assignment-time-remain">あと13日7時間22分</span><p class="cs-assignment-title">「第六章1節」の講義予習動画を見たら行う課題</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit-disabled">再提出不可</span></div></div></div><div class="cs-minisakai-list cs-minisakai-list-other"><div class="cs-assignment-other"><a class="cs-course-other cs-course-name" href="https://tact.ac.thers.ac.jp/portal/site/n_2025_0846240">ディジタル信号処理(2025年度春/木２限)</a><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/6/19 10:30</p><span class="cs-assignment-time-remain">あと14日17時間57分</span><p class="cs-assignment-title">レポート3</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/10 10:30</p><span class="cs-assignment-time-remain">あと35日17時間57分</span><p class="cs-assignment-title">レポート4</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/17 10:30</p><span class="cs-assignment-time-remain">あと42日17時間57分</span><p class="cs-assignment-title">レポート5</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div></div><div class="cs-assignment-other"><a class="cs-course-other cs-course-name" href="https://tact.ac.thers.ac.jp/portal/site/n_2025_0846270">真空電子工学(2025年度春/月２限)</a><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/6/28 23:55</p><span class="cs-assignment-time-remain">あと24日7時間22分</span><p class="cs-assignment-title">第4-9回課題</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/5 23:55</p><span class="cs-assignment-time-remain">あと31日7時間22分</span><p class="cs-assignment-title">第4-9回課題チェック済み</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/19 23:55</p><span class="cs-assignment-time-remain">あと45日7時間22分</span><p class="cs-assignment-title">第10-12回課題</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/26 23:55</p><span class="cs-assignment-time-remain">あと52日7時間22分</span><p class="cs-assignment-title">第10-12回課題チェック済み</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div></div><div class="cs-assignment-other"><a class="cs-course-other cs-course-name" href="https://tact.ac.thers.ac.jp/portal/site/n_2025_0846130">[遠隔]電気電子情報工学実験第１(2025年度春/火３限,火４限,火５限,水３限,水４限)</a><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/6/30 23:55</p><span class="cs-assignment-time-remain">あと26日7時間22分</span><p class="cs-assignment-title">B5　光通信</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit-disabled">再提出不可</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/8 0:00</p><span class="cs-assignment-time-remain">あと33日7時間27分</span><p class="cs-assignment-title">A1B6 「ダイオード・トランジスタの特性測定」レポート</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/22 12:00</p><span class="cs-assignment-time-remain">あと47日19時間27分</span><p class="cs-assignment-title">C1A7「演算増幅器」レポート</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit-disabled">再提出不可</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/23 23:55</p><span class="cs-assignment-time-remain">あと49日7時間22分</span><p class="cs-assignment-title">A4 変圧器のレポート</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/24 23:55</p><span class="cs-assignment-time-remain">あと50日7時間22分</span><p class="cs-assignment-title">C3B8「ディジタル信号処理」レポート</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 5回</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/31 23:55</p><span class="cs-assignment-time-remain">あと57日7時間22分</span><p class="cs-assignment-title">A2B7 「磁気測定」レポート</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/31 23:55</p><span class="cs-assignment-time-remain">あと57日7時間22分</span><p class="cs-assignment-title">A5　「直流モーター」レポート</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit-disabled">再提出不可</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/31 23:55</p><span class="cs-assignment-time-remain">あと57日7時間22分</span><p class="cs-assignment-title">B1C7「ホール効果」レポート</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/31 23:55</p><span class="cs-assignment-time-remain">あと57日7時間22分</span><p class="cs-assignment-title">B3A6「波形変換回路」</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/7/31 23:55</p><span class="cs-assignment-time-remain">あと57日7時間22分</span><p class="cs-assignment-title">C2A8「マイクロコンピュータ」レポート</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div><div class="cs-minus-button"></div><p class="cs-assignment-date">2025/8/1 23:55</p><span class="cs-assignment-time-remain">あと58日7時間22分</span><p class="cs-assignment-title">B2C8 「パルス伝送」レポート</p><div class="cs-assignment-badges"><span class="cs-badge cs-badge-resubmit">再提出可能: 無制限</span></div></div></div></div>
                 </div>
                 
                 <!-- 時間割表示デモ -->
