@@ -160,7 +160,7 @@ Comfortable NU is a Chrome browser extension designed to enhance the user experi
 **Extension ID:** [To be assigned by Chrome Web Store]  
 **OAuth Client ID:** 320934121909-3mo570972bcc19chatsu8pcp6bevj7fm.apps.googleusercontent.com  
 **Manifest Version:** 3  
-**Extension Version:** 1.0.2
+**Extension Version:** 1.0.3
 
 ---
 

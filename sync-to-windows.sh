@@ -29,6 +29,15 @@ if [ -d "$WINDOWS_PATH" ]; then
     # ZIPファイルもコピー
     echo "リリース用ZIPファイルをコピー中..."
     cp dist/release/comfortable-sakai-chrome-v2.0.1.zip "$WINDOWS_PATH/"
+
+    # comfortable-NU-chrome-v1.0.2.zipもリリース用フォルダにコピー
+    RELEASE_PATH="/mnt/c/Users/rozwe/デスクトップ/拡張機能リリース用"
+    if [ -d "$RELEASE_PATH" ]; then
+        echo "comfortable-NU-chrome-v1.0.3.zipをリリース用フォルダにコピー中..."
+        cp dist/release/comfortable-NU-chrome-v1.0.3.zip "$RELEASE_PATH/"
+    else
+        echo "エラー: リリース用フォルダが見つかりません: $RELEASE_PATH"
+    fi
     
     echo "同期が完了しました！"
 else
