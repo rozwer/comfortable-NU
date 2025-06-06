@@ -68,9 +68,9 @@
     --bgColor: #cacaca;
     --dateColor: #b01011; */
 
-    height: 95vh;
+    height: 100vh;
     width: 0;
-    position: absolute;
+    position: fixed;
     z-index: 9999;
     top: 0;
     right: 0;
