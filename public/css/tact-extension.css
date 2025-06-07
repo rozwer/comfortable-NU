@@ -1228,3 +1228,129 @@
 #cs-export-preview-container::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* タブスタイル */
+.folder-tabs {
+    display: flex;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 20px;
+    background-color: #f8f9fa;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-button:hover {
+    background-color: #e9ecef;
+    color: #333;
+}
+
+.tab-button.active {
+    background-color: #fff;
+    color: #007acc;
+    border-bottom-color: #007acc;
+    font-weight: 600;
+}
+
+.tab-content {
+    min-height: 400px;
+}
+
+/* 課題アイテムのスタイル */
+.assignments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.assignment-item {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.assignment-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.assignment-item h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.assignment-item .due-date {
+    color: #e74c3c;
+    font-weight: 600;
+    margin: 4px 0;
+    font-size: 14px;
+}
+
+.assignment-item .description {
+    color: #666;
+    margin: 8px 0 0 0;
+    line-height: 1.4;
+}
+
+/* お知らせアイテムのスタイル */
+.announcements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.announcement-item {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-left: 4px solid #3498db;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.announcement-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.announcement-item h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.announcement-item .date {
+    color: #3498db;
+    font-weight: 500;
+    margin: 4px 0;
+    font-size: 14px;
+}
+
+.announcement-item .content {
+    color: #666;
+    margin: 8px 0 0 0;
+    line-height: 1.4;
+}
+
+.info-message {
+    background: #e8f4fd;
+    border: 1px solid #bee5eb;
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 16px;
+    color: #0c5460;
+    font-size: 14px;
+}

@@ -8,6 +8,7 @@ export class FolderUI {
     private container: HTMLElement;
     private tactApiClient: TactApiClient;
     private isEditMode: boolean = false;
+    private activeTab: 'class-materials' | 'assignments' | 'materials' | 'announcements' = 'class-materials';
 
     constructor(container: HTMLElement) {
         this.container = container;
@@ -19,19 +20,36 @@ export class FolderUI {
         this.render();
         // ボタンのイベントリスナーを追加
         this.addRefreshButtonListener();
-        // 初期化時に自動読み込み
-        this.loadTactStructure();
+        // タブ切り替えのイベントリスナーを追加
+        this.addTabSwitchListeners();
+        // 初期化時にデフォルトタブのデータを読み込み
+        this.loadActiveTabData();
     }
 
     private render() {
         this.container.innerHTML = `
             <div class="folder-ui">
+                <div class="folder-tabs">
+                    <button class="tab-button ${this.activeTab === 'class-materials' ? 'active' : ''}" data-tab="class-materials">
+                        📚 授業資料
+                    </button>
+                    <button class="tab-button ${this.activeTab === 'assignments' ? 'active' : ''}" data-tab="assignments">
+                        📝 課題
+                    </button>
+                    <button class="tab-button ${this.activeTab === 'materials' ? 'active' : ''}" data-tab="materials">
+                        📖 教材
+                    </button>
+                    <button class="tab-button ${this.activeTab === 'announcements' ? 'active' : ''}" data-tab="announcements">
+                        📢 お知らせ
+                    </button>
+                </div>
                 <div class="folder-content">
-                    ${this.renderTactTreeContent()}
+                    ${this.renderActiveTabContent()}
                 </div>
             </div>
         `;
     }
+
 
     /**
      * TACT構造表示タブの内容を生成
@@ -130,6 +148,26 @@ export class FolderUI {
                     <p>💡 ログインしているか、正しい講義ページにいるかを確認してください</p>
                 </div>
             `;
+        }
+    }
+
+    /**
+     * アクティブなタブのデータを読み込み
+     */
+    private loadActiveTabData(): void {
+        switch (this.activeTab) {
+            case 'class-materials':
+                this.loadTactStructure();
+                break;
+            case 'assignments':
+                this.loadAssignments();
+                break;
+            case 'materials':
+                this.loadMaterials();
+                break;
+            case 'announcements':
+                this.loadAnnouncements();
+                break;
         }
     }
 
@@ -672,6 +710,857 @@ export class FolderUI {
             console.error('ファイル移動エラー:', error);
             alert('ファイル移動中にエラーが発生しました');
         }
+    }
+
+    /**
+     * アクティブなタブのコンテンツを返す
+     */
+    private renderActiveTabContent(): string {
+        switch (this.activeTab) {
+            case 'class-materials':
+                return this.renderTactTreeContent();
+            case 'assignments':
+                return this.renderAssignmentsContent();
+            case 'materials':
+                return this.renderMaterialsContent();
+            case 'announcements':
+                return this.renderAnnouncementsContent();
+            default:
+                return this.renderTactTreeContent();
+        }
+    }
+
+    /**
+     * 課題タブのコンテンツを表示
+     */
+    private renderAssignmentsContent(): string {
+        return `
+            <div class="tab-content assignments-content">
+                <div class="folder-section">
+                    <h3>📝 課題一覧</h3>
+                    <div class="tact-controls">
+                        <button id="refresh-tact-data" class="btn btn-primary">
+                            🔄 API再実行
+                        </button>
+                        <span class="refresh-info">最新の課題データを取得します</span>
+                    </div>
+                    <div class="assignments-container" id="assignments-container">
+                        <p class="loading-message">🔄 課題データを読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * 教材タブのコンテンツを表示
+     */
+    private renderMaterialsContent(): string {
+        return `
+            <div class="tab-content materials-content">
+                <div class="folder-section">
+                    <h3>📖 教材一覧</h3>
+                    <div class="tact-controls">
+                        <button id="refresh-tact-data" class="btn btn-primary">
+                            🔄 API再実行
+                        </button>
+                        <span class="refresh-info">最新の教材データを取得します</span>
+                    </div>
+                    <div class="materials-container" id="materials-container">
+                        <p class="loading-message">🔄 教材データを読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * お知らせタブのコンテンツを表示
+     */
+    private renderAnnouncementsContent(): string {
+        return `
+            <div class="tab-content announcements-content">
+                <div class="folder-section">
+                    <h3>📢 お知らせ</h3>
+                    <div class="tact-controls">
+                        <button id="refresh-tact-data" class="btn btn-primary">
+                            🔄 API再実行
+                        </button>
+                        <span class="refresh-info">最新のお知らせを取得します</span>
+                    </div>
+                    <div class="announcements-container" id="announcements-container">
+                        <p class="loading-message">🔄 お知らせを読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * タブ切り替えのイベントリスナーを追加
+     */
+    private addTabSwitchListeners(): void {
+        const tabButtons = this.container.querySelectorAll('.tab-button');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const target = e.target as HTMLElement;
+                const tabType = target.getAttribute('data-tab') as 'class-materials' | 'assignments' | 'materials' | 'announcements';
+                
+                if (tabType && tabType !== this.activeTab) {
+                    this.switchTab(tabType);
+                }
+            });
+        });
+    }
+
+    /**
+     * タブを切り替える
+     */
+    private switchTab(tabType: 'class-materials' | 'assignments' | 'materials' | 'announcements'): void {
+        console.log(`タブ切り替え: ${this.activeTab} → ${tabType}`);
+        this.activeTab = tabType;
+        
+        // UIを再描画
+        this.render();
+        
+        // 新しいタブのイベントリスナーを設定
+        this.addRefreshButtonListener();
+        this.addTabSwitchListeners();
+        
+        // タブに応じてデータを読み込み
+        switch (tabType) {
+            case 'class-materials':
+                this.loadTactStructure();
+                break;
+            case 'assignments':
+                this.loadAssignments();
+                break;
+            case 'materials':
+                this.loadMaterials();
+                break;
+            case 'announcements':
+                this.loadAnnouncements();
+                break;
+        }
+    }
+
+    /**
+     * 課題データを読み込み
+     */
+    private async loadAssignments(): Promise<void> {
+        const containerElement = this.container.querySelector('#assignments-container');
+        if (!containerElement) return;
+
+        containerElement.innerHTML = '<p class="loading-message">🔄 課題データを読み込み中...</p>';
+
+        try {
+            // TODO: 実際の課題取得APIを実装
+            // 仮のデータ表示
+            setTimeout(() => {
+                containerElement.innerHTML = `
+                    <div class="assignments-list">
+                        <div class="assignment-item clickable-card" data-assignment-id="assignment-1">
+                            <h4>📝 課題1：レポート提出</h4>
+                            <p class="due-date">提出期限: 2025年6月15日</p>
+                            <p class="description">説明文がここに表示されます</p>
+                            <div class="card-footer">
+                                <span class="status-badge status-pending">未提出</span>
+                                <span class="click-hint">クリックで詳細表示</span>
+                            </div>
+                        </div>
+                        <div class="assignment-item clickable-card" data-assignment-id="assignment-2">
+                            <h4>📝 課題2：小テスト</h4>
+                            <p class="due-date">提出期限: 2025年6月20日</p>
+                            <p class="description">オンライン小テストです</p>
+                            <div class="card-footer">
+                                <span class="status-badge status-submitted">提出済み</span>
+                                <span class="click-hint">クリックで詳細表示</span>
+                            </div>
+                        </div>
+                        <p class="info-message">💡 実際の課題データを表示するにはAPI実装が必要です</p>
+                    </div>
+                `;
+                
+                // 課題カードのクリックイベントを追加
+                this.addAssignmentCardListeners(containerElement);
+            }, 500);
+        } catch (error) {
+            console.error('課題の読み込みに失敗:', error);
+            containerElement.innerHTML = `
+                <div class="error-message">
+                    <p>❌ 課題の読み込みに失敗しました</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * 教材データを読み込み
+     */
+    private async loadMaterials(): Promise<void> {
+        const containerElement = this.container.querySelector('#materials-container');
+        if (!containerElement) return;
+
+        containerElement.innerHTML = '<p class="loading-message">🔄 教材データを読み込み中...</p>';
+
+        try {
+            // TODO: 実際の教材取得APIを実装
+            // 仮のデータ表示
+            setTimeout(() => {
+                containerElement.innerHTML = `
+                    <div class="materials-list">
+                        <div class="material-item">
+                            <h4>📖 教材1：参考書籍</h4>
+                            <p class="description">推奨参考書の情報です</p>
+                        </div>
+                        <div class="material-item">
+                            <h4>📖 教材2：補助資料</h4>
+                            <p class="description">授業の補助資料です</p>
+                        </div>
+                        <p class="info-message">💡 実際の教材データを表示するにはAPI実装が必要です</p>
+                    </div>
+                `;
+            }, 500);
+        } catch (error) {
+            console.error('教材の読み込みに失敗:', error);
+            containerElement.innerHTML = `
+                <div class="error-message">
+                    <p>❌ 教材の読み込みに失敗しました</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * お知らせデータを読み込み
+     */
+    private async loadAnnouncements(): Promise<void> {
+        const containerElement = this.container.querySelector('#announcements-container');
+        if (!containerElement) return;
+
+        containerElement.innerHTML = '<p class="loading-message">🔄 お知らせを読み込み中...</p>';
+
+        try {
+            // TODO: 実際のお知らせ取得APIを実装
+            // 仮のデータ表示
+            setTimeout(() => {
+                containerElement.innerHTML = `
+                    <div class="announcements-list">
+                        <div class="announcement-item clickable-card" data-announcement-id="announce-1">
+                            <h4>📢 重要なお知らせ</h4>
+                            <p class="date">2025年6月5日</p>
+                            <p class="content">今週の授業は休講となります。</p>
+                            <div class="card-footer">
+                                <span class="click-hint">クリックで詳細表示</span>
+                            </div>
+                        </div>
+                        <div class="announcement-item clickable-card" data-announcement-id="announce-2">
+                            <h4>📢 試験日程について</h4>
+                            <p class="date">2025年6月3日</p>
+                            <p class="content">期末試験の日程が決まりました。</p>
+                            <div class="card-footer">
+                                <span class="click-hint">クリックで詳細表示</span>
+                            </div>
+                        </div>
+                        <p class="info-message">💡 実際のお知らせを表示するにはAPI実装が必要です</p>
+                    </div>
+                `;
+                
+                // お知らせカードのクリックイベントを追加
+                this.addAnnouncementCardListeners(containerElement);
+            }, 500);
+        } catch (error) {
+            console.error('お知らせの読み込みに失敗:', error);
+            containerElement.innerHTML = `
+                <div class="error-message">
+                    <p>❌ お知らせの読み込みに失敗しました</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * 課題カードのクリックイベントリスナーを追加
+     */
+    private addAssignmentCardListeners(container: Element): void {
+        const assignmentCards = container.querySelectorAll('.assignment-item.clickable-card');
+        
+        assignmentCards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                const assignmentId = card.getAttribute('data-assignment-id');
+                if (assignmentId) {
+                    this.toggleAssignmentDetail(card as HTMLElement, assignmentId);
+                }
+            });
+        });
+    }
+
+    /**
+     * お知らせカードのクリックイベントリスナーを追加
+     */
+    private addAnnouncementCardListeners(container: Element): void {
+        const announcementCards = container.querySelectorAll('.announcement-item.clickable-card');
+        
+        announcementCards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                const announcementId = card.getAttribute('data-announcement-id');
+                if (announcementId) {
+                    this.toggleAnnouncementDetail(card as HTMLElement, announcementId);
+                }
+            });
+        });
+    }
+
+    /**
+     * 課題詳細モーダルを表示
+     */
+    private showAssignmentDetailModal(assignmentId: string): void {
+        // TODO: 実際のAPIから課題詳細を取得
+        const assignmentData = this.getMockAssignmentData(assignmentId);
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'dialog-overlay';
+        
+        const modal = document.createElement('div');
+        modal.className = 'assignment-detail-modal';
+        
+        modal.innerHTML = `
+            <div class="modal-header">
+                <h3>📝 ${assignmentData.title}</h3>
+                <button class="close-btn" id="close-assignment-modal">×</button>
+            </div>
+            <div class="modal-content">
+                <div class="assignment-meta">
+                    <div class="meta-item">
+                        <strong>提出期限:</strong> ${assignmentData.dueDate}
+                    </div>
+                    <div class="meta-item">
+                        <strong>状態:</strong> 
+                        <span class="status-badge ${assignmentData.status === '提出済み' ? 'status-submitted' : 'status-pending'}">
+                            ${assignmentData.status}
+                        </span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>遅延提出:</strong> ${assignmentData.lateSubmission ? '可' : '不可'}
+                    </div>
+                    <div class="meta-item">
+                        <strong>再提出:</strong> ${assignmentData.resubmission.allowed ? `可 (${assignmentData.resubmission.maxCount}回まで)` : '不可'}
+                    </div>
+                </div>
+                
+                <div class="assignment-description">
+                    <h4>課題説明</h4>
+                    <div class="description-content">
+                        ${assignmentData.description}
+                    </div>
+                </div>
+                
+                <div class="assignment-attachments">
+                    <h4>添付ファイル・リンク</h4>
+                    <div class="attachments-list">
+                        ${assignmentData.attachments.map((attachment: any) => `
+                            <div class="attachment-item">
+                                <span class="attachment-icon">${attachment.type === 'file' ? '📄' : '🔗'}</span>
+                                <a href="${attachment.url}" target="_blank" class="attachment-link">
+                                    ${attachment.name}
+                                </a>
+                                ${attachment.type === 'file' ? `<span class="file-size">(${attachment.size})</span>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="close-assignment-modal-footer">閉じる</button>
+            </div>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        // モーダルを閉じる処理
+        const closeModal = () => {
+            document.body.removeChild(overlay);
+        };
+        
+        const closeButtons = [
+            modal.querySelector('#close-assignment-modal'),
+            modal.querySelector('#close-assignment-modal-footer')
+        ];
+        
+        closeButtons.forEach(button => {
+            if (button) {
+                button.addEventListener('click', closeModal);
+            }
+        });
+        
+        // オーバーレイクリックで閉じる
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                closeModal();
+            }
+        });
+        
+        // ESCキーで閉じる
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
+    }
+
+    /**
+     * お知らせ詳細モーダルを表示
+     */
+    private showAnnouncementDetailModal(announcementId: string): void {
+        // TODO: 実際のAPIからお知らせ詳細を取得
+        const announcementData = this.getMockAnnouncementData(announcementId);
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'dialog-overlay';
+        
+        const modal = document.createElement('div');
+        modal.className = 'announcement-detail-modal';
+        
+        modal.innerHTML = `
+            <div class="modal-header">
+                <h3>📢 ${announcementData.title}</h3>
+                <button class="close-btn" id="close-announcement-modal">×</button>
+            </div>
+            <div class="modal-content">
+                <div class="announcement-meta">
+                    <div class="meta-row">
+                        <div class="meta-item">
+                            <strong>投稿日:</strong> ${announcementData.date}
+                        </div>
+                        <div class="meta-item">
+                            <strong>投稿者:</strong> ${announcementData.author}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="announcement-content">
+                    <h4>お知らせ内容</h4>
+                    <div class="content-body">
+                        ${announcementData.content}
+                    </div>
+                </div>
+                
+                ${announcementData.attachments && announcementData.attachments.length > 0 ? `
+                    <div class="announcement-attachments">
+                        <h4>添付ファイル</h4>
+                        <div class="attachments-list">
+                            ${announcementData.attachments.map((attachment: any) => `
+                                <div class="attachment-item">
+                                    <span class="attachment-icon">📄</span>
+                                    <a href="${attachment.url}" target="_blank" class="attachment-link">
+                                        ${attachment.name}
+                                    </a>
+                                    <span class="file-size">(${attachment.size})</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="close-announcement-modal-footer">閉じる</button>
+            </div>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        // モーダルを閉じる処理
+        const closeModal = () => {
+            document.body.removeChild(overlay);
+        };
+        
+        const closeButtons = [
+            modal.querySelector('#close-announcement-modal'),
+            modal.querySelector('#close-announcement-modal-footer')
+        ];
+        
+        closeButtons.forEach(button => {
+            if (button) {
+                button.addEventListener('click', closeModal);
+            }
+        });
+        
+        // オーバーレイクリックで閉じる
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                closeModal();
+            }
+        });
+        
+        // ESCキーで閉じる
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
+    }
+
+    /**
+     * 課題詳細の表示/非表示を切り替え
+     */
+    private toggleAssignmentDetail(cardElement: HTMLElement, assignmentId: string): void {
+        // 既存の詳細表示を確認
+        const existingDetail = cardElement.nextElementSibling;
+        
+        if (existingDetail && existingDetail.classList.contains('assignment-detail-expanded')) {
+            // 既に展開されている場合は閉じる
+            existingDetail.remove();
+            cardElement.classList.remove('expanded');
+            return;
+        }
+
+        // 他の展開されている詳細をすべて閉じる
+        const allExpandedDetails = cardElement.parentElement?.querySelectorAll('.assignment-detail-expanded');
+        const allExpandedCards = cardElement.parentElement?.querySelectorAll('.assignment-item.expanded');
+        
+        allExpandedDetails?.forEach(detail => detail.remove());
+        allExpandedCards?.forEach(card => card.classList.remove('expanded'));
+
+        // 詳細データを取得
+        const assignmentData = this.getMockAssignmentData(assignmentId);
+        
+        // 詳細表示エリアを作成
+        const detailElement = document.createElement('div');
+        detailElement.className = 'assignment-detail-expanded';
+        
+        detailElement.innerHTML = `
+            <div class="detail-content">
+                <div class="assignment-meta">
+                    <div class="meta-row">
+                        <div class="meta-item">
+                            <strong>提出期限:</strong> ${assignmentData.dueDate}
+                        </div>
+                        <div class="meta-item">
+                            <strong>状態:</strong> 
+                            <span class="status-badge ${assignmentData.status === '提出済み' ? 'status-submitted' : 'status-pending'}">
+                                ${assignmentData.status}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta-item">
+                            <strong>遅延提出:</strong> ${assignmentData.lateSubmission ? '可' : '不可'}
+                        </div>
+                        <div class="meta-item">
+                            <strong>再提出:</strong> ${assignmentData.resubmission.allowed ? `可 (${assignmentData.resubmission.maxCount}回まで)` : '不可'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assignment-description">
+                    <h4>📝 課題説明</h4>
+                    <div class="description-content">
+                        ${assignmentData.description}
+                    </div>
+                </div>
+                
+                <div class="assignment-attachments">
+                    <h4>📎 添付ファイル・リンク</h4>
+                    <div class="attachments-list">
+                        ${assignmentData.attachments.map((attachment: any) => `
+                            <div class="attachment-item">
+                                <span class="attachment-icon">${attachment.type === 'file' ? '📄' : '🔗'}</span>
+                                <a href="${attachment.url}" target="_blank" class="attachment-link">
+                                    ${attachment.name}
+                                </a>
+                                ${attachment.type === 'file' ? `<span class="file-size">(${attachment.size})</span>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div class="detail-actions">
+                    <button class="btn btn-secondary collapse-btn">
+                        ▲ 詳細を閉じる
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // カードの後に詳細を挿入
+        cardElement.parentNode?.insertBefore(detailElement, cardElement.nextSibling);
+        cardElement.classList.add('expanded');
+
+        // 閉じるボタンのイベントリスナー
+        const collapseBtn = detailElement.querySelector('.collapse-btn');
+        if (collapseBtn) {
+            collapseBtn.addEventListener('click', () => {
+                detailElement.remove();
+                cardElement.classList.remove('expanded');
+            });
+        }
+
+        // スムーズにスクロール
+        setTimeout(() => {
+            detailElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    /**
+     * お知らせ詳細の表示/非表示を切り替え
+     */
+    private toggleAnnouncementDetail(cardElement: HTMLElement, announcementId: string): void {
+        // 既存の詳細表示を確認
+        const existingDetail = cardElement.nextElementSibling;
+        
+        if (existingDetail && existingDetail.classList.contains('announcement-detail-expanded')) {
+            // 既に展開されている場合は閉じる
+            existingDetail.remove();
+            cardElement.classList.remove('expanded');
+            return;
+        }
+
+        // 他の展開されている詳細をすべて閉じる
+        const allExpandedDetails = cardElement.parentElement?.querySelectorAll('.announcement-detail-expanded');
+        const allExpandedCards = cardElement.parentElement?.querySelectorAll('.announcement-item.expanded');
+        
+        allExpandedDetails?.forEach(detail => detail.remove());
+        allExpandedCards?.forEach(card => card.classList.remove('expanded'));
+
+        // 詳細データを取得
+        const announcementData = this.getMockAnnouncementData(announcementId);
+        
+        // 詳細表示エリアを作成
+        const detailElement = document.createElement('div');
+        detailElement.className = 'announcement-detail-expanded';
+        
+        detailElement.innerHTML = `
+            <div class="detail-content">
+                <div class="announcement-meta">
+                    <div class="meta-row">
+                        <div class="meta-item">
+                            <strong>投稿日:</strong> ${announcementData.date}
+                        </div>
+                        <div class="meta-item">
+                            <strong>投稿者:</strong> ${announcementData.author}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="announcement-content">
+                    <h4>📢 お知らせ内容</h4>
+                    <div class="content-body">
+                        ${announcementData.content}
+                    </div>
+                </div>
+                
+                ${announcementData.attachments && announcementData.attachments.length > 0 ? `
+                    <div class="announcement-attachments">
+                        <h4>📎 添付ファイル</h4>
+                        <div class="attachments-list">
+                            ${announcementData.attachments.map((attachment: any) => `
+                                <div class="attachment-item">
+                                    <span class="attachment-icon">📄</span>
+                                    <a href="${attachment.url}" target="_blank" class="attachment-link">
+                                        ${attachment.name}
+                                    </a>
+                                    <span class="file-size">(${attachment.size})</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div class="detail-actions">
+                    <button class="btn btn-secondary collapse-btn">
+                        ▲ 詳細を閉じる
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // カードの後に詳細を挿入
+        cardElement.parentNode?.insertBefore(detailElement, cardElement.nextSibling);
+        cardElement.classList.add('expanded');
+
+        // 閉じるボタンのイベントリスナー
+        const collapseBtn = detailElement.querySelector('.collapse-btn');
+        if (collapseBtn) {
+            collapseBtn.addEventListener('click', () => {
+                detailElement.remove();
+                cardElement.classList.remove('expanded');
+            });
+        }
+
+        // スムーズにスクロール
+        setTimeout(() => {
+            detailElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    /**
+     * モック課題データを取得
+     */
+    private getMockAssignmentData(assignmentId: string): any {
+        const mockData: { [key: string]: any } = {
+            'assignment-1': {
+                title: 'レポート提出',
+                dueDate: '2025年6月15日 23:59',
+                status: '未提出',
+                lateSubmission: true,
+                resubmission: {
+                    allowed: true,
+                    maxCount: 3
+                },
+                description: `
+                    <p>この課題では、授業で学習した内容について2000字以内のレポートを作成してください。</p>
+                    <p><strong>提出要件:</strong></p>
+                    <ul>
+                        <li>文字数: 1500〜2000字</li>
+                        <li>形式: PDF形式</li>
+                        <li>参考文献を明記すること</li>
+                        <li>剽窃チェックを実施します</li>
+                    </ul>
+                    <p><strong>評価基準:</strong></p>
+                    <ul>
+                        <li>内容の理解度 (40%)</li>
+                        <li>論理的構成 (30%)</li>
+                        <li>文章表現 (20%)</li>
+                        <li>独創性 (10%)</li>
+                    </ul>
+                `,
+                attachments: [
+                    {
+                        type: 'file',
+                        name: '課題説明資料.pdf',
+                        url: '#',
+                        size: '1.2MB'
+                    },
+                    {
+                        type: 'link',
+                        name: '参考資料サイト',
+                        url: '#'
+                    }
+                ]
+            },
+            'assignment-2': {
+                title: '小テスト',
+                dueDate: '2025年6月20日 15:00',
+                status: '提出済み',
+                lateSubmission: false,
+                resubmission: {
+                    allowed: false,
+                    maxCount: 0
+                },
+                description: `
+                    <p>第1〜3回の授業内容に関する小テストです。</p>
+                    <p><strong>出題範囲:</strong></p>
+                    <ul>
+                        <li>第1回: 基礎概念</li>
+                        <li>第2回: 応用理論</li>
+                        <li>第3回: 実践演習</li>
+                    </ul>
+                    <p><strong>注意事項:</strong></p>
+                    <ul>
+                        <li>制限時間: 30分</li>
+                        <li>回答後の修正は不可</li>
+                        <li>一度開始したら中断できません</li>
+                    </ul>
+                `,
+                attachments: [
+                    {
+                        type: 'link',
+                        name: 'オンラインテスト（Webclass）',
+                        url: '#'
+                    }
+                ]
+            }
+        };
+        
+        return mockData[assignmentId] || {
+            title: '課題情報',
+            dueDate: '未設定',
+            status: '不明',
+            lateSubmission: false,
+            resubmission: { allowed: false, maxCount: 0 },
+            description: '詳細情報を取得できませんでした。',
+            attachments: []
+        };
+    }
+
+    /**
+     * モックお知らせデータを取得
+     */
+    private getMockAnnouncementData(announcementId: string): any {
+        const mockData: { [key: string]: any } = {
+            'announce-1': {
+                title: '重要なお知らせ',
+                date: '2025年6月5日 10:30',
+                author: '田中教授',
+                content: `
+                    <p>お疲れ様です。</p>
+                    <p>来週6月12日（木）の授業についてお知らせします。</p>
+                    <p><strong>変更内容:</strong></p>
+                    <ul>
+                        <li>6月12日の授業は休講となります</li>
+                        <li>補講日: 6月26日（木）同時間</li>
+                        <li>場所: 通常と同じ教室</li>
+                    </ul>
+                    <p><strong>理由:</strong><br>
+                    学会出張のため、誠に申し訳ございませんが休講とさせていただきます。</p>
+                    <p>ご不明な点がございましたら、メールでお問い合わせください。</p>
+                    <p>よろしくお願いいたします。</p>
+                `,
+                attachments: []
+            },
+            'announce-2': {
+                title: '試験日程について',
+                date: '2025年6月3日 14:15',
+                author: '田中教授',
+                content: `
+                    <p>期末試験の日程が確定しましたのでお知らせします。</p>
+                    
+                    <p><strong>試験日程:</strong></p>
+                    <ul>
+                        <li>日時: 7月18日（金） 13:00〜14:30</li>
+                        <li>場所: A棟201教室</li>
+                        <li>試験時間: 90分</li>
+                        <li>持込: 不可（電卓含む）</li>
+                    </ul>
+                    
+                    <p><strong>出題範囲:</strong></p>
+                    <ul>
+                        <li>第1回〜第15回の授業内容</li>
+                        <li>配布資料すべて</li>
+                        <li>指定教科書 第1章〜第8章</li>
+                    </ul>
+                    
+                    <p><strong>注意事項:</strong></p>
+                    <ul>
+                        <li>学生証を必ず持参してください</li>
+                        <li>遅刻は30分まで入室可能</li>
+                        <li>体調不良等で受験できない場合は事前に連絡すること</li>
+                    </ul>
+                    
+                    <p>詳細な試験要項は添付ファイルをご確認ください。</p>
+                `,
+                attachments: [
+                    {
+                        name: '期末試験要項.pdf',
+                        url: '#',
+                        size: '256KB'
+                    }
+                ]
+            }
+        };
+        
+        return mockData[announcementId] || {
+            title: 'お知らせ',
+            date: '未設定',
+            author: '不明',
+            content: '詳細情報を取得できませんでした。',
+            attachments: []
+        };
     }
 
     public destroy() {
