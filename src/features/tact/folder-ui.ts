@@ -8,7 +8,7 @@ export class FolderUI {
     private container: HTMLElement;
     private tactApiClient: TactApiClient;
     private isEditMode: boolean = false;
-    private activeTab: 'class-materials' | 'assignments' | 'materials' | 'announcements' = 'class-materials';
+    private activeTab: 'class-materials' | 'assignments' | 'announcements' = 'class-materials';
     private announcements: any[] = [];
 
     constructor(container: HTMLElement) {
@@ -36,9 +36,6 @@ export class FolderUI {
                     </button>
                     <button class="tab-button ${this.activeTab === 'assignments' ? 'active' : ''}" data-tab="assignments">
                         📝 課題
-                    </button>
-                    <button class="tab-button ${this.activeTab === 'materials' ? 'active' : ''}" data-tab="materials">
-                        📖 教材
                     </button>
                     <button class="tab-button ${this.activeTab === 'announcements' ? 'active' : ''}" data-tab="announcements">
                         📢 お知らせ
@@ -145,9 +142,6 @@ export class FolderUI {
                 break;
             case 'assignments':
                 this.loadAssignments();
-                break;
-            case 'materials':
-                this.loadMaterials();
                 break;
             case 'announcements':
                 this.loadAnnouncements();
@@ -760,8 +754,6 @@ export class FolderUI {
                 return this.renderTactTreeContent();
             case 'assignments':
                 return this.renderAssignmentsContent();
-            case 'materials':
-                return this.renderMaterialsContent();
             case 'announcements':
                 return this.renderAnnouncementsContent();
             default:
@@ -785,28 +777,6 @@ export class FolderUI {
                     </div>
                     <div class="assignments-container" id="assignments-container">
                         <p class="loading-message">🔄 課題データを読み込み中...</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    /**
-     * 教材タブのコンテンツを表示
-     */
-    private renderMaterialsContent(): string {
-        return `
-            <div class="tab-content materials-content">
-                <div class="folder-section">
-                    <h3>📖 教材一覧</h3>
-                    <div class="tact-controls">
-                        <button id="refresh-tact-data" class="btn btn-primary">
-                            🔄 API再実行
-                        </button>
-                        <span class="refresh-info">最新の教材データを取得します</span>
-                    </div>
-                    <div class="materials-container" id="materials-container">
-                        <p class="loading-message">🔄 教材データを読み込み中...</p>
                     </div>
                 </div>
             </div>
@@ -840,12 +810,10 @@ export class FolderUI {
      */
     private addTabSwitchListeners(): void {
         const tabButtons = this.container.querySelectorAll('.tab-button');
-        
         tabButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 const target = e.target as HTMLElement;
-                const tabType = target.getAttribute('data-tab') as 'class-materials' | 'assignments' | 'materials' | 'announcements';
-                
+                const tabType = target.getAttribute('data-tab') as 'class-materials' | 'assignments' | 'announcements';
                 if (tabType && tabType !== this.activeTab) {
                     this.switchTab(tabType);
                 }
@@ -856,27 +824,18 @@ export class FolderUI {
     /**
      * タブを切り替える
      */
-    private switchTab(tabType: 'class-materials' | 'assignments' | 'materials' | 'announcements'): void {
+    private switchTab(tabType: 'class-materials' | 'assignments' | 'announcements'): void {
         console.log(`タブ切り替え: ${this.activeTab} → ${tabType}`);
         this.activeTab = tabType;
-        
-        // UIを再描画
         this.render();
-        
-        // 新しいタブのイベントリスナーを設定
         this.addRefreshButtonListener();
         this.addTabSwitchListeners();
-        
-        // タブに応じてデータを読み込み
         switch (tabType) {
             case 'class-materials':
                 this.loadTactStructure();
                 break;
             case 'assignments':
                 this.loadAssignments();
-                break;
-            case 'materials':
-                this.loadMaterials();
                 break;
             case 'announcements':
                 this.loadAnnouncements();
@@ -953,15 +912,6 @@ export class FolderUI {
             `;
         }
         this.addRefreshButtonListener();
-    }
-
-    /**
-     * 教材データを読み込み（キャッシュ未実装・ダミー）
-     */
-    private async loadMaterials(): Promise<void> {
-        const containerElement = this.container.querySelector('#materials-container');
-        if (!containerElement) return;
-        containerElement.innerHTML = '<p class="info-message">教材データの取得は未実装です</p>';
     }
 
     /**
