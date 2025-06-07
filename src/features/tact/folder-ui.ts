@@ -9,6 +9,7 @@ export class FolderUI {
     private tactApiClient: TactApiClient;
     private isEditMode: boolean = false;
     private activeTab: 'class-materials' | 'assignments' | 'materials' | 'announcements' = 'class-materials';
+    private announcements: any[] = [];
 
     constructor(container: HTMLElement) {
         this.container = container;
@@ -71,6 +72,9 @@ export class FolderUI {
         `;
     }
 
+    // キャッシュ有効期間（秒）
+    private readonly CACHE_EXPIRE_SECONDS = 2 * 60 * 60; // 2時間
+
     /**
      * TACT APIから講義構造を読み込み
      */
@@ -78,66 +82,46 @@ export class FolderUI {
         const containerElement = this.container.querySelector('#tact-structure-container');
         if (!containerElement) return;
 
-        // ローディング表示
         containerElement.innerHTML = '<p class="loading-message">🔄 TACT APIから構造を読み込み中...</p>';
 
         try {
-            // 現在のサイトIDを取得
             const siteId = this.tactApiClient.getCurrentSiteId();
-            if (!siteId) {
-                throw new Error('サイトIDを取得できませんでした');
+            if (!siteId) throw new Error('サイトIDを取得できませんでした');
+            const cacheKey = `tact-structure-cache-${siteId}`;
+            const cacheTimeKey = `tact-structure-cache-time-${siteId}`;
+            let useCache = false;
+            let tree: any = null;
+            const cached = localStorage.getItem(cacheKey);
+            const cachedTime = localStorage.getItem(cacheTimeKey);
+            if (!forceRefresh && cached && cachedTime) {
+                const elapsed = (Date.now() - parseInt(cachedTime, 10)) / 1000;
+                if (elapsed < this.CACHE_EXPIRE_SECONDS) {
+                    tree = JSON.parse(cached);
+                    useCache = true;
+                }
             }
-
-            // ローカルストレージに保存されたデータがあるかチェック
-            // （サイトIDを設定してからストレージを確認）
-            let hasStoredData: boolean = false;
-            try {
-                // サイトIDを一時的に設定してストレージをチェック
+            if (!useCache) {
+                // API fetch & build tree
                 this.tactApiClient.setSiteId(siteId);
-                const storedTree = this.tactApiClient.buildFileTreeFromStorage();
-                hasStoredData = !!(storedTree.children && storedTree.children.length > 0);
-            } catch (e) {
-                hasStoredData = false;
+                const items = await this.tactApiClient.fetchSiteContent(siteId);
+                this.tactApiClient.generateStatistics(items);
+                tree = this.tactApiClient.buildFileTreeFromStorage();
+                localStorage.setItem(cacheKey, JSON.stringify(tree));
+                localStorage.setItem(cacheTimeKey, Date.now().toString());
             }
-
-            // APIからデータを取得（ローカルデータがない場合、または強制更新の場合）
-            let items: any[];
-            if (!hasStoredData || forceRefresh) {
-                items = await this.tactApiClient.fetchSiteContent(siteId);
-            } else {
-                // ローカルデータから取得（統計のために空配列を使用）
-                items = [];
-            }
-            
-            // 統計情報を生成
-            const statistics = this.tactApiClient.generateStatistics(items);
-            
-            // ストレージからツリー構造を構築（保存された名前変更を反映）
-            const tree = this.tactApiClient.buildFileTreeFromStorage();
             const treeHTML = this.tactApiClient.renderTreeAsHTML(tree, this.isEditMode);
-
-            // 結果を表示
             containerElement.innerHTML = `
                 <div class="tact-structure-results">
                     <div class="tact-tree">
                         <h4>🌲 フォルダ構造</h4>
                         <div class="tree-display">${treeHTML || '<p>構造が見つかりませんでした</p>'}</div>
                     </div>
-                    <div class="tact-raw-data" style="margin-top: 20px;">
-                    </div>
+                    <div class="tact-raw-data" style="margin-top: 20px;"></div>
                 </div>
             `;
-
-            // フォルダのトグル機能を追加
             this.addFolderToggleListeners(containerElement);
-            
-            // ファイル名編集機能を追加
             this.addEditListeners(containerElement);
-            
-            // ダウンロード機能を追加
             this.addDownloadListeners(containerElement);
-            
-            // ドラッグ&ドロップ機能を追加（編集モードの状態に応じて有効/無効を切り替え）
             this.addMoveButtonListeners(containerElement);
         } catch (error) {
             console.error('TACT構造の読み込みに失敗:', error);
@@ -910,8 +894,35 @@ export class FolderUI {
         containerElement.innerHTML = '<p class="loading-message">🔄 課題データを読み込み中...</p>';
 
         try {
-            // 実データ取得
-            const assignments = await this.fetchAssignmentsForCurrentSite();
+            const match = location.href.match("(https?://[^/]+)/portal");
+            const baseURL = match ? match[1] : "";
+            const courseIdMatch = location.href.match("/portal/site-?[a-z]*/([^/]+)");
+            const courseId = courseIdMatch ? courseIdMatch[1] : null;
+            const cacheKey = `assignment-cache-${courseId}`;
+            const cacheTimeKey = `assignment-cache-time-${courseId}`;
+            let assignments: any[] = [];
+            let useCache = false;
+            if (courseId) {
+                const cached = localStorage.getItem(cacheKey);
+                const cachedTime = localStorage.getItem(cacheTimeKey);
+                if (cached && cachedTime) {
+                    const elapsed = (Date.now() - parseInt(cachedTime, 10)) / 1000;
+                    if (elapsed < this.CACHE_EXPIRE_SECONDS) {
+                        assignments = JSON.parse(cached);
+                        useCache = true;
+                    }
+                }
+            }
+            if (!useCache && baseURL && courseId) {
+                const url = `${baseURL}/direct/assignment/site/${courseId}.json`;
+                const res = await fetch(url, { cache: "no-cache" });
+                if (res.ok) {
+                    const data = await res.json();
+                    assignments = Array.isArray(data.assignment_collection) ? data.assignment_collection : [];
+                    localStorage.setItem(cacheKey, JSON.stringify(assignments));
+                    localStorage.setItem(cacheTimeKey, Date.now().toString());
+                }
+            }
             if (!assignments || assignments.length === 0) {
                 containerElement.innerHTML = '<p class="info-message">課題が見つかりませんでした</p>';
                 return;
@@ -945,40 +956,12 @@ export class FolderUI {
     }
 
     /**
-     * 教材データを読み込み
+     * 教材データを読み込み（キャッシュ未実装・ダミー）
      */
     private async loadMaterials(): Promise<void> {
         const containerElement = this.container.querySelector('#materials-container');
         if (!containerElement) return;
-
-        containerElement.innerHTML = '<p class="loading-message">🔄 教材データを読み込み中...</p>';
-
-        try {
-            // TODO: 実際の教材取得APIを実装
-            // 仮のデータ表示
-            setTimeout(() => {
-                containerElement.innerHTML = `
-                    <div class="materials-list">
-                        <div class="material-item">
-                            <h4>📖 教材1：参考書籍</h4>
-                            <p class="description">推奨参考書の情報です</p>
-                        </div>
-                        <div class="material-item">
-                            <h4>📖 教材2：補助資料</h4>
-                            <p class="description">授業の補助資料です</p>
-                        </div>
-                        <p class="info-message">💡 実際の教材データを表示するにはAPI実装が必要です</p>
-                    </div>
-                `;
-            }, 500);
-        } catch (error) {
-            console.error('教材の読み込みに失敗:', error);
-            containerElement.innerHTML = `
-                <div class="error-message">
-                    <p>❌ 教材の読み込みに失敗しました</p>
-                </div>
-            `;
-        }
+        containerElement.innerHTML = '<p class="info-message">教材データの取得は未実装です</p>';
     }
 
     /**
@@ -991,34 +974,55 @@ export class FolderUI {
         containerElement.innerHTML = '<p class="loading-message">🔄 お知らせを読み込み中...</p>';
 
         try {
-            // TODO: 実際のお知らせ取得APIを実装
-            // 仮のデータ表示
-            setTimeout(() => {
-                containerElement.innerHTML = `
-                    <div class="announcements-list">
-                        <div class="announcement-item clickable-card" data-announcement-id="announce-1">
-                            <h4>📢 重要なお知らせ</h4>
-                            <p class="date">2025年6月5日</p>
-                            <p class="content">今週の授業は休講となります。</p>
+            const match = location.href.match("(https?://[^/]+)/portal");
+            const baseURL = match ? match[1] : "";
+            const courseIdMatch = location.href.match("/portal/site-?[a-z]*/([^/]+)");
+            const courseId = courseIdMatch ? courseIdMatch[1] : null;
+            const cacheKey = `announcement-cache-${courseId}`;
+            const cacheTimeKey = `announcement-cache-time-${courseId}`;
+            let announcements: any[] = [];
+            let useCache = false;
+            if (courseId) {
+                const cached = localStorage.getItem(cacheKey);
+                const cachedTime = localStorage.getItem(cacheTimeKey);
+                if (cached && cachedTime) {
+                    const elapsed = (Date.now() - parseInt(cachedTime, 10)) / 1000;
+                    if (elapsed < this.CACHE_EXPIRE_SECONDS) {
+                        announcements = JSON.parse(cached);
+                        useCache = true;
+                    }
+                }
+            }
+            if (!useCache && baseURL && courseId) {
+                const url = `${baseURL}/direct/announcement/site/${courseId}.json`;
+                const res = await fetch(url, { cache: "no-cache" });
+                if (res.ok) {
+                    const data = await res.json();
+                    announcements = Array.isArray(data.announcement_collection) ? data.announcement_collection : [];
+                    localStorage.setItem(cacheKey, JSON.stringify(announcements));
+                    localStorage.setItem(cacheTimeKey, Date.now().toString());
+                }
+            }
+            this.announcements = announcements;
+            if (!announcements || announcements.length === 0) {
+                containerElement.innerHTML = '<p class="info-message">お知らせはありません</p>';
+                return;
+            }
+            containerElement.innerHTML = `
+                <div class="announcements-list">
+                    ${(announcements as any[]).map((a: any) => `
+                        <div class="announcement-item clickable-card" data-announcement-id="${a.announcementId}">
+                            <h4>📢 ${a.title || '無題のお知らせ'}</h4>
+                            <p class="date">${a.createdOn ? (new Date(a.createdOn)).toLocaleString() : ''}</p>
+                            <p class="content">${a.body ? a.body.replace(/<[^>]+>/g, '').slice(0, 60) : ''}</p>
                             <div class="card-footer">
                                 <span class="click-hint">クリックで詳細表示</span>
                             </div>
                         </div>
-                        <div class="announcement-item clickable-card" data-announcement-id="announce-2">
-                            <h4>📢 試験日程について</h4>
-                            <p class="date">2025年6月3日</p>
-                            <p class="content">期末試験の日程が決まりました。</p>
-                            <div class="card-footer">
-                                <span class="click-hint">クリックで詳細表示</span>
-                            </div>
-                        </div>
-                        <p class="info-message">💡 実際のお知らせを表示するにはAPI実装が必要です</p>
-                    </div>
-                `;
-                
-                // お知らせカードのクリックイベントを追加
-                this.addAnnouncementCardListeners(containerElement);
-            }, 500);
+                    `).join('')}
+                </div>
+            `;
+            this.addAnnouncementCardListeners(containerElement);
         } catch (error) {
             console.error('お知らせの読み込みに失敗:', error);
             containerElement.innerHTML = `
@@ -1359,49 +1363,50 @@ export class FolderUI {
     private toggleAnnouncementDetail(cardElement: HTMLElement, announcementId: string): void {
         // 既存の詳細表示を確認
         const existingDetail = cardElement.nextElementSibling;
-        
         if (existingDetail && existingDetail.classList.contains('announcement-detail-expanded')) {
-            // 既に展開されている場合は閉じる
             existingDetail.remove();
             cardElement.classList.remove('expanded');
             return;
         }
-
         // 他の展開されている詳細をすべて閉じる
         const allExpandedDetails = cardElement.parentElement?.querySelectorAll('.announcement-detail-expanded');
         const allExpandedCards = cardElement.parentElement?.querySelectorAll('.announcement-item.expanded');
-        
         allExpandedDetails?.forEach(detail => detail.remove());
         allExpandedCards?.forEach(card => card.classList.remove('expanded'));
 
-        // 詳細データを取得
-        const announcementData = this.getMockAnnouncementData(announcementId);
-        
+        // API取得済みデータから該当お知らせを検索
+        const announcementData = this.announcements.find((a: any) => a.announcementId === announcementId);
+        if (!announcementData) {
+            // データがなければエラー表示
+            const detailElement = document.createElement('div');
+            detailElement.className = 'announcement-detail-expanded';
+            detailElement.innerHTML = `<div class="detail-content"><p>詳細情報を取得できませんでした。</p></div>`;
+            cardElement.parentNode?.insertBefore(detailElement, cardElement.nextSibling);
+            cardElement.classList.add('expanded');
+            return;
+        }
         // 詳細表示エリアを作成
         const detailElement = document.createElement('div');
         detailElement.className = 'announcement-detail-expanded';
-        
         detailElement.innerHTML = `
             <div class="detail-content">
                 <div class="announcement-meta">
                     <div class="meta-row">
                         <div class="meta-item">
-                            <strong>投稿日:</strong> ${announcementData.date}
+                            <strong>投稿日:</strong> ${announcementData.createdOn ? (new Date(announcementData.createdOn)).toLocaleString() : '未設定'}
                         </div>
                         <div class="meta-item">
-                            <strong>投稿者:</strong> ${announcementData.author}
+                            <strong>投稿者:</strong> ${announcementData.createdByDisplayName || '不明'}
                         </div>
                     </div>
                 </div>
-                
                 <div class="announcement-content">
                     <h4>📢 お知らせ内容</h4>
                     <div class="content-body">
-                        ${announcementData.content}
+                        ${announcementData.body || ''}
                     </div>
                 </div>
-                
-                ${announcementData.attachments && announcementData.attachments.length > 0 ? `
+                ${(announcementData.attachments && announcementData.attachments.length > 0) ? `
                     <div class="announcement-attachments">
                         <h4>📎 添付ファイル</h4>
                         <div class="attachments-list">
@@ -1411,13 +1416,12 @@ export class FolderUI {
                                     <a href="${attachment.url}" target="_blank" class="attachment-link">
                                         ${attachment.name}
                                     </a>
-                                    <span class="file-size">(${attachment.size})</span>
+                                    ${attachment.size ? `<span class="file-size">(${attachment.size})</span>` : ''}
                                 </div>
                             `).join('')}
                         </div>
                     </div>
                 ` : ''}
-                
                 <div class="detail-actions">
                     <button class="btn btn-secondary collapse-btn">
                         ▲ 詳細を閉じる
@@ -1425,7 +1429,6 @@ export class FolderUI {
                 </div>
             </div>
         `;
-
         // カードの後に詳細を挿入
         cardElement.parentNode?.insertBefore(detailElement, cardElement.nextSibling);
         cardElement.classList.add('expanded');
