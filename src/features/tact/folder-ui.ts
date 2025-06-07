@@ -176,20 +176,18 @@ export class FolderUI {
      */
     private addRefreshButtonListener(): void {
         const refreshButton = this.container.querySelector('#refresh-tact-data') as HTMLButtonElement;
-        
         if (refreshButton) {
             refreshButton.addEventListener('click', async () => {
                 refreshButton.disabled = true;
                 refreshButton.textContent = '🔄 実行中...';
-                
                 try {
-                    // 新しいデータを取得して追加
-                    console.log('API再実行: 最新データを取得しています...');
-                    
-                    // 強制的にAPIから再取得（ストレージはクリアしない）
-                    await this.loadTactStructure(true);
-                    
-                    console.log('API再実行完了: 最新データを取得して追加しました');
+                    // タブごとに処理を分岐
+                    if (this.activeTab === 'assignments') {
+                        await this.fetchAndLogAssignmentsForCurrentSite();
+                    } else {
+                        // 既存のAPI再実行処理
+                        await this.loadTactStructure(true);
+                    }
                 } catch (error) {
                     console.error('API再実行エラー:', error);
                     alert('データの再取得中にエラーが発生しました。ネットワーク接続を確認してください。');
@@ -198,6 +196,63 @@ export class FolderUI {
                     refreshButton.textContent = '🔄 API再実行';
                 }
             });
+        }
+    }
+
+    /**
+     * 現在開いている講義サイトの課題データを取得し返す
+     */
+    private async fetchAssignmentsForCurrentSite(): Promise<any[]> {
+        try {
+            const match = location.href.match("(https?://[^/]+)/portal");
+            const baseURL = match ? match[1] : "";
+            const courseIdMatch = location.href.match("/portal/site-?[a-z]*/([^/]+)");
+            const courseId = courseIdMatch ? courseIdMatch[1] : null;
+            if (!baseURL || !courseId) {
+                console.warn("課題取得: サイトIDまたはベースURLが取得できませんでした");
+                return [];
+            }
+            const url = `${baseURL}/direct/assignment/site/${courseId}.json`;
+            const res = await fetch(url, { cache: "no-cache" });
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.assignment_collection)) {
+                    return data.assignment_collection;
+                }
+            } else {
+                console.warn(`Failed to fetch assignments for ${courseId}: ${res.status}`);
+            }
+        } catch (e) {
+            console.error("Error fetching assignments for current site:", e);
+        }
+        return [];
+    }
+
+    /**
+     * 現在開いている講義サイトの課題データを取得しコンソールに出力
+     */
+    private async fetchAndLogAssignmentsForCurrentSite(): Promise<void> {
+        try {
+            // SakaiのベースURLを取得
+            const match = location.href.match("(https?://[^/]+)/portal");
+            const baseURL = match ? match[1] : "";
+            // 現在の講義サイトIDを取得
+            const courseIdMatch = location.href.match("/portal/site-?[a-z]*/([^/]+)");
+            const courseId = courseIdMatch ? courseIdMatch[1] : null;
+            if (!baseURL || !courseId) {
+                console.warn("課題取得: サイトIDまたはベースURLが取得できませんでした");
+                return;
+            }
+            const url = `${baseURL}/direct/assignment/site/${courseId}.json`;
+            const res = await fetch(url, { cache: "no-cache" });
+            if (res.ok) {
+                const data = await res.json();
+                console.log(`Course ID: ${courseId}`, data);
+            } else {
+                console.warn(`Failed to fetch assignments for ${courseId}: ${res.status}`);
+            }
+        } catch (e) {
+            console.error("Error fetching assignments for current site:", e);
         }
     }
 
@@ -855,36 +910,29 @@ export class FolderUI {
         containerElement.innerHTML = '<p class="loading-message">🔄 課題データを読み込み中...</p>';
 
         try {
-            // TODO: 実際の課題取得APIを実装
-            // 仮のデータ表示
-            setTimeout(() => {
-                containerElement.innerHTML = `
-                    <div class="assignments-list">
-                        <div class="assignment-item clickable-card" data-assignment-id="assignment-1">
-                            <h4>📝 課題1：レポート提出</h4>
-                            <p class="due-date">提出期限: 2025年6月15日</p>
-                            <p class="description">説明文がここに表示されます</p>
+            // 実データ取得
+            const assignments = await this.fetchAssignmentsForCurrentSite();
+            if (!assignments || assignments.length === 0) {
+                containerElement.innerHTML = '<p class="info-message">課題が見つかりませんでした</p>';
+                return;
+            }
+            containerElement.innerHTML = `
+                <div class="assignments-list">
+                    ${assignments.map((a) => `
+                        <div class="assignment-item clickable-card" data-assignment-id="${a.id}">
+                            <h4>📝 ${a.title || '無題の課題'}</h4>
+                            <p class="due-date">提出期限: ${a.dueTimeString ? a.dueTimeString.replace('T', ' ').replace('Z', '') : '未設定'}</p>
                             <div class="card-footer">
-                                <span class="status-badge status-pending">未提出</span>
+                                <span class="status-badge ${a.submissions && a.submissions.length > 0 ? 'status-submitted' : 'status-pending'}">
+                                    ${a.submissions && a.submissions.length > 0 ? '提出済み' : '未提出'}
+                                </span>
                                 <span class="click-hint">クリックで詳細表示</span>
                             </div>
                         </div>
-                        <div class="assignment-item clickable-card" data-assignment-id="assignment-2">
-                            <h4>📝 課題2：小テスト</h4>
-                            <p class="due-date">提出期限: 2025年6月20日</p>
-                            <p class="description">オンライン小テストです</p>
-                            <div class="card-footer">
-                                <span class="status-badge status-submitted">提出済み</span>
-                                <span class="click-hint">クリックで詳細表示</span>
-                            </div>
-                        </div>
-                        <p class="info-message">💡 実際の課題データを表示するにはAPI実装が必要です</p>
-                    </div>
-                `;
-                
-                // 課題カードのクリックイベントを追加
-                this.addAssignmentCardListeners(containerElement);
-            }, 500);
+                    `).join('')}
+                </div>
+            `;
+            this.addAssignmentCardListeners(containerElement);
         } catch (error) {
             console.error('課題の読み込みに失敗:', error);
             containerElement.innerHTML = `
@@ -893,6 +941,7 @@ export class FolderUI {
                 </div>
             `;
         }
+        this.addRefreshButtonListener();
     }
 
     /**
@@ -1208,77 +1257,78 @@ export class FolderUI {
     /**
      * 課題詳細の表示/非表示を切り替え
      */
-    private toggleAssignmentDetail(cardElement: HTMLElement, assignmentId: string): void {
+    private async toggleAssignmentDetail(cardElement: HTMLElement, assignmentId: string): Promise<void> {
         // 既存の詳細表示を確認
         const existingDetail = cardElement.nextElementSibling;
-        
         if (existingDetail && existingDetail.classList.contains('assignment-detail-expanded')) {
-            // 既に展開されている場合は閉じる
             existingDetail.remove();
             cardElement.classList.remove('expanded');
             return;
         }
-
         // 他の展開されている詳細をすべて閉じる
         const allExpandedDetails = cardElement.parentElement?.querySelectorAll('.assignment-detail-expanded');
         const allExpandedCards = cardElement.parentElement?.querySelectorAll('.assignment-item.expanded');
-        
         allExpandedDetails?.forEach(detail => detail.remove());
         allExpandedCards?.forEach(card => card.classList.remove('expanded'));
 
-        // 詳細データを取得
-        const assignmentData = this.getMockAssignmentData(assignmentId);
-        
+        // 実データから該当課題を取得
+        const assignments = await this.fetchAssignmentsForCurrentSite();
+        const assignmentData = assignments.find(a => a.id === assignmentId);
+        // データがなければデフォルト
+        const title = assignmentData?.title || '課題情報';
+        const dueDate = assignmentData?.dueTimeString ? assignmentData.dueTimeString.replace('T', ' ').replace('Z', '') : '未設定';
+        const status = assignmentData?.submissions && assignmentData.submissions.length > 0 ? '提出済み' : '未提出';
+        const lateSubmission = assignmentData?.allowResubmission ? '可' : '不可';
+        const resubmission = assignmentData?.allowResubmission ? '可' : '不可';
+        const description = assignmentData?.instructions ? this.linkifyText(assignmentData.instructions.replace(/<[^>]+>/g, '')) : '詳細情報を取得できませんでした。';
+        const attachments = Array.isArray(assignmentData?.attachments) ? assignmentData.attachments : [];
+
         // 詳細表示エリアを作成
         const detailElement = document.createElement('div');
         detailElement.className = 'assignment-detail-expanded';
-        
         detailElement.innerHTML = `
             <div class="detail-content">
                 <div class="assignment-meta">
                     <div class="meta-row">
                         <div class="meta-item">
-                            <strong>提出期限:</strong> ${assignmentData.dueDate}
+                            <strong>提出期限:</strong> ${dueDate}
                         </div>
                         <div class="meta-item">
                             <strong>状態:</strong> 
-                            <span class="status-badge ${assignmentData.status === '提出済み' ? 'status-submitted' : 'status-pending'}">
-                                ${assignmentData.status}
+                            <span class="status-badge ${status === '提出済み' ? 'status-submitted' : 'status-pending'}">
+                                ${status}
                             </span>
                         </div>
                     </div>
                     <div class="meta-row">
                         <div class="meta-item">
-                            <strong>遅延提出:</strong> ${assignmentData.lateSubmission ? '可' : '不可'}
+                            <strong>遅延提出:</strong> ${lateSubmission}
                         </div>
                         <div class="meta-item">
-                            <strong>再提出:</strong> ${assignmentData.resubmission.allowed ? `可 (${assignmentData.resubmission.maxCount}回まで)` : '不可'}
+                            <strong>再提出:</strong> ${resubmission}
                         </div>
                     </div>
                 </div>
-                
                 <div class="assignment-description">
                     <h4>📝 課題説明</h4>
                     <div class="description-content">
-                        ${assignmentData.description}
+                        ${description}
                     </div>
                 </div>
-                
                 <div class="assignment-attachments">
                     <h4>📎 添付ファイル・リンク</h4>
                     <div class="attachments-list">
-                        ${assignmentData.attachments.map((attachment: any) => `
+                        ${attachments.length > 0 ? attachments.map((attachment: any) => `
                             <div class="attachment-item">
-                                <span class="attachment-icon">${attachment.type === 'file' ? '📄' : '🔗'}</span>
+                                <span class="attachment-icon">📄</span>
                                 <a href="${attachment.url}" target="_blank" class="attachment-link">
                                     ${attachment.name}
                                 </a>
-                                ${attachment.type === 'file' ? `<span class="file-size">(${attachment.size})</span>` : ''}
+                                <span class="file-size">(${attachment.size || ''})</span>
                             </div>
-                        `).join('')}
+                        `).join('') : '<span>添付なし</span>'}
                     </div>
                 </div>
-                
                 <div class="detail-actions">
                     <button class="btn btn-secondary collapse-btn">
                         ▲ 詳細を閉じる
@@ -1286,11 +1336,9 @@ export class FolderUI {
                 </div>
             </div>
         `;
-
         // カードの後に詳細を挿入
         cardElement.parentNode?.insertBefore(detailElement, cardElement.nextSibling);
         cardElement.classList.add('expanded');
-
         // 閉じるボタンのイベントリスナー
         const collapseBtn = detailElement.querySelector('.collapse-btn');
         if (collapseBtn) {
@@ -1299,7 +1347,6 @@ export class FolderUI {
                 cardElement.classList.remove('expanded');
             });
         }
-
         // スムーズにスクロール
         setTimeout(() => {
             detailElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1523,7 +1570,7 @@ export class FolderUI {
                     <p><strong>試験日程:</strong></p>
                     <ul>
                         <li>日時: 7月18日（金） 13:00〜14:30</li>
-                        <li>場所: A棟201教室</li>
+                        <li>場所: A棠201教室</li>
                         <li>試験時間: 90分</li>
                         <li>持込: 不可（電卓含む）</li>
                     </ul>
@@ -1561,6 +1608,19 @@ export class FolderUI {
             content: '詳細情報を取得できませんでした。',
             attachments: []
         };
+    }
+
+    /**
+     * テキスト内のURLを自動検出し、aタグでリンク化する
+     */
+    private linkifyText(text: string): string {
+        if (!text) return '';
+        // URL検出用正規表現
+        const urlRegex = /(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+)(?![^<]*>|[^<>]*<\/?a)/g;
+        // 既存のaタグ内は除外し、URLをaタグに変換
+        return text.replace(urlRegex, (url) => {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        });
     }
 
     public destroy() {
