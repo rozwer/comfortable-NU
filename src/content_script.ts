@@ -195,8 +195,7 @@ async function performAutoSync() {
             quizzes: totalQuizEntries
         });
         
-        // 最終同期時刻保存
-        chrome.storage.local.set({ lastSyncTime: Date.now() });
+        // 注: 最終同期時刻の保存はバックグラウンドスクリプトからの通知で行うため、ここでは行わない
         
         console.log(`自動同期完了: ${result.assignments.length + result.quizzes.length}件作成`);
     } catch (error) {

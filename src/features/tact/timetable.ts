@@ -476,6 +476,14 @@ export const showTimetableModal = (): void => {
     classroomEditBtn.onclick = showClassroomEditModal;
     selectors.appendChild(classroomEditBtn);
     
+    // PNG出力ボタン追加
+    const pngExportBtn = document.createElement('button');
+    pngExportBtn.textContent = 'PNG出力';
+    pngExportBtn.className = 'cs-btn cs-btn-primary';
+    pngExportBtn.style.marginLeft = '12px';
+    pngExportBtn.onclick = showCourseColorModal;
+    selectors.appendChild(pngExportBtn);
+    
     timetableContainer.appendChild(selectors);
     
     // 時間割表示部分
@@ -808,6 +816,354 @@ function extractCourseCategories(): Map<string, string> {
     }
     
     return courseCategoryMap;
+}
+
+// 教科の色情報のストレージキー
+const CourseColorStorageKey = 'cs-timetable-course-colors';
+
+// 教科の色情報の保存・取得
+async function saveCourseColors(hostname: string, data: Record<string, string>) {
+    await toStorage(hostname, CourseColorStorageKey, data);
+}
+
+async function loadCourseColors(hostname: string): Promise<Record<string, string>> {
+    const result = await fromStorage<Record<string, string> | undefined>(hostname, CourseColorStorageKey, d => d || {});
+    return result || {};
+}
+
+// 教科の色選択モーダル
+function showCourseColorModal() {
+    const hostname = window.location.hostname;
+    const modal = document.createElement('div');
+    modal.className = 'cs-tact-modal cs-timetable-color-modal'; // クラス名を変更
+    modal.style.zIndex = '10002';
+    modal.style.maxHeight = '60vh'; // 高さを明示的に60vhに限定
+    modal.style.overflowY = 'auto';
+    
+    const header = document.createElement('div');
+    header.className = 'cs-tact-modal-header';
+    
+    const title = document.createElement('h2');
+    title.textContent = '教科の色設定';
+    header.appendChild(title);
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.className = 'cs-tact-modal-close';
+    closeBtn.onclick = () => modal.remove();
+    header.appendChild(closeBtn);
+    modal.appendChild(header);
+    
+    const content = document.createElement('div');
+    content.className = 'cs-tact-modal-content';
+    content.style.maxHeight = '60vh';
+    content.style.overflowY = 'auto';
+    
+    // 現在表示されている講義を取得
+    const yearSelect = document.getElementById('cs-timetable-year') as HTMLSelectElement;
+    const termSelect = document.getElementById('cs-timetable-term') as HTMLSelectElement;
+    const year = yearSelect.value;
+    const term = termSelect.value;
+    
+    const courses = cachedCourses || SAMPLE_COURSES;
+    const filteredCourses = courses.filter(course => {
+        let courseYear = course.academicYear || "";
+        if (!courseYear) {
+            const yearRegexMatch = course.title.match(/\((\d{4})年度/);
+            if (yearRegexMatch && yearRegexMatch[1]) {
+                courseYear = yearRegexMatch[1];
+            } else if (course.term && course.term.match(/(\d{4})年/)) {
+                const termYearMatch = course.term.match(/(\d{4})年/);
+                if (termYearMatch && termYearMatch[1]) {
+                    courseYear = termYearMatch[1];
+                }
+            }
+        }
+        
+        let isYearMatching = courseYear === year;
+        if (!courseYear) {
+            isYearMatching = true;
+        }
+        
+        const normalizedCourseTerm = normalizeTerm(course.term);
+        const normalizedSelectedTerm = term;
+        const courseTermBase = normalizedCourseTerm.split('-')[0];
+        const selectedTermBase = normalizedSelectedTerm.split('-')[0];
+        
+        let termMatch = false;
+        if (normalizedCourseTerm === normalizedSelectedTerm) {
+            termMatch = true;
+        } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
+            termMatch = true;
+        } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
+            termMatch = true;
+        }
+        
+        return isYearMatching && termMatch;
+    });
+    
+    // 重複する講義名を除去
+    const uniqueCourses = filteredCourses.filter((course, index, self) => 
+        index === self.findIndex(c => c.title === course.title)
+    );
+    
+    loadCourseColors(hostname).then((colorMap) => {
+        // ヘッダー説明
+        const description = document.createElement('div');
+        description.style.marginBottom = '16px';
+        description.style.padding = '12px';
+        description.style.backgroundColor = '#f8f9fa';
+        description.style.borderRadius = '4px';
+        description.style.fontSize = '14px';
+        description.style.color = '#666';
+        description.innerHTML = `
+            <p><strong>教科の色設定</strong></p>
+            <p>各教科の色を選択してください。デフォルトは白です。</p>
+            <p>設定した色は時間割のPNG出力時に使用されます。</p>
+        `;
+        content.appendChild(description);
+        
+        uniqueCourses.forEach(course => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.marginBottom = '12px';
+            row.style.padding = '8px';
+            row.style.border = '1px solid #e0e0e0';
+            row.style.borderRadius = '4px';
+            row.style.backgroundColor = '#fff';
+            
+            const label = document.createElement('span');
+            const shortTitle = course.title.split('(')[0].trim();
+            label.textContent = shortTitle;
+            label.style.flex = '0 0 250px';
+            label.style.fontWeight = 'bold';
+            label.style.fontSize = '14px';
+            label.title = course.title;
+            row.appendChild(label);
+            
+            const colorInput = document.createElement('input');
+            colorInput.type = 'color';
+            colorInput.value = colorMap[course.title] || '#ffffff';
+            colorInput.style.marginLeft = '12px';
+            colorInput.style.width = '50px';
+            colorInput.style.height = '35px';
+            colorInput.style.border = '1px solid #ccc';
+            colorInput.style.borderRadius = '4px';
+            colorInput.style.cursor = 'pointer';
+            row.appendChild(colorInput);
+            
+            const colorPreview = document.createElement('div');
+            colorPreview.style.marginLeft = '12px';
+            colorPreview.style.width = '100px';
+            colorPreview.style.height = '35px';
+            colorPreview.style.backgroundColor = colorInput.value;
+            colorPreview.style.border = '1px solid #ccc';
+            colorPreview.style.borderRadius = '4px';
+            colorPreview.style.display = 'flex';
+            colorPreview.style.alignItems = 'center';
+            colorPreview.style.justifyContent = 'center';
+            colorPreview.style.fontSize = '12px';
+            colorPreview.style.color = colorInput.value === '#ffffff' ? '#333' : '#fff';
+            colorPreview.textContent = 'プレビュー';
+            row.appendChild(colorPreview);
+            
+            // リセットボタン
+            const resetBtn = document.createElement('button');
+            resetBtn.textContent = 'リセット';
+            resetBtn.className = 'cs-btn cs-btn-secondary';
+            resetBtn.style.marginLeft = '12px';
+            resetBtn.style.fontSize = '12px';
+            resetBtn.style.padding = '4px 8px';
+            resetBtn.onclick = () => {
+                colorInput.value = '#ffffff';
+                colorPreview.style.backgroundColor = '#ffffff';
+                colorPreview.style.color = '#333';
+            };
+            row.appendChild(resetBtn);
+            
+            // 色変更時のプレビュー更新
+            colorInput.addEventListener('input', () => {
+                colorPreview.style.backgroundColor = colorInput.value;
+                colorPreview.style.color = colorInput.value === '#ffffff' ? '#333' : '#fff';
+            });
+            
+            row.dataset.title = course.title;
+            content.appendChild(row);
+        });
+        
+        // ボタンコンテナ
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.marginTop = '20px';
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.gap = '12px';
+        buttonContainer.style.justifyContent = 'center';
+        
+        // 全てリセットボタン
+        const resetAllBtn = document.createElement('button');
+        resetAllBtn.textContent = '全てリセット';
+        resetAllBtn.className = 'cs-btn cs-btn-secondary';
+        resetAllBtn.onclick = () => {
+            content.querySelectorAll('div[data-title]').forEach(row => {
+                const colorInput = row.querySelector('input[type="color"]') as HTMLInputElement;
+                const colorPreview = row.querySelector('div') as HTMLElement;
+                if (colorInput && colorPreview) {
+                    colorInput.value = '#ffffff';
+                    colorPreview.style.backgroundColor = '#ffffff';
+                    colorPreview.style.color = '#333';
+                }
+            });
+        };
+        buttonContainer.appendChild(resetAllBtn);
+        
+        // 出力ボタン
+        const exportBtn = document.createElement('button');
+        exportBtn.textContent = '出力';
+        exportBtn.className = 'cs-btn cs-btn-primary';
+        exportBtn.onclick = async () => {
+            // 実データで時間割HTMLを生成
+            const yearSelect = document.getElementById('cs-timetable-year') as HTMLSelectElement;
+            const termSelect = document.getElementById('cs-timetable-term') as HTMLSelectElement;
+            const year = yearSelect.value;
+            const term = termSelect.value;
+            const courses = cachedCourses || SAMPLE_COURSES;
+            // フィルタリングは既存ロジックを流用
+            const filteredCourses = courses.filter(course => {
+                let courseYear = course.academicYear || "";
+                if (!courseYear) {
+                    const yearRegexMatch = course.title.match(/\((\d{4})年度/);
+                    if (yearRegexMatch && yearRegexMatch[1]) {
+                        courseYear = yearRegexMatch[1];
+                    } else if (course.term && course.term.match(/(\d{4})年/)) {
+                        const termYearMatch = course.term.match(/(\d{4})年/);
+                        if (termYearMatch && termYearMatch[1]) {
+                            courseYear = termYearMatch[1];
+                        }
+                    }
+                }
+                
+                let isYearMatching = courseYear === year;
+                if (!courseYear) {
+                    isYearMatching = true;
+                }
+                
+                const normalizedCourseTerm = normalizeTerm(course.term);
+                const normalizedSelectedTerm = term;
+                const courseTermBase = normalizedCourseTerm.split('-')[0];
+                const selectedTermBase = normalizedSelectedTerm.split('-')[0];
+                
+                let termMatch = false;
+                if (normalizedCourseTerm === normalizedSelectedTerm) {
+                    termMatch = true;
+                } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
+                    termMatch = true;
+                } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
+                    termMatch = true;
+                }
+                
+                return isYearMatching && termMatch;
+            });
+            // 色設定を取得
+            const colorMap = await loadCourseColors(hostname);
+            // 教室情報を取得
+            const classroomMap = await loadClassroomInfo(hostname);
+            // 時間割2次元配列を作成
+            const days = ['月', '火', '水', '木', '金'];
+            const periods = 6;
+            const timetable: CourseInfo[][][] = Array.from({length: periods}, () => Array.from({length: days.length}, () => [] as CourseInfo[]));
+            filteredCourses.forEach(course => {
+                course.dayPeriod.forEach(dp => {
+                    const dayIdx = days.findIndex(d => dp.startsWith(d));
+                    const period = parseInt(dp.replace(/[^0-9]/g, ''));
+                    if (dayIdx >= 0 && period >= 1 && period <= periods) {
+                        timetable[period-1][dayIdx].push(course);
+                    }
+                });
+            });
+            // HTML生成
+            const periodLabels = [
+                '1限<br>8:45<br>10:15',
+                '2限<br>10:30<br>12:00',
+                '3限<br>13:00<br>14:30',
+                '4限<br>14:45<br>16:15',
+                '5限<br>16:30<br>18:00',
+                '6限<br>18:15<br>19:45'
+            ];
+            let timetableCells = '';
+            // ヘッダー
+            timetableCells += '<div class="cell header">時間</div>';
+            days.forEach(day => {
+                timetableCells += `<div class="cell header day-header">${day}曜日</div>`;
+            });
+            // 各時限
+            for(let p=0; p<periods; p++){
+                timetableCells += `<div class="cell time-header">${periodLabels[p]}</div>`;
+                for(let d=0; d<days.length; d++){
+                    const coursesInCell = timetable[p][d];
+                    if(coursesInCell.length>0){
+                        // 1つ目のみ表示（複数対応は必要なら拡張）
+                        const course = coursesInCell[0];
+                        let shortTitle = course.title.split('(')[0].trim();
+                        // 教室情報を優先的に設定から取得
+                        let room = classroomMap[course.title] || course.room || '教室未定';
+                        // 色設定
+                        const color = colorMap[course.title] || '#ffffff';
+                        timetableCells += `<div class="cell" style="border-left:6px solid ${color}"><div class="subject">${shortTitle}</div><div class="room">📍 ${room}</div></div>`;
+                    }else{
+                        timetableCells += '<div class="cell empty"><div class="subject"></div></div>';
+                    }
+                }
+            }
+            // CSS
+            const timetableCss = `<style>\n*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f5f5f5;min-height:100vh;padding:15px;display:flex;justify-content:center;align-items:flex-start;}.container{background:white;border-radius:12px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,0.1);border:1px solid #e0e0e0;max-width:90vw;width:100%;min-width:800px;}.timetable{display:grid;grid-template-columns:120px repeat(5,1fr);gap:2px;background:#e9ecef;border-radius:8px;padding:2px;animation:fadeInUp 1s ease-out 0.3s both;font-size:1.1em;}.cell{background:white;padding:15px 8px;text-align:center;border-radius:4px;transition:all 0.2s ease;position:relative;overflow:hidden;word-break:break-word;hyphens:auto;min-height:80px;}.cell:hover{transform:translateY(-2px);box-shadow:0 4px 8px rgba(0,0,0,0.1);}.header{background:#495057;color:white;font-weight:600;font-size:1.1rem;}.time-header{background:#6c757d;color:white;font-weight:600;font-size:0.9rem;line-height:1.2;}.subject{font-weight:600;color:#333;margin-bottom:5px;font-size:0.9rem;line-height:1.3;word-break:break-word;hyphens:auto;}.room{font-size:0.85rem;color:#333;background:#f5f5f5;padding:3px 5px;border-radius:3px;display:inline-block;margin-top:5px;border:1px solid #e0e0e0;}.empty{background:#f8f9fa;color:#6c757d;font-style:italic;opacity:0.8;}@media (max-width:768px){.container{padding:10px;margin:5px;max-width:100vw;min-width:auto;}h1{font-size:2rem;}.timetable{grid-template-columns:100px repeat(5,1fr);gap:1px;font-size:1em;}.cell{padding:12px 6px;font-size:0.9rem;min-height:70px;}.subject{font-size:0.85rem;}.room{font-size:0.75rem;}}</style>`;
+            // モーダル生成
+            const previewModal = document.createElement('div');
+            previewModal.className = 'cs-tact-modal cs-timetable-modal';
+            previewModal.style.zIndex = '10010';
+            previewModal.style.display = 'flex';
+            previewModal.style.flexDirection = 'column';
+            previewModal.style.alignItems = 'center';
+            previewModal.style.justifyContent = 'center';
+            previewModal.style.background = 'rgba(255,255,255,0.98)';
+            previewModal.style.padding = '12px'; // パディングを小さく
+            previewModal.style.position = 'fixed';
+            previewModal.style.top = '50%';
+            previewModal.style.left = '50%';
+            previewModal.style.transform = 'translate(-50%, -50%)';
+            previewModal.style.width = 'auto';
+            previewModal.style.height = 'auto';
+            previewModal.style.maxHeight = '95vh'; // 画面縦幅の95%に
+            previewModal.style.overflowY = 'auto';
+            // 閉じるボタン
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '×';
+            closeBtn.className = 'cs-tact-modal-close';
+            closeBtn.style.position = 'absolute';
+            closeBtn.style.top = '24px';
+            closeBtn.style.right = '32px';
+            closeBtn.style.fontSize = '28px';
+            closeBtn.onclick = () => previewModal.remove();
+            previewModal.appendChild(closeBtn);
+            // タイトル
+            const imgTitle = document.createElement('h2');
+            imgTitle.textContent = '時間割プレビュー'; // 「モダンな」を削除
+            imgTitle.style.marginBottom = '18px';
+            previewModal.appendChild(imgTitle);
+            // HTML+CSS本体
+            const htmlContainer = document.createElement('div');
+            htmlContainer.innerHTML = timetableCss + `<div class='container'><div class='timetable'>${timetableCells}</div></div><div style='margin-top:24px;text-align:center;font-size:1.1em;color:#495057;font-weight:bold;'>この画面をスクリーンショットして保存してください<br><span style='font-size:0.95em;font-weight:normal;color:#888;'>(右クリック→画像として保存 も可)</span></div>`;
+            htmlContainer.style.background = 'none';
+            htmlContainer.style.boxShadow = 'none';
+            previewModal.appendChild(htmlContainer);
+            document.body.appendChild(previewModal);
+        };
+        buttonContainer.appendChild(exportBtn);
+        
+        content.appendChild(buttonContainer);
+    });
+    
+    modal.appendChild(content);
+    document.body.appendChild(modal);
 }
 
 /**
