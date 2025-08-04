@@ -33,8 +33,8 @@ if [ -d "$WINDOWS_PATH" ]; then
     # comfortable-NU-chrome-v1.0.2.zipもリリース用フォルダにコピー
     RELEASE_PATH="/mnt/c/Users/rozwe/デスクトップ/拡張機能リリース用"
     if [ -d "$RELEASE_PATH" ]; then
-        echo "comfortable-NU-chrome-v1.0.3.zipをリリース用フォルダにコピー中..."
-        cp dist/release/comfortable-NU-chrome-v1.0.3.zip "$RELEASE_PATH/"
+        echo "comfortable-NU-chrome-v1.0.4.zipをリリース用フォルダにコピー中..."
+        cp dist/release/comfortable-NU-chrome-v1.0.4.zip "$RELEASE_PATH/"
     else
         echo "エラー: リリース用フォルダが見つかりません: $RELEASE_PATH"
     fi
