@@ -240,7 +240,7 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                         );
                         
                         // 現在時刻よりも後ならtrue（非表示タブに表示）
-                        return checkDate.getTime() / 1000 > this.state.settings.appInfo.currentTime;
+                        return checkDate.getTime() / 1000 > (Date.now() / 1000);
                     } catch (e) {
                         console.error("Invalid timestamp format:", e);
                         return false;

@@ -16,12 +16,23 @@
   z-index: 9999;
 }
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-08-04
+ * Changes    : モバイル対応のためモーダルサイズと高さ制約を追加
+ * Category   : UI改善
+ * -----------------------------------------------------------------
+ */
 .cs-datepicker-modal {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   width: 380px;
   max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 16px;
   overflow: hidden;
 }
 
@@ -146,4 +157,34 @@
   font-size: 14px;
   color: #17a2b8;
   font-weight: 500;
+}
+
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-08-04
+ * Changes    : モバイル対応のためレスポンシブレイアウトを追加
+ * Category   : UI改善
+ * -----------------------------------------------------------------
+ */
+/* モバイル対応 */
+@media (max-width: 480px) {
+  .cs-datepicker-modal {
+    width: calc(100vw - 32px);
+    margin: 16px;
+  }
+  
+  .cs-datepicker-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .cs-datepicker-field {
+    width: 100%;
+  }
+  
+  .cs-datepicker-field select {
+    width: 100%;
+    min-width: auto;
+  }
 }

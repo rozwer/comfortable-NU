@@ -58,7 +58,7 @@ export class FolderUI {
                 <h3>TACT講義構造</h3>
                 <div class="tact-controls">
                     <button id="refresh-tact-data" class="btn btn-primary">
-                        🔄 API再実行
+                        🔄 再読み込み
                     </button>
                     <span class="refresh-info">最新のデータを取得します</span>
                 </div>
@@ -71,6 +71,15 @@ export class FolderUI {
 
     // キャッシュ有効期間（秒）
     private readonly CACHE_EXPIRE_SECONDS = 2 * 60 * 60; // 2時間
+
+    /**
+     * フォルダ構造データのキャッシュ有効期間（秒）
+     */
+    private readonly FOLDER_CACHE_EXPIRE_SECONDS = 2 * 60 * 60; // 2時間
+    /**
+     * 再読み込みボタン用のキャッシュ無視期間（秒）
+     */
+    private readonly FOLDER_FORCE_REFRESH_INTERVAL = 10 * 60; // 10分
 
     /**
      * TACT APIから講義構造を読み込み
@@ -133,12 +142,82 @@ export class FolderUI {
     }
 
     /**
+     * フォルダ構造データを取得（キャッシュ対応）
+     * @param forceRefresh trueならキャッシュを無視してAPI取得
+     * @param forceRefreshByButton trueなら「再読み込みボタン」からの強制リフレッシュ
+     */
+    private async loadFolderStructure(forceRefresh: boolean = false, forceRefreshByButton: boolean = false): Promise<void> {
+        const containerElement = this.container.querySelector('#tact-structure-container');
+        if (!containerElement) return;
+
+        containerElement.innerHTML = '<p class="loading-message">🔄 フォルダ構造を読み込み中...</p>';
+
+        try {
+            const siteId = this.tactApiClient.getCurrentSiteId();
+            if (!siteId) throw new Error('サイトIDを取得できませんでした');
+            const cacheKey = `folder-structure-cache-${siteId}`;
+            const cacheTimeKey = `folder-structure-cache-time-${siteId}`;
+            let useCache = false;
+            let tree: any = null;
+            const cached = localStorage.getItem(cacheKey);
+            const cachedTime = localStorage.getItem(cacheTimeKey);
+            const now = Date.now();
+            if (!forceRefresh && cached && cachedTime) {
+                const elapsed = (now - parseInt(cachedTime, 10)) / 1000;
+                // 再読み込みボタンからの場合は10分以内ならキャッシュを使う
+                if (forceRefreshByButton) {
+                    if (elapsed < this.FOLDER_FORCE_REFRESH_INTERVAL) {
+                        tree = JSON.parse(cached);
+                        useCache = true;
+                    }
+                } else {
+                    if (elapsed < this.FOLDER_CACHE_EXPIRE_SECONDS) {
+                        tree = JSON.parse(cached);
+                        useCache = true;
+                    }
+                }
+            }
+            if (!useCache) {
+                this.tactApiClient.setSiteId(siteId);
+                const items = await this.tactApiClient.fetchSiteContent(siteId);
+                this.tactApiClient.generateStatistics(items);
+                tree = this.tactApiClient.buildFileTreeFromStorage();
+                localStorage.setItem(cacheKey, JSON.stringify(tree));
+                localStorage.setItem(cacheTimeKey, now.toString());
+            }
+            const treeHTML = this.tactApiClient.renderTreeAsHTML(tree, this.isEditMode);
+            containerElement.innerHTML = `
+                <div class="tact-structure-results">
+                    <div class="tact-tree">
+                        <h4>🌲 フォルダ構造</h4>
+                        <div class="tree-display">${treeHTML || '<p>構造が見つかりませんでした</p>'}</div>
+                    </div>
+                    <div class="tact-raw-data" style="margin-top: 20px;"></div>
+                </div>
+            `;
+            this.addFolderToggleListeners(containerElement);
+            this.addEditListeners(containerElement);
+            this.addDownloadListeners(containerElement);
+            this.addMoveButtonListeners(containerElement);
+        } catch (error) {
+            console.error('フォルダ構造の読み込みに失敗:', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            containerElement.innerHTML = `
+                <div class="error-message">
+                    <p>❌ エラーが発生しました: ${errorMessage}</p>
+                    <p>💡 ログインしているか、正しい講義ページにいるかを確認してください</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
      * アクティブなタブのデータを読み込み
      */
     private loadActiveTabData(): void {
         switch (this.activeTab) {
             case 'class-materials':
-                this.loadTactStructure();
+                this.loadFolderStructure();
                 break;
             case 'assignments':
                 this.loadAssignments();
@@ -150,7 +229,7 @@ export class FolderUI {
     }
 
     /**
-     * API再実行ボタンのイベントリスナーを追加
+     * 再読み込みボタンのイベントリスナーを追加
      */
     private addRefreshButtonListener(): void {
         const refreshButton = this.container.querySelector('#refresh-tact-data') as HTMLButtonElement;
@@ -159,19 +238,16 @@ export class FolderUI {
                 refreshButton.disabled = true;
                 refreshButton.textContent = '🔄 実行中...';
                 try {
-                    // タブごとに処理を分岐
                     if (this.activeTab === 'assignments') {
                         await this.fetchAndLogAssignmentsForCurrentSite();
                     } else {
-                        // 既存のAPI再実行処理
-                        await this.loadTactStructure(true);
+                        await this.loadFolderStructure(false, true); // 再読み込みボタンからの呼び出し
                     }
                 } catch (error) {
-                    console.error('API再実行エラー:', error);
-                    alert('データの再取得中にエラーが発生しました。ネットワーク接続を確認してください。');
+                    console.error('再読み込みエラー:', error);
                 } finally {
                     refreshButton.disabled = false;
-                    refreshButton.textContent = '🔄 API再実行';
+                    refreshButton.textContent = '🔄 再読み込み';
                 }
             });
         }
@@ -190,7 +266,7 @@ export class FolderUI {
                 console.warn("課題取得: サイトIDまたはベースURLが取得できませんでした");
                 return [];
             }
-            const url = `${baseURL}/direct/assignment/site/${courseId}.json`;
+            const url = `${baseURL}/direct/assignment/site/${courseId}.json?n=100`;
             const res = await fetch(url, { cache: "no-cache" });
             if (res.ok) {
                 const data = await res.json();
@@ -221,7 +297,7 @@ export class FolderUI {
                 console.warn("課題取得: サイトIDまたはベースURLが取得できませんでした");
                 return;
             }
-            const url = `${baseURL}/direct/assignment/site/${courseId}.json`;
+            const url = `${baseURL}/direct/assignment/site/${courseId}.json?n=100`;
             const res = await fetch(url, { cache: "no-cache" });
             if (res.ok) {
                 const data = await res.json();
@@ -482,6 +558,12 @@ export class FolderUI {
      */
     private async downloadSingleFile(url: string, filename: string): Promise<void> {
         try {
+            // NUSSファイルかどうか判定
+            if (this.isNussLink(url)) {
+                await this.handleNussFile(url, filename);
+                return;
+            }
+
             const response = await fetch(url, {
                 method: 'GET',
                 credentials: 'include'
@@ -506,6 +588,30 @@ export class FolderUI {
         } catch (error) {
             console.error(`ファイル ${filename} のダウンロードに失敗:`, error);
             throw error;
+        }
+    }
+
+    /**
+     * NUSSリンクかどうか判定
+     */
+    private isNussLink(url: string): boolean {
+        return url.includes('nuss.nagoy') || url.includes('https%3A__nuss.nagoy');
+    }
+
+    /**
+     * NUSSファイルの警告表示とリンク開き
+     */
+    private async handleNussFile(url: string, filename: string): Promise<void> {
+        console.log(`⚠️ NUSSファイル検出: ${filename}`);
+        
+        // 警告メッセージを表示
+        const message = `NUSSファイル「${filename}」は現在ダウンロードできません。\n\nブラウザの別タブでNUSSサイトを開きます。\n手動でダウンロードしてください。`;
+        
+        if (confirm(message)) {
+            console.log(`🌐 NUSSリンクを新しいタブで開きます: ${url}`);
+            window.open(url, '_blank');
+        } else {
+            console.log('👤 ユーザーがNUSSリンクを開くのをキャンセルしました');
         }
     }
 
@@ -771,9 +877,25 @@ export class FolderUI {
                     <h3>📝 課題一覧</h3>
                     <div class="tact-controls">
                         <button id="refresh-tact-data" class="btn btn-primary">
-                            🔄 API再実行
+                            🔄 再読み込み
                         </button>
                         <span class="refresh-info">最新の課題データを取得します</span>
+                    </div>
+                    <div class="assignment-controls">
+                        <div class="sort-controls">
+                            <label>📊 ソート:</label>
+                            <select id="assignment-sort" class="sort-select">
+                                <option value="name">名前順</option>
+                                <option value="due-date">提出期限順</option>
+                                <option value="open-date">公開日順</option>
+                            </select>
+                        </div>
+                        <div class="filter-controls">
+                            <label>
+                                <input type="checkbox" id="show-unsubmitted-first" checked>
+                                📌 未提出を上部に表示
+                            </label>
+                        </div>
                     </div>
                     <div class="assignments-container" id="assignments-container">
                         <p class="loading-message">🔄 課題データを読み込み中...</p>
@@ -793,7 +915,7 @@ export class FolderUI {
                     <h3>📢 お知らせ</h3>
                     <div class="tact-controls">
                         <button id="refresh-tact-data" class="btn btn-primary">
-                            🔄 API再実行
+                            🔄 再読み込み
                         </button>
                         <span class="refresh-info">最新のお知らせを取得します</span>
                     </div>
@@ -832,7 +954,7 @@ export class FolderUI {
         this.addTabSwitchListeners();
         switch (tabType) {
             case 'class-materials':
-                this.loadTactStructure();
+                this.loadFolderStructure();
                 break;
             case 'assignments':
                 this.loadAssignments();
@@ -873,7 +995,7 @@ export class FolderUI {
                 }
             }
             if (!useCache && baseURL && courseId) {
-                const url = `${baseURL}/direct/assignment/site/${courseId}.json`;
+                const url = `${baseURL}/direct/assignment/site/${courseId}.json?n=100`;
                 const res = await fetch(url, { cache: "no-cache" });
                 if (res.ok) {
                     const data = await res.json();
@@ -886,23 +1008,9 @@ export class FolderUI {
                 containerElement.innerHTML = '<p class="info-message">課題が見つかりませんでした</p>';
                 return;
             }
-            containerElement.innerHTML = `
-                <div class="assignments-list">
-                    ${assignments.map((a) => `
-                        <div class="assignment-item clickable-card" data-assignment-id="${a.id}">
-                            <h4>📝 ${a.title || '無題の課題'}</h4>
-                            <p class="due-date">提出期限: ${a.dueTimeString ? a.dueTimeString.replace('T', ' ').replace('Z', '') : '未設定'}</p>
-                            <div class="card-footer">
-                                <span class="status-badge ${a.submissions && a.submissions.length > 0 ? 'status-submitted' : 'status-pending'}">
-                                    ${a.submissions && a.submissions.length > 0 ? '提出済み' : '未提出'}
-                                </span>
-                                <span class="click-hint">クリックで詳細表示</span>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            this.addAssignmentCardListeners(containerElement);
+            
+            // ソート・フィルタを適用して表示
+            this.renderSortedAssignments(assignments, containerElement);
         } catch (error) {
             console.error('課題の読み込みに失敗:', error);
             containerElement.innerHTML = `
@@ -912,6 +1020,143 @@ export class FolderUI {
             `;
         }
         this.addRefreshButtonListener();
+    }
+
+    /**
+     * 自然順序ソート（数字を数値として比較）
+     */
+    private naturalSort(a: string, b: string): number {
+        const regex = /(\d+|\D+)/g;
+        const aParts = a.match(regex) || [];
+        const bParts = b.match(regex) || [];
+        
+        const maxLength = Math.max(aParts.length, bParts.length);
+        
+        for (let i = 0; i < maxLength; i++) {
+            const aPart = aParts[i] || '';
+            const bPart = bParts[i] || '';
+            
+            // 両方が数字の場合は数値として比較
+            if (/^\d+$/.test(aPart) && /^\d+$/.test(bPart)) {
+                const aNum = parseInt(aPart, 10);
+                const bNum = parseInt(bPart, 10);
+                if (aNum !== bNum) {
+                    return aNum - bNum;
+                }
+            } else {
+                // 文字列として比較
+                const result = aPart.localeCompare(bPart);
+                if (result !== 0) {
+                    return result;
+                }
+            }
+        }
+        
+        return 0;
+    }
+
+    /**
+     * 課題をソート・フィルタして表示
+     */
+    private renderSortedAssignments(assignments: any[], containerElement: Element): void {
+        // ソート設定を取得
+        const sortSelect = this.container.querySelector('#assignment-sort') as HTMLSelectElement;
+        const sortType = sortSelect?.value || 'name';
+        
+        // フィルタ設定を取得
+        const unsubmittedFirstCheckbox = this.container.querySelector('#show-unsubmitted-first') as HTMLInputElement;
+        const showUnsubmittedFirst = unsubmittedFirstCheckbox?.checked ?? true;
+        
+        // ソート処理
+        const sortedAssignments = [...assignments].sort((a, b) => {
+            switch (sortType) {
+                case 'due-date':
+                    const dateA = a.dueTimeString ? new Date(a.dueTimeString).getTime() : Number.MAX_SAFE_INTEGER;
+                    const dateB = b.dueTimeString ? new Date(b.dueTimeString).getTime() : Number.MAX_SAFE_INTEGER;
+                    return dateA - dateB;
+                case 'open-date':
+                    const openA = a.openTimeString ? new Date(a.openTimeString).getTime() : 0;
+                    const openB = b.openTimeString ? new Date(b.openTimeString).getTime() : 0;
+                    return openB - openA; // 新しい順
+                case 'name':
+                default:
+                    return this.naturalSort(a.title || '', b.title || '');
+            }
+        });
+        
+        // 未提出を上部に表示する処理
+        const finalAssignments = showUnsubmittedFirst ? 
+            [
+                ...sortedAssignments.filter(a => !(a.submissions && a.submissions.length > 0)),
+                ...sortedAssignments.filter(a => a.submissions && a.submissions.length > 0)
+            ] : sortedAssignments;
+            
+        containerElement.innerHTML = `
+            <div class="assignments-list">
+                ${finalAssignments.map((a) => `
+                    <div class="assignment-item clickable-card ${!(a.submissions && a.submissions.length > 0) ? 'unsubmitted' : ''}" data-assignment-id="${a.id}">
+                        <h4>📝 ${a.title || '無題の課題'}</h4>
+                        <p class="due-date">提出期限: ${a.dueTimeString ? a.dueTimeString.replace('T', ' ').replace('Z', '') : '未設定'}</p>
+                        <div class="card-footer">
+                            <span class="status-badge ${a.submissions && a.submissions.length > 0 ? 'status-submitted' : 'status-pending'}">
+                                ${a.submissions && a.submissions.length > 0 ? '提出済み' : '未提出'}
+                            </span>
+                            <span class="click-hint">クリックで詳細表示</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        this.addAssignmentCardListeners(containerElement);
+        this.addAssignmentControlListeners();
+    }
+
+    /**
+     * 課題コントロールのイベントリスナーを追加
+     */
+    private addAssignmentControlListeners(): void {
+        const sortSelect = this.container.querySelector('#assignment-sort') as HTMLSelectElement;
+        const unsubmittedFirstCheckbox = this.container.querySelector('#show-unsubmitted-first') as HTMLInputElement;
+        
+        // ソート変更時の処理
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                this.refreshAssignmentDisplay();
+            });
+        }
+        
+        // フィルタ変更時の処理
+        if (unsubmittedFirstCheckbox) {
+            unsubmittedFirstCheckbox.addEventListener('change', () => {
+                this.refreshAssignmentDisplay();
+            });
+        }
+    }
+
+    /**
+     * 課題表示を再描画
+     */
+    private async refreshAssignmentDisplay(): Promise<void> {
+        const containerElement = this.container.querySelector('#assignments-container');
+        if (!containerElement) return;
+        
+        // キャッシュされた課題データを取得
+        const courseIdMatch = location.href.match("/portal/site-?[a-z]*/([^/]+)");
+        const courseId = courseIdMatch ? courseIdMatch[1] : null;
+        const cacheKey = `assignment-cache-${courseId}`;
+        
+        if (courseId) {
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                const assignments = JSON.parse(cached);
+                this.renderSortedAssignments(assignments, containerElement);
+                return;
+            }
+        }
+        
+        // キャッシュがない場合は再読み込み
+        await this.loadAssignments();
     }
 
     /**
@@ -944,7 +1189,7 @@ export class FolderUI {
                 }
             }
             if (!useCache && baseURL && courseId) {
-                const url = `${baseURL}/direct/announcement/site/${courseId}.json`;
+                const url = `${baseURL}/direct/announcement/site/${courseId}.json?n=100`;
                 const res = await fetch(url, { cache: "no-cache" });
                 if (res.ok) {
                     const data = await res.json();
@@ -990,10 +1235,10 @@ export class FolderUI {
         const assignmentCards = container.querySelectorAll('.assignment-item.clickable-card');
         
         assignmentCards.forEach(card => {
-            card.addEventListener('click', (e) => {
+            card.addEventListener('click', async (e) => {
                 const assignmentId = card.getAttribute('data-assignment-id');
                 if (assignmentId) {
-                    this.toggleAssignmentDetail(card as HTMLElement, assignmentId);
+                    await this.toggleAssignmentDetail(card as HTMLElement, assignmentId);
                 }
             });
         });
@@ -1018,9 +1263,9 @@ export class FolderUI {
     /**
      * 課題詳細モーダルを表示
      */
-    private showAssignmentDetailModal(assignmentId: string): void {
-        // TODO: 実際のAPIから課題詳細を取得
-        const assignmentData = this.getMockAssignmentData(assignmentId);
+    private async showAssignmentDetailModal(assignmentId: string): Promise<void> {
+        // キャッシュから課題詳細を取得、なければAPIから取得
+        const assignmentData = await this.getAssignmentDetail(assignmentId);
         
         const overlay = document.createElement('div');
         overlay.className = 'dialog-overlay';
@@ -1225,9 +1470,8 @@ export class FolderUI {
         allExpandedDetails?.forEach(detail => detail.remove());
         allExpandedCards?.forEach(card => card.classList.remove('expanded'));
 
-        // 実データから該当課題を取得
-        const assignments = await this.fetchAssignmentsForCurrentSite();
-        const assignmentData = assignments.find(a => a.id === assignmentId);
+        // キャッシュ優先で課題詳細を取得
+        const assignmentData = await this.getAssignmentDetail(assignmentId);
         // データがなければデフォルト
         const title = assignmentData?.title || '課題情報';
         const dueDate = assignmentData?.dueTimeString ? assignmentData.dueTimeString.replace('T', ' ').replace('Z', '') : '未設定';
@@ -1271,14 +1515,27 @@ export class FolderUI {
                 </div>
                 <div class="assignment-attachments">
                     <h4>📎 添付ファイル・リンク</h4>
+                    ${attachments.length > 0 ? `
+                        <div class="download-controls">
+                            <button class="download-btn" id="download-selected-assignment-${assignmentId}" disabled>
+                                選択したファイルをダウンロード
+                            </button>
+                            <span class="selected-count">(0件選択)</span>
+                        </div>
+                    ` : ''}
                     <div class="attachments-list">
-                        ${attachments.length > 0 ? attachments.map((attachment: any) => `
+                        ${attachments.length > 0 ? attachments.map((attachment: any, index: number) => `
                             <div class="attachment-item">
+                                <input type="checkbox" class="attachment-checkbox" 
+                                       id="attachment-${assignmentId}-${index}" 
+                                       data-url="${attachment.url}" 
+                                       data-filename="${attachment.name}">
                                 <span class="attachment-icon">📄</span>
                                 <a href="${attachment.url}" target="_blank" class="attachment-link">
                                     ${attachment.name}
                                 </a>
                                 <span class="file-size">(${attachment.size || ''})</span>
+                                ${this.isNussLink(attachment.url) ? '<span class="nuss-label" style="color: #28a745; font-weight: bold; margin-left: 8px;">nuss</span>' : ''}
                             </div>
                         `).join('') : '<span>添付なし</span>'}
                     </div>
@@ -1301,6 +1558,10 @@ export class FolderUI {
                 cardElement.classList.remove('expanded');
             });
         }
+        
+        // 添付ファイルのダウンロード機能を追加
+        this.addAssignmentAttachmentListeners(detailElement, assignmentId);
+        
         // スムーズにスクロール
         setTimeout(() => {
             detailElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1396,6 +1657,134 @@ export class FolderUI {
         setTimeout(() => {
             detailElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }, 100);
+    }
+
+    /**
+     * 課題添付ファイルのダウンロード機能を追加
+     */
+    private addAssignmentAttachmentListeners(container: Element, assignmentId: string): void {
+        const downloadButton = container.querySelector(`#download-selected-assignment-${assignmentId}`) as HTMLButtonElement;
+        const selectedCountSpan = container.querySelector('.selected-count') as HTMLSpanElement;
+        const checkboxes = container.querySelectorAll('.attachment-checkbox') as NodeListOf<HTMLInputElement>;
+        
+        if (!downloadButton || !selectedCountSpan) return;
+        
+        // チェックボックスの状態管理
+        const updateDownloadButton = () => {
+            const checkedBoxes = Array.from(checkboxes).filter(cb => cb.checked);
+            const count = checkedBoxes.length;
+            selectedCountSpan.textContent = `(${count}件選択)`;
+            downloadButton.disabled = count === 0;
+        };
+        
+        // チェックボックスのイベントリスナー
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateDownloadButton);
+        });
+        
+        // ダウンロードボタンのイベントリスナー
+        downloadButton.addEventListener('click', async () => {
+            const selectedCheckboxes = Array.from(checkboxes).filter(cb => cb.checked);
+            if (selectedCheckboxes.length === 0) return;
+            
+            try {
+                downloadButton.disabled = true;
+                downloadButton.textContent = 'ダウンロード中...';
+                
+                await this.downloadSelectedAttachments(selectedCheckboxes);
+                
+                // チェックボックスをリセット
+                selectedCheckboxes.forEach(cb => cb.checked = false);
+                updateDownloadButton();
+            } catch (error) {
+                console.error('添付ファイルダウンロードエラー:', error);
+                alert('添付ファイルのダウンロードに失敗しました');
+            } finally {
+                downloadButton.disabled = false;
+                downloadButton.textContent = '選択したファイルをダウンロード';
+            }
+        });
+        
+        // 初期状態を設定
+        updateDownloadButton();
+    }
+
+    /**
+     * 選択された添付ファイルをダウンロード
+     */
+    private async downloadSelectedAttachments(checkboxes: HTMLInputElement[]): Promise<void> {
+        const attachments = checkboxes.map(checkbox => ({
+            url: checkbox.getAttribute('data-url') || '',
+            filename: checkbox.getAttribute('data-filename') || 'unknown'
+        }));
+        
+        console.log(`📥 ${attachments.length}個の添付ファイルのダウンロードを開始`);
+        
+        for (const attachment of attachments) {
+            if (attachment.url && attachment.filename) {
+                try {
+                    await this.downloadSingleFile(attachment.url, attachment.filename);
+                    console.log(`✅ ダウンロード完了: ${attachment.filename}`);
+                } catch (error) {
+                    console.error(`❌ ダウンロード失敗: ${attachment.filename}`, error);
+                }
+            }
+        }
+        
+        console.log(`🎉 添付ファイルのダウンロード処理完了`);
+    }
+
+    /**
+     * 課題詳細を取得（キャッシュ優先）
+     */
+    private async getAssignmentDetail(assignmentId: string): Promise<any> {
+        const cacheKey = `assignment-detail-${assignmentId}`;
+        const cacheTimeKey = `assignment-detail-time-${assignmentId}`;
+        
+        // キャッシュチェック
+        const cached = localStorage.getItem(cacheKey);
+        const cachedTime = localStorage.getItem(cacheTimeKey);
+        
+        if (cached && cachedTime) {
+            const elapsed = (Date.now() - parseInt(cachedTime, 10)) / 1000;
+            if (elapsed < this.CACHE_EXPIRE_SECONDS) {
+                console.log(`📋 課題詳細をキャッシュから取得: ${assignmentId}`);
+                return JSON.parse(cached);
+            }
+        }
+        
+        // APIから取得を試行
+        try {
+            const match = location.href.match("(https?://[^/]+)/portal");
+            const baseURL = match ? match[1] : "";
+            
+            if (baseURL) {
+                const url = `${baseURL}/direct/assignment/${assignmentId}.json`;
+                console.log(`🌐 課題詳細をAPIから取得: ${url}`);
+                
+                const response = await fetch(url, { 
+                    cache: "no-cache",
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // キャッシュに保存
+                    localStorage.setItem(cacheKey, JSON.stringify(data));
+                    localStorage.setItem(cacheTimeKey, Date.now().toString());
+                    
+                    console.log(`✅ 課題詳細をAPIから取得完了: ${assignmentId}`);
+                    return data;
+                }
+            }
+        } catch (error) {
+            console.warn(`⚠️ 課題詳細APIエラー (${assignmentId}):`, error);
+        }
+        
+        // フォールバック: モックデータを使用
+        console.log(`🔄 モックデータにフォールバック: ${assignmentId}`);
+        return this.getMockAssignmentData(assignmentId);
     }
 
     /**

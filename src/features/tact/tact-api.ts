@@ -291,8 +291,14 @@ export class TactApiClient {
                 const fileName = node.url 
                     ? `<a href="${node.url}" target="_blank" class="file-link"><span class="editable-name" data-original="${node.name}">${node.name}</span></a>`
                     : `<span class="editable-name" data-original="${node.name}">${node.name}</span>`;
+                
+                // NUSSファイルラベルを追加
+                const nussLabel = (node.url && this.isNussUrl(node.url)) 
+                    ? '<span class="nuss-label" style="color: #28a745; font-weight: bold; margin-left: 8px;">nuss</span>' 
+                    : '';
+                
                 return `<li class="file-item" data-node-id="${nodeId}">
-                    ${checkbox}${icon} ${fileName} <span class="edit-icon" title="名前を変更">✏️</span>${moveButton}</li>`;
+                    ${checkbox}${icon} ${fileName}${nussLabel} <span class="edit-icon" title="名前を変更">✏️</span>${moveButton}</li>`;
             }
         };
 
@@ -382,5 +388,12 @@ export class TactApiClient {
      */
     clearAllStorage(): void {
         this.fileStorage.clearAllStorage();
+    }
+
+    /**
+     * NUSSのURLかどうか判定
+     */
+    private isNussUrl(url: string): boolean {
+        return url.includes('nuss.nagoy') || url.includes('https%3A__nuss.nagoy');
     }
 }

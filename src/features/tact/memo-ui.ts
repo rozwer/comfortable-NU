@@ -71,21 +71,21 @@ export class MemoUI {
         newMemoBtn.className = 'cs-btn cs-btn-primary';
         newMemoBtn.addEventListener('click', () => this.showNewMemoDialog());
 
-        // エクスポートボタン
-        const exportBtn = document.createElement('button');
-        exportBtn.textContent = i18nMessage('memo_ui_export');
-        exportBtn.className = 'cs-btn cs-btn-secondary';
-        exportBtn.addEventListener('click', () => this.exportNotes());
+        // // エクスポートボタン
+        // const exportBtn = document.createElement('button');
+        // exportBtn.textContent = i18nMessage('memo_ui_export');
+        // exportBtn.className = 'cs-btn cs-btn-secondary';
+        // exportBtn.addEventListener('click', () => this.exportNotes());
 
-        // インポートボタン
-        const importBtn = document.createElement('button');
-        importBtn.textContent = i18nMessage('memo_ui_import');
-        importBtn.className = 'cs-btn cs-btn-secondary';
-        importBtn.addEventListener('click', () => this.showImportDialog());
+        // // インポートボタン
+        // const importBtn = document.createElement('button');
+        // importBtn.textContent = i18nMessage('memo_ui_import');
+        // importBtn.className = 'cs-btn cs-btn-secondary';
+        // importBtn.addEventListener('click', () => this.showImportDialog());
 
         actions.appendChild(newMemoBtn);
-        actions.appendChild(exportBtn);
-        actions.appendChild(importBtn);
+        // actions.appendChild(exportBtn);
+        // actions.appendChild(importBtn);
 
         header.appendChild(title);
         header.appendChild(actions);

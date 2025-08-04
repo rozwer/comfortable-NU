@@ -478,7 +478,7 @@ export const showTimetableModal = (): void => {
     
     // PNG出力ボタン追加
     const pngExportBtn = document.createElement('button');
-    pngExportBtn.textContent = 'PNG出力';
+    pngExportBtn.textContent = 'プレビュー';
     pngExportBtn.className = 'cs-btn cs-btn-primary';
     pngExportBtn.style.marginLeft = '12px';
     pngExportBtn.onclick = showCourseColorModal;
@@ -919,7 +919,6 @@ function showCourseColorModal() {
         description.innerHTML = `
             <p><strong>教科の色設定</strong></p>
             <p>各教科の色を選択してください。デフォルトは白です。</p>
-            <p>設定した色は時間割のPNG出力時に使用されます。</p>
         `;
         content.appendChild(description);
         
@@ -1021,6 +1020,17 @@ function showCourseColorModal() {
         exportBtn.textContent = '出力';
         exportBtn.className = 'cs-btn cs-btn-primary';
         exportBtn.onclick = async () => {
+            // モーダルから現在の色設定を取得
+            const currentColorMap: Record<string, string> = {};
+            content.querySelectorAll('div[data-title]').forEach(row => {
+                const title = (row as HTMLElement).dataset.title;
+                const colorInput = row.querySelector('input[type="color"]') as HTMLInputElement;
+                if (title && colorInput) {
+                    currentColorMap[title] = colorInput.value;
+                }
+            });
+            console.log('🎨 モーダルから取得した色設定:', currentColorMap);
+            
             // 実データで時間割HTMLを生成
             const yearSelect = document.getElementById('cs-timetable-year') as HTMLSelectElement;
             const termSelect = document.getElementById('cs-timetable-term') as HTMLSelectElement;
@@ -1063,8 +1073,8 @@ function showCourseColorModal() {
                 
                 return isYearMatching && termMatch;
             });
-            // 色設定を取得
-            const colorMap = await loadCourseColors(hostname);
+            // モーダルの色設定を使用（ストレージの代わりに）
+            const colorMap = currentColorMap;
             // 教室情報を取得
             const classroomMap = await loadClassroomInfo(hostname);
             // 時間割2次元配列を作成
@@ -1108,15 +1118,26 @@ function showCourseColorModal() {
                         let room = classroomMap[course.title] || course.room || '教室未定';
                         // 色設定
                         const color = colorMap[course.title] || '#ffffff';
-                        timetableCells += `<div class="cell" style="border-left:6px solid ${color}"><div class="subject">${shortTitle}</div><div class="room">📍 ${room}</div></div>`;
+                        // 背景色として設定（透明度付き）
+                        let backgroundColor: string;
+                        let borderColor: string;
+                        if (color === '#ffffff') {
+                            // 白色の場合は薄いグレーの背景にして、ボーダーも薄いグレーにする
+                            backgroundColor = '#f8f9fa';
+                            borderColor = '#dee2e6';
+                        } else {
+                            backgroundColor = `color-mix(in srgb, ${color} 20%, white)`;
+                            borderColor = color;
+                        }
+                        timetableCells += `<div class="cell" style="background-color:${backgroundColor};border-left:6px solid ${borderColor}"><div class="subject">${shortTitle}</div><div class="room">📍 ${room}</div></div>`;
                     }else{
                         timetableCells += '<div class="cell empty"><div class="subject"></div></div>';
                     }
                 }
             }
-            // CSS
-            const timetableCss = `<style>\n*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f5f5f5;min-height:100vh;padding:15px;display:flex;justify-content:center;align-items:flex-start;}.container{background:white;border-radius:12px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,0.1);border:1px solid #e0e0e0;max-width:90vw;width:100%;min-width:800px;}.timetable{display:grid;grid-template-columns:120px repeat(5,1fr);gap:2px;background:#e9ecef;border-radius:8px;padding:2px;animation:fadeInUp 1s ease-out 0.3s both;font-size:1.1em;}.cell{background:white;padding:15px 8px;text-align:center;border-radius:4px;transition:all 0.2s ease;position:relative;overflow:hidden;word-break:break-word;hyphens:auto;min-height:80px;}.cell:hover{transform:translateY(-2px);box-shadow:0 4px 8px rgba(0,0,0,0.1);}.header{background:#495057;color:white;font-weight:600;font-size:1.1rem;}.time-header{background:#6c757d;color:white;font-weight:600;font-size:0.9rem;line-height:1.2;}.subject{font-weight:600;color:#333;margin-bottom:5px;font-size:0.9rem;line-height:1.3;word-break:break-word;hyphens:auto;}.room{font-size:0.85rem;color:#333;background:#f5f5f5;padding:3px 5px;border-radius:3px;display:inline-block;margin-top:5px;border:1px solid #e0e0e0;}.empty{background:#f8f9fa;color:#6c757d;font-style:italic;opacity:0.8;}@media (max-width:768px){.container{padding:10px;margin:5px;max-width:100vw;min-width:auto;}h1{font-size:2rem;}.timetable{grid-template-columns:100px repeat(5,1fr);gap:1px;font-size:1em;}.cell{padding:12px 6px;font-size:0.9rem;min-height:70px;}.subject{font-size:0.85rem;}.room{font-size:0.75rem;}}</style>`;
-            // モーダル生成
+            // CSS（スマホアスペクト比対応 & ホバー効果無効）
+            const timetableCss = `<style>\n*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f5f5f5;min-height:100vh;padding:10px;display:flex;justify-content:center;align-items:flex-start;}.container{background:white;border-radius:8px;padding:15px;box-shadow:0 2px 8px rgba(0,0,0,0.1);border:1px solid #e0e0e0;max-width:100vw;width:100%;aspect-ratio:9/16;max-height:90vh;}.timetable{display:grid;grid-template-columns:50px repeat(5,1fr);gap:1px;background:#e9ecef;border-radius:6px;padding:1px;font-size:0.75em;height:100%;}.cell{background:white;padding:8px 4px;text-align:center;border-radius:2px;position:relative;overflow:hidden;word-break:break-word;hyphens:auto;display:flex;flex-direction:column;justify-content:center;font-size:0.85rem;}.header{background:#495057;color:white;font-weight:600;font-size:0.8rem;}.time-header{background:#6c757d;color:white;font-weight:600;font-size:0.65rem;line-height:1.0;padding:4px 2px;}.subject{font-weight:600;color:#333;margin-bottom:2px;font-size:0.75rem;line-height:1.2;word-break:break-word;hyphens:auto;}.room{font-size:0.65rem;color:#555;background:#f8f9fa;padding:1px 3px;border-radius:2px;display:inline-block;margin-top:2px;border:1px solid #e0e0e0;}.empty{background:#f8f9fa;color:#6c757d;font-style:italic;opacity:0.8;}</style>`;
+            // モーダル生成（スマホアスペクト比対応）
             const previewModal = document.createElement('div');
             previewModal.className = 'cs-tact-modal cs-timetable-modal';
             previewModal.style.zIndex = '10010';
@@ -1125,33 +1146,37 @@ function showCourseColorModal() {
             previewModal.style.alignItems = 'center';
             previewModal.style.justifyContent = 'center';
             previewModal.style.background = 'rgba(255,255,255,0.98)';
-            previewModal.style.padding = '12px'; // パディングを小さく
+            previewModal.style.padding = '8px';
             previewModal.style.position = 'fixed';
             previewModal.style.top = '50%';
             previewModal.style.left = '50%';
             previewModal.style.transform = 'translate(-50%, -50%)';
-            previewModal.style.width = 'auto';
-            previewModal.style.height = 'auto';
-            previewModal.style.maxHeight = '95vh'; // 画面縦幅の95%に
+            previewModal.style.width = '100vw';
+            previewModal.style.height = '100vh';
+            previewModal.style.maxWidth = '420px'; // スマホ幅に制限
+            previewModal.style.maxHeight = '100vh';
             previewModal.style.overflowY = 'auto';
-            // 閉じるボタン
+            // 閉じるボタン（スマホ対応）
             const closeBtn = document.createElement('button');
             closeBtn.textContent = '×';
             closeBtn.className = 'cs-tact-modal-close';
             closeBtn.style.position = 'absolute';
-            closeBtn.style.top = '24px';
-            closeBtn.style.right = '32px';
-            closeBtn.style.fontSize = '28px';
+            closeBtn.style.top = '16px';
+            closeBtn.style.right = '16px';
+            closeBtn.style.fontSize = '24px';
+            closeBtn.style.zIndex = '10011';
             closeBtn.onclick = () => previewModal.remove();
             previewModal.appendChild(closeBtn);
-            // タイトル
+            // タイトル（スマホ対応）
             const imgTitle = document.createElement('h2');
-            imgTitle.textContent = '時間割プレビュー'; // 「モダンな」を削除
-            imgTitle.style.marginBottom = '18px';
+            imgTitle.textContent = '時間割プレビュー';
+            imgTitle.style.marginBottom = '12px';
+            imgTitle.style.fontSize = '1.2rem';
+            imgTitle.style.textAlign = 'center';
             previewModal.appendChild(imgTitle);
-            // HTML+CSS本体
+            // HTML+CSS本体（スマホ対応メッセージ）
             const htmlContainer = document.createElement('div');
-            htmlContainer.innerHTML = timetableCss + `<div class='container'><div class='timetable'>${timetableCells}</div></div><div style='margin-top:24px;text-align:center;font-size:1.1em;color:#495057;font-weight:bold;'>この画面をスクリーンショットして保存してください<br><span style='font-size:0.95em;font-weight:normal;color:#888;'>(右クリック→画像として保存 も可)</span></div>`;
+            htmlContainer.innerHTML = timetableCss + `<div class='container'><div class='timetable'>${timetableCells}</div></div><div style='margin-top:16px;text-align:center;font-size:0.9em;color:#495057;font-weight:bold;padding:0 10px;'>この画面をスクリーンショットして保存してください<br><span style='font-size:0.85em;font-weight:normal;color:#888;'>(長押し→画像として保存 も可)</span></div>`;
             htmlContainer.style.background = 'none';
             htmlContainer.style.boxShadow = 'none';
             previewModal.appendChild(htmlContainer);
