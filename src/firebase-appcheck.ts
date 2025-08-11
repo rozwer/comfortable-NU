@@ -78,7 +78,7 @@ export async function testAppCheckConnection(): Promise<any> {
     console.error("App Check test error:", error);
     return {
       success: false,
-      error: error.message || String(error),
+      error: error instanceof Error ? error.message : String(error),
       message: "App Check connection failed"
     };
   }
