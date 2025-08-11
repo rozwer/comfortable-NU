@@ -61,9 +61,10 @@ async function handleAppCheckTest() {
             `;
         }
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         resultDiv.innerHTML = `
             <div style="color: red;">❌ 予期しないエラー</div>
-            <div>${error.message || String(error)}</div>
+            <div>${errorMessage}</div>
             <div style="font-size: 11px; color: #666; margin-top: 5px;">
                 ${new Date().toLocaleString()}
             </div>

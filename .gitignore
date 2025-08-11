@@ -305,3 +305,5 @@ sync-to-windows.sh
 
 # Claude Code configuration
 CLAUDE.md
+
+src/firebase-config.ts
