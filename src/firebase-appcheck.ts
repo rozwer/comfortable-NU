@@ -102,3 +102,42 @@ export async function callCloudFunction(functionName: string, data?: any): Promi
     throw error;
   }
 }
+
+/**
+ * Calendar Sync backend connectivity test via Cloud Functions
+ * - Calls a lightweight ping function on the backend (expected name: "calendarSyncPing")
+ * - Returns success flag and payload for UI display
+ */
+export async function testCalendarSyncBackend(): Promise<{
+  success: boolean;
+  data?: any;
+  message: string;
+  error?: string;
+}> {
+  try {
+    if (!functions) {
+      initializeFirebaseAppCheck();
+    }
+
+    // Obtain App Check token for debug visibility (Functions callable attaches it automatically)
+    const token = await getToken(appCheck, false);
+    console.log("App Check token (exists):", !!token);
+
+    // Try to call the expected backend ping function
+    const ping = httpsCallable(functions, "calendarSyncPing");
+    const res = await ping({ ts: Date.now() });
+
+    return {
+      success: true,
+      data: res.data,
+      message: "Calendar Sync backend connectivity successful"
+    };
+  } catch (error) {
+    console.error("Calendar Sync backend test error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      message: "Calendar Sync backend connectivity failed"
+    };
+  }
+}

@@ -2,7 +2,7 @@ import { loadHostName } from "./features/storage";
 import { createRoot } from "react-dom/client";
 import React from "react";
 import { MiniSakaiRoot } from "./components/main";
-import { initializeFirebaseAppCheck, testAppCheckConnection } from "./firebase-appcheck";
+import { initializeFirebaseAppCheck, testAppCheckConnection, testCalendarSyncBackend } from "./firebase-appcheck";
 
 /**
  * Initialize subSakai
@@ -72,6 +72,46 @@ async function handleAppCheckTest() {
     }
 }
 
+/**
+ * Calendar Sync backend connectivity test handler
+ */
+async function handleCalendarSyncTest() {
+    const resultDiv = document.getElementById("calendarSyncTestResult");
+    if (!resultDiv) return;
+
+    resultDiv.innerHTML = "🔄 テスト中...";
+
+    try {
+        const result = await testCalendarSyncBackend();
+        if (result.success) {
+            resultDiv.innerHTML = `
+                <div style=\"color: green;\">✅ ${result.message}</div>
+                <div>レスポンス: ${JSON.stringify(result.data, null, 2)}</div>
+                <div style=\"font-size: 11px; color: #666; margin-top: 5px;\">
+                    ${new Date().toLocaleString()}
+                </div>
+            `;
+        } else {
+            resultDiv.innerHTML = `
+                <div style=\"color: red;\">❌ ${result.message}</div>
+                <div>エラー: ${result.error}</div>
+                <div style=\"font-size: 11px; color: #666; margin-top: 5px;\">
+                    ${new Date().toLocaleString()}
+                </div>
+            `;
+        }
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        resultDiv.innerHTML = `
+            <div style=\"color: red;\">❌ 予期しないエラー</div>
+            <div>${errorMessage}</div>
+            <div style=\"font-size: 11px; color: #666; margin-top: 5px;\">
+                ${new Date().toLocaleString()}
+            </div>
+        `;
+    }
+}
+
 // Initialize and setup event listeners
 initSubSakai();
 
@@ -82,6 +122,12 @@ document.addEventListener("DOMContentLoaded", () => {
         testButton.addEventListener("click", handleAppCheckTest);
         console.log("App Check test button initialized");
     }
+
+    const calTestButton = document.getElementById("btnCalendarSyncTest");
+    if (calTestButton) {
+        calTestButton.addEventListener("click", handleCalendarSyncTest);
+        console.log("Calendar Sync test button initialized");
+    }
 });
 
 // Also try to setup immediately (in case DOM is already ready)
@@ -90,5 +136,11 @@ setTimeout(() => {
     if (testButton) {
         testButton.addEventListener("click", handleAppCheckTest);
         console.log("App Check test button initialized (immediate)");
+    }
+
+    const calTestButton = document.getElementById("btnCalendarSyncTest");
+    if (calTestButton) {
+        calTestButton.addEventListener("click", handleCalendarSyncTest);
+        console.log("Calendar Sync test button initialized (immediate)");
     }
 }, 100);

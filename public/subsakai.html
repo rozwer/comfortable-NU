@@ -35,6 +35,20 @@ Category   : スタイルシート追加
   </div>
 </div>
 
+<!-- Calendar Sync Backend Connectivity Test -->
+<div style="margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+  <h3>📅 カレンダー同期 バックエンド疎通テスト</h3>
+  <button id="btnCalendarSyncTest" style="padding: 8px 16px; margin: 5px; background: #34a853; color: white; border: none; border-radius: 4px; cursor: pointer;">
+    Functions: calendarSyncPing を呼び出す
+  </button>
+  <div style="font-size: 12px; color: #666; margin-bottom: 6px;">
+    App Check を付与して Cloud Functions の軽量エンドポイントを呼び出します。
+  </div>
+  <div id="calendarSyncTestResult" style="margin-top: 10px; padding: 10px; font-family: monospace; font-size: 12px; background: #f5f5f5; border-radius: 4px; max-height: 240px; overflow-y: auto;">
+    テスト結果がここに表示されます
+  </div>
+</div>
+
 <script src="subsakai.js"></script>
 </body>
 </html>

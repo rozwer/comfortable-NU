@@ -566,7 +566,7 @@ async function createCalendarEvent(item: any, type: string, token: string): Prom
     extendedProperties: {
       private: {
         sakaiAssignmentId: item.id || '',
-        extensionVersion: '1.0.5',
+        extensionVersion: '1.0.6',
         syncTimestamp: new Date().toISOString(),
         itemType: type
       }
