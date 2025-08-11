@@ -52,7 +52,8 @@
   },
   "host_permissions": [
     "https://tact.ac.thers.ac.jp/*",
-    "https://www.googleapis.com/*"
+    "https://www.googleapis.com/*",
+    "https://asia-northeast1-comfortablenu.cloudfunctions.net/*"
   ],
   "web_accessible_resources": [
     {
