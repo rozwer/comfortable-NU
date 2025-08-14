@@ -159,6 +159,20 @@
   font-weight: 500;
 }
 
+/* Dark mode overrides */
+html.cs-dark .cs-datepicker-modal { background-color: #111827; color: #e5e7eb; }
+html.cs-dark .cs-datepicker-header { background-color: #1f2937; color: #e5e7eb; }
+html.cs-dark .cs-datepicker-close-button { color: #e5e7eb; }
+html.cs-dark .cs-datepicker-field label { color: #d1d5db; }
+html.cs-dark .cs-datepicker-field select { background: #111827; color: #e5e7eb; border-color: #4b5563; }
+html.cs-dark .cs-datepicker-footer { border-top-color: #374151; }
+html.cs-dark .cs-datepicker-cancel-button { background: #1f2937; border-color: #374151; color: #e5e7eb; }
+html.cs-dark .cs-datepicker-save-button { background: #2563eb; border-color: #2563eb; color: #fff; }
+html.cs-dark .cs-datepicker-permanent-option { background-color: #0f172a; border-left-color: #2563eb; }
+html.cs-dark .cs-datepicker-permanent-label { color: #e5e7eb; }
+html.cs-dark .cs-datepicker-permanent-info { background-color: #0f172a; border-left-color: #0ea5e9; }
+html.cs-dark .cs-datepicker-permanent-info p { color: #93c5fd; }
+
 /**
  * -----------------------------------------------------------------
  * Modified by: roz

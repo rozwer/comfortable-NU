@@ -1,8 +1,9 @@
 {
   "name": "Comfortable NU",
   "description": "__MSG_EXTENSION_DESCRIPTION__",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7WavPEFPu+sysr8lZd9I5zUyyV0ynRA/ZuYgQEchh3jvIyDEAZVpKv3cnyh0uXV7jaI9qqAiBjjq3kzoXlf5JibQrid0HPwgD6DL6VRrPLiJA2dUIFJqc3w/31j61sCnHsQoQzACQ6VlO98OOgnv3czoV/4qC6wIt+A7JcblJ9hz9h8/88hZYGPeQJsvVBQ5sAQhqPFqVFbo0nj6jf81YjFHdPvnYzVqUpYaqnVtGBEsBmWNSrgOzmTbx48vbtnaNNFPPpp89hqca6QlW1pFhdc0YI9lSQs3JB4iQTMPaKtAfTdn59zCzv54oekqPH//8TWl1fwUYbA9aTx2musgnQIDAQAB",
   "default_locale": "en",
   "icons": {
     "16": "img/icon16.png",
@@ -42,18 +43,21 @@
   "oauth2": {
     "client_id": "320934121909-3mo570972bcc19chatsu8pcp6bevj7fm.apps.googleusercontent.com",
     "scopes": [
-      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/calendar.events",
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile"
     ]
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://www.googleapis.com https://accounts.google.com; frame-src 'none';"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com https://openidconnect.googleapis.com https://accounts.google.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://asia-northeast1-comfortablenu.cloudfunctions.net https://asia-northeast1-engaged-upgrade-460911-c4.cloudfunctions.net; frame-src 'none';"
   },
   "host_permissions": [
     "https://tact.ac.thers.ac.jp/*",
     "https://www.googleapis.com/*",
-    "https://asia-northeast1-comfortablenu.cloudfunctions.net/*"
+    "https://oauth2.googleapis.com/*",
+    "https://openidconnect.googleapis.com/*",
+    "https://asia-northeast1-comfortablenu.cloudfunctions.net/*",
+    "https://asia-northeast1-engaged-upgrade-460911-c4.cloudfunctions.net/*"
   ],
   "web_accessible_resources": [
     {
@@ -71,7 +75,8 @@
         "img/miniSakaiBtn.png",
         "img/closeBtn.svg",
         "img/scheduleBtn.svg",
-        "img/favoriteBtn.svg"
+        "img/favoriteBtn.svg",
+        "img/returnBtn.svg"
       ],
       "matches": [
         "http://*/*",

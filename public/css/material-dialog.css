@@ -111,3 +111,12 @@
   font-size: 12px;
   margin-top: 4px;
 }
+
+/* Dark mode overrides */
+html.cs-dark .cs-material-dialog-modal { background-color: #111827; color: #e5e7eb; }
+html.cs-dark .cs-material-dialog-header { background-color: #1f2937; color: #e5e7eb; }
+html.cs-dark .cs-material-dialog-form-group label { color: #e5e7eb; }
+html.cs-dark .cs-material-dialog-form-group input { background: #111827; color: #e5e7eb; border-color: #4b5563; }
+html.cs-dark .cs-material-dialog-footer { border-top-color: #374151; }
+html.cs-dark .cs-material-dialog-cancel-button { background-color: #1f2937; border-color: #374151; color: #e5e7eb; }
+html.cs-dark .cs-material-dialog-save-button { background-color: #2563eb; border-color: #2563eb; color: white; }

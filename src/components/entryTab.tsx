@@ -36,7 +36,7 @@ function MiniSakaiCourse(props: {
     entries: EntryUnion[];
     dueType: DueType;
     isSubset: boolean;
-    onCheck: (entry: EntryUnion, checked: boolean, requestDate?: boolean) => void;
+    onCheck: (entry: EntryUnion, checked: boolean, requestDate?: boolean, permanent?: boolean) => void;
     onDelete: (entry: EntryUnion) => void;
 }) {
     const divClass = useMemo(() => `cs-assignment-${props.dueType}`, [props.dueType]);
@@ -51,7 +51,7 @@ function MiniSakaiCourse(props: {
                         key={entry.getID()}
                         isSubset={props.isSubset}
                         assignment={entry}
-                        onCheck={(checked, requestDate) => props.onCheck(entry, checked, requestDate)}
+                        onCheck={(checked, requestDate, permanent) => props.onCheck(entry, checked, requestDate, permanent)}
                     />
                 );
             } else if (entry instanceof QuizEntry) {
@@ -60,7 +60,7 @@ function MiniSakaiCourse(props: {
                         key={entry.getID()}
                         isSubset={props.isSubset}
                         quiz={entry}
-                        onCheck={(checked, requestDate) => props.onCheck(entry, checked, requestDate)}
+                        onCheck={(checked, requestDate, permanent) => props.onCheck(entry, checked, requestDate, permanent)}
                     />
                 );
             } else if (entry instanceof MemoEntry) {
@@ -69,7 +69,7 @@ function MiniSakaiCourse(props: {
                         key={entry.getID()}
                         isSubset={props.isSubset}
                         memo={entry}
-                        onCheck={(checked, requestDate) => props.onCheck(entry, checked, requestDate)}
+                        onCheck={(checked, requestDate, permanent) => props.onCheck(entry, checked, requestDate, permanent)}
                         onDelete={() => props.onDelete(entry)}
                     />
                 );
@@ -83,9 +83,9 @@ function MiniSakaiCourse(props: {
         <div className={divClass}>
             {/* TODO: subset a tag */}
             {props.isSubset ? (
-                <div className={aClass}>{props.courseName}</div>
+                <div className={aClass} title={props.courseName}>{props.courseName}</div>
             ) : (
-                <a className={aClass} href={props.coursePage}>
+                <a className={aClass} href={props.coursePage} title={props.courseName}>
                     {props.courseName}
                 </a>
             )}
@@ -102,7 +102,7 @@ export function EntryTab(props: {
     showMemoBox: boolean;
     entities: EntityUnion[];
     settings: Settings;
-    onCheck: (entry: EntryUnion, checked: boolean, requestDate?: boolean) => void;
+    onCheck: (entry: EntryUnion, checked: boolean, requestDate?: boolean, permanent?: boolean) => void;
     onDelete: (entry: EntryUnion) => void;
     onMemoAdd: (memo: MemoAddInfo) => void;
 }) {
@@ -299,7 +299,7 @@ function AddMemoBox(props: { shown: boolean; courses: Course[]; onMemoAdd: (memo
         if (filteredCourses.length === 0) {
             return [
                 <option value="" key="no-courses" disabled>
-                    検索結果がありません
+                    {useTranslation('search_no_results')}
                 </option>
             ];
         }
@@ -324,7 +324,7 @@ function AddMemoBox(props: { shown: boolean; courses: Course[]; onMemoAdd: (memo
                     <input
                         type='text'
                         className='cs-course-search-input'
-                        placeholder='講義名で検索...'
+                        placeholder={useTranslation('course_search_placeholder')}
                         value={searchQuery}
                         onChange={(ev) => setSearchQuery(ev.target.value)}
                     />
@@ -400,7 +400,7 @@ export function MiniSakaiEntryList(props: {
     }[];
     settings: Settings;
     isSubset: boolean;
-    onCheck: (entry: EntryUnion, checked: boolean, requestDate?: boolean) => void;
+    onCheck: (entry: EntryUnion, checked: boolean, requestDate?: boolean, permanent?: boolean) => void;
     onDelete: (entry: EntryUnion) => void;
 }) {
     const className = useMemo(() => {
@@ -425,14 +425,14 @@ export function MiniSakaiEntryList(props: {
             entries = courseIdMap.get(courseID)!;
         }
         entries.push(ewc.entry);
-        courseNameMap.set(courseID, ewc.course.name ?? "unknown course");
+        courseNameMap.set(courseID, ewc.course.name ?? useTranslation('unknown_course'));
     }
 
     courseIdMap = new Map([...courseIdMap.entries()].sort(sortCourseIdMap(props.settings)));
 
     const courses: JSX.Element[] = [];
     for (const [courseID, entries] of courseIdMap.entries()) {
-        const courseName = courseNameMap.get(courseID) ?? "<unknown>";
+        const courseName = courseNameMap.get(courseID) ?? useTranslation('unknown_course');
         courses.push(
             <MiniSakaiCourse
                 key={courseID}
@@ -442,7 +442,7 @@ export function MiniSakaiEntryList(props: {
                 isSubset={props.isSubset}
                 dueType={props.dueType}
                 entries={entries.sort(sortEntries)}
-                onCheck={(entry, checked, requestDate) => props.onCheck(entry, checked, requestDate)}
+                onCheck={(entry, checked, requestDate, permanent) => props.onCheck(entry, checked, requestDate, permanent)}
                 onDelete={(entry) => props.onDelete(entry)}
             />
         );

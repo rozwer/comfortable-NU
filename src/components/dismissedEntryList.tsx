@@ -255,7 +255,7 @@ export function DismissedEntryList(props: {
         }
         
         entries.push(ewc.entry);
-        courseNameMap.set(courseID, ewc.course.name ?? "unknown course");
+        courseNameMap.set(courseID, ewc.course.name ?? useTranslation('unknown_course'));
     }
 
     // コースをソート（締め切り日が近い順）
@@ -278,7 +278,7 @@ export function DismissedEntryList(props: {
 
     const courses: JSX.Element[] = [];
     for (const [courseID, entries] of courseIdMap.entries()) {
-        const courseName = courseNameMap.get(courseID) ?? "<unknown>";
+        const courseName = courseNameMap.get(courseID) ?? useTranslation('unknown_course');
         const dueType = calculateDueType(entries);
         courses.push(
             <DismissedCourse
@@ -308,7 +308,7 @@ export function DismissedEntryList(props: {
                     courses={getSakaiCourses()}
                     onMemoAdd={(memo) => props.onMemoAdd && props.onMemoAdd(memo)}
                     onClose={() => props.onToggleMemoBox && props.onToggleMemoBox(false)}
-                    initialContent={selectedEntry ? `[非表示課題] ${selectedEntry.title}` : ""}
+                    initialContent={selectedEntry ? `[${useTranslation('prefix_hidden')}] ${selectedEntry.title}` : ""}
                     initialCourseId={selectedCourse?.id}
                     initialDueTime={selectedEntry ? selectedEntry.dueTime : undefined}
                 />

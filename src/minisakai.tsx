@@ -40,7 +40,8 @@ export const toggleMiniSakai = (): void => {
 
 export const miniSakai = document.createElement("div");
 miniSakai.id = "miniSakai";
-miniSakai.classList.add("cs-minisakai", "cs-tab");
+// 初期表示時には完全に隠す（padding/box-shadow抑制のため）
+miniSakai.classList.add("cs-minisakai", "cs-tab", "cs-hide");
 
 export const hamburger = document.createElement("button");
 hamburger.className = "cs-loading";
@@ -85,6 +86,23 @@ favoriteButton.addEventListener("click", () => {
 });
 
 /**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-08-14
+ * Changes    : 返却課題ダッシュボード起動ボタンを追加（星ボタンの隣）
+ * Category   : UI機能拡張
+ * -----------------------------------------------------------------
+ */
+export const returnsButton = document.createElement("button");
+returnsButton.className = "cs-header-btn cs-returns-btn";
+returnsButton.innerHTML = `<img src="${chrome.runtime.getURL("img/returnBtn.svg")}" alt="returns">`;
+returnsButton.addEventListener("click", () => {
+    import("./returnedDashboard").then(({ showReturnedDashboard }) => {
+        showReturnedDashboard();
+    });
+});
+
+/**
  * Add a button to open miniSakai.
  */
 export function addMiniSakaiBtn(): void {
@@ -98,9 +116,12 @@ export function addMiniSakaiBtn(): void {
          * Category   : UI機能拡張
          * -----------------------------------------------------------------
          */
-        // お気に入りボタンを追加
+        // 配置順: 返却ボタン（左）→ 星 → 時間割 → ハンバーガー
+        // 返却課題ダッシュボードボタンを追加（左端）
+        topbar?.appendChild(returnsButton);
+        // お気に入りボタン（星）
         topbar?.appendChild(favoriteButton);
-        // 時間割ボタンを追加
+        // 時間割ボタン
         topbar?.appendChild(scheduleButton);
         // 既存のハンバーガーボタンを追加
         topbar?.appendChild(hamburger);

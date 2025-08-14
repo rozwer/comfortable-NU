@@ -95,24 +95,26 @@ export function SettingsTab(props: { onSettingsChange: (change: SettingsChange) 
             <TranslatedNumberItem
                 descriptionTag="settings_assignment_cache"
                 value={settings.cacheInterval.assignment}
-                onChange={(v) =>
+                onChange={(v) => {
+                    const clamped = isNaN(v) || v < 120 ? 120 : v;
                     props.onSettingsChange({
                         type: "number",
                         id: "cacheInterval.assignment",
-                        newValue: v
-                    })
-                }
+                        newValue: clamped
+                    });
+                }}
             />
             <TranslatedNumberItem
                 descriptionTag="settings_quizzes_cache"
                 value={settings.cacheInterval.quiz}
-                onChange={(v) =>
+                onChange={(v) => {
+                    const clamped = isNaN(v) || v < 600 ? 600 : v;
                     props.onSettingsChange({
                         type: "number",
                         id: "cacheInterval.quiz",
-                        newValue: v
-                    })
-                }
+                        newValue: clamped
+                    });
+                }}
             />
 
             <StringItem
@@ -315,6 +317,7 @@ function NumberItem(props: {
                 type="number"
                 className="cp-settings-inputbox"
                 value={props.value}
+                min={0}
                 onChange={(ev) => props.onChange(parseInt(ev.target.value))}
             ></input>
         </SettingsItem>

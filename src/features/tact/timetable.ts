@@ -3,6 +3,14 @@
  * 時間割の取得・表示・管理を行う統合モジュール
  */
 /**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2025-08-14
+ * Changes    : モーダル内タイトル色(#265B81)を #002C94 に統一
+ * Category   : UI/カラー統一（モーダル）
+ * -----------------------------------------------------------------
+ */
+/**
  * 時間割表示機能
  * このモジュールはTACTポータルに時間割表示機能を追加します
  */
@@ -1318,6 +1326,7 @@ async function updateTimetable() {
         table.style.borderCollapse = 'collapse';
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
+        const isDark = document.documentElement.classList.contains('cs-dark');
         days.forEach(day => {
             const th = document.createElement('th');
             th.textContent = day;
@@ -1325,6 +1334,11 @@ async function updateTimetable() {
             th.style.backgroundColor = '#f5f5f5';
             th.style.border = '1px solid #ddd';
             th.style.textAlign = 'center';
+            if (isDark) {
+                th.style.backgroundColor = '#1f2937';
+                th.style.color = '#e5e7eb';
+                th.style.border = '1px solid #374151';
+            }
             headerRow.appendChild(th);
         });
         thead.appendChild(headerRow);
@@ -1341,6 +1355,11 @@ async function updateTimetable() {
             periodCell.style.verticalAlign = 'middle';
             periodCell.style.width = '50px';
             periodCell.style.border = '1px solid #ddd';
+            if (isDark) {
+                periodCell.style.backgroundColor = '#1f2937';
+                periodCell.style.color = '#e5e7eb';
+                periodCell.style.border = '1px solid #374151';
+            }
             row.appendChild(periodCell);
             for (let dayIndex = 1; dayIndex < days.length; dayIndex++) {
                 const day = days[dayIndex];
@@ -1354,6 +1373,10 @@ async function updateTimetable() {
                 cell.style.height = '120px';
                 cell.style.cursor = 'pointer';
                 cell.style.transition = 'all 0.3s ease';
+                if (isDark) {
+                    cell.style.border = '1px solid #374151';
+                    cell.style.color = '#e5e7eb';
+                }
                 const coursesForCell = filteredCourses.filter(course => {
                     return course.dayPeriod.some(dp => dp === day + period);
                 });
@@ -1388,6 +1411,11 @@ async function updateTimetable() {
                         courseDiv.style.border = '1px solid rgba(0, 0, 0, 0.05)';
                         courseDiv.style.borderRadius = '4px';
                         courseDiv.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+                        if (isDark) {
+                            courseDiv.style.border = '1px solid rgba(55, 65, 81, 0.8)';
+                            courseDiv.style.backgroundColor = 'rgba(31, 41, 55, 0.6)';
+                            courseDiv.style.color = '#e5e7eb';
+                        }
                         let displayTitle = course.title;
                         if (displayTitle.includes('(')) {
                             displayTitle = displayTitle.split('(')[0].trim();
@@ -1411,7 +1439,7 @@ async function updateTimetable() {
                         courseTitleEl.style.textOverflow = 'ellipsis';
                         courseTitleEl.style.whiteSpace = 'nowrap';
                         courseTitleEl.style.fontSize = '12px';
-                        courseTitleEl.style.color = '#265b81';
+                        courseTitleEl.style.color = '#002C94';
                         courseTitleEl.style.fontWeight = 'bold';
                         courseTitleContainer.appendChild(courseTitleEl);
                         courseDiv.appendChild(courseTitleContainer);

@@ -612,3 +612,35 @@
 .cs-memo-dialog::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+
+/* Dark mode overrides */
+html.cs-dark .cs-memo-container { color: #e5e7eb; }
+html.cs-dark .cs-memo-header { border-bottom-color: #374151; }
+html.cs-dark .cs-memo-title { color: #e5e7eb; }
+html.cs-dark .cs-memo-tab-nav { background-color: #111827; }
+html.cs-dark .cs-memo-tab { color: #9ca3af; }
+html.cs-dark .cs-memo-tab:hover { background-color: #1f2937; color: #e5e7eb; }
+html.cs-dark .cs-memo-empty { color: #9ca3af; }
+html.cs-dark .cs-note-item { background: #111827; border-color: #374151; box-shadow: none; }
+html.cs-dark .cs-note-item--clickable:hover { background-color: #1f2937; border-color: #60a5fa; }
+html.cs-dark .cs-note-title { color: #e5e7eb; }
+html.cs-dark .cs-note-date { color: #9ca3af; }
+html.cs-dark .cs-note-action-btn:hover { background-color: #1f2937; }
+html.cs-dark .cs-note-content { color: #e5e7eb; }
+html.cs-dark .cs-note-links { background-color: #1f2937; color: #93c5fd; }
+html.cs-dark .cs-lecture-header { background-color: #111827; }
+html.cs-dark .cs-lecture-notes { background-color: #0b1220; }
+html.cs-dark .cs-link-item { background: #111827; border-color: #374151; }
+html.cs-dark .cs-link-title { color: #93c5fd; }
+html.cs-dark .cs-link-url { color: #9ca3af; }
+html.cs-dark .cs-link-description { color: #e5e7eb; }
+html.cs-dark .cs-link-action-btn:hover { background-color: #1f2937; }
+html.cs-dark .cs-memo-dialog { background: #0b1220; color: #e5e7eb; }
+html.cs-dark .cs-memo-dialog h3 { color: #e5e7eb; }
+html.cs-dark .cs-memo-input, html.cs-dark .cs-memo-textarea { background: #111827; color: #e5e7eb; border-color: #374151; }
+html.cs-dark .cs-memo-links-container label { color: #e5e7eb; }
+html.cs-dark .cs-link-selection-item { background-color: #111827; border-color: #374151; }
+html.cs-dark .cs-link-selection-title { color: #e5e7eb; }
+html.cs-dark .cs-link-selection-url { color: #93c5fd; }
+html.cs-dark .cs-link-selection-description { color: #9ca3af; }
