@@ -149,7 +149,7 @@ function ReturnedDashboard() {
                                                 <div className="cs-forum-post-header cs-return-item-main">
                                                     <span className="cs-return-title cs-forum-post-title">{it.title}</span>
                                                     {it.grade ? <span className="cs-return-badge-grade">{it.grade}</span> : null}
-                                                    {it.needResubmit ? <span className="cs-return-badge-resubmit">再提出</span> : null}
+                                                    {it.needResubmit ? <span className="cs-return-badge-resubmit">再提出可能</span> : null}
                                                 </div>
                                                 {it.commentPreview ? (
                                                     <details className="cs-return-details">
@@ -159,7 +159,15 @@ function ReturnedDashboard() {
                                                 ) : null}
                                                 <div className="cs-return-actions cs-forum-post-actions">
                                                     {it.detailUrl ? (
-                                                        <a className="cs-return-link" href={it.detailUrl} target="_blank" rel="noreferrer">詳細へ</a>
+                                                        /**
+                                                         * -----------------------------------------------------------------
+                                                         * Modified by: roz
+                                                         * Date       : 2025-08-15
+                                                         * Changes    : 返却課題の詳細表示で新規タブを開かないように変更（同一タブ遷移）
+                                                         * Category   : UI・ナビゲーション
+                                                         * -----------------------------------------------------------------
+                                                         */
+                                                        <a className="cs-return-link" href={it.detailUrl}>詳細へ</a>
                                                     ) : null}
                                                 </div>
                                             </div>

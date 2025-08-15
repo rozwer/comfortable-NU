@@ -37,6 +37,8 @@ const MANIFEST_OAUTH_CLIENT_ID = (process.env.MANIFEST_OAUTH_CLIENT_ID || (() =>
 })());
 const GOOGLE_OAUTH_CLIENT_ID = WEB_OAUTH_CLIENT_ID || MANIFEST_OAUTH_CLIENT_ID;
 
+// NUSS関連のwebRequestロジックは撤去（CORS回避の試行は中止）
+
 // 通知を表示する関数
 function showNotification(title: string, message: string) {
   chrome.notifications.create({
@@ -93,10 +95,10 @@ async function getSyncInterval(): Promise<number> {
 }
 
 // Google Calendar sync background script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  (async () => {
-    try {
-      switch (request.action) {
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    (async () => {
+      try {
+        switch (request.action) {
         case 'authenticateGoogle': {
           console.log('[DEBUG] authenticateGoogle action received');
           // Use incremental authentication with minimal required scopes
@@ -244,7 +246,7 @@ async function incrementDailyUsageLocal(): Promise<void> {
 // 最後の同期から設定間隔以上経過、かつ日次上限未満かをチェック
 async function shouldAutoSync(): Promise<boolean> {
   return new Promise((resolve) => {
-    chrome.storage.local.get(['lastSyncTime', 'calendarSyncInterval', 'autoSyncEnabled', 'todayUsedCount', 'usageDateJst', 'syncBypassEnabled', 'syncBypassKey'], (result) => {
+    chrome.storage.local.get(['lastSyncTime', 'calendarSyncInterval', 'autoSyncEnabled', 'todayUsedCount', 'usageDateJst'], (result) => {
       // 自動同期が無効化されている場合は同期しない
       const autoSyncEnabled = result.autoSyncEnabled !== false; // デフォルトはtrue
       if (!autoSyncEnabled) {
@@ -252,11 +254,7 @@ async function shouldAutoSync(): Promise<boolean> {
         return;
       }
 
-      // テストバイパス（キーが入力され、バイパス有効なら制限無視）
-      if (result.syncBypassEnabled && typeof result.syncBypassKey === 'string' && result.syncBypassKey.trim().length > 0) {
-        resolve(true);
-        return;
-      }
+  // バイパス機能は廃止
 
       const lastSyncTime = result.lastSyncTime || 0;
       // 最小間隔180分（3時間）を強制
@@ -422,7 +420,8 @@ async function authenticateGoogleWithChooser(scopes: string[], hdHint?: string, 
   // Fetch userinfo for status caching (no domain enforcement by default)
   try {
     const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store'
     });
     if (resp.ok) {
       const ui = await resp.json();
@@ -465,7 +464,7 @@ async function verifyTokenSecurity(token: string): Promise<void> {
   console.log('🔧 [TOKEN DEBUG] Starting token security verification...');
   try {
     // Verify token by making a test API call (preferred endpoint)
-    const response = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + token);
+  const response = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + token, { cache: 'no-store' });
     console.log('🔧 [TOKEN DEBUG] Token info response status:', response.status);
     
     if (!response.ok) {
@@ -541,7 +540,8 @@ async function getGoogleAccounts(): Promise<any[]> {
                   'Authorization': `Bearer ${tokenToUse}`,
                   'Accept': 'application/json',
                   'Cache-Control': 'no-cache'
-                }
+                },
+                cache: 'no-store'
               });
               
               console.log('[DEBUG] User info fetch response status:', response.status);
@@ -662,7 +662,8 @@ async function getGoogleAccounts(): Promise<any[]> {
                 'Authorization': `Bearer ${tokenToUse}`,
                 'Accept': 'application/json',
                 'Cache-Control': 'no-cache'
-              }
+              },
+              cache: 'no-store'
             });
             
             console.log('[DEBUG] User info fetch response status:', response.status);
@@ -762,7 +763,8 @@ async function findEventBySakaiId(sakaiId: string, token: string): Promise<any |
       privateExtendedProperty: `sakaiAssignmentId=${encodeURIComponent(sakaiId)}`
     });
     const resp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store'
     });
     if (!resp.ok) return null;
     const j = await resp.json();
@@ -958,6 +960,7 @@ async function createCalendarEvent(item: any, type: string, token: string): Prom
         'Accept': 'application/json',
         'Cache-Control': 'no-cache'
       },
+      cache: 'no-store',
       body: requestBody
     });
     let responseBody = '';

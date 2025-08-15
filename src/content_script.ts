@@ -209,7 +209,7 @@ async function performAutoSync() {
         // 軽量に有効性チェック
         try {
             const testParams = new URLSearchParams({ maxResults: '1', timeMin: new Date(Date.now() - 5*60*1000).toISOString() });
-            const test = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${testParams.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+            const test = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${testParams.toString()}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
             if (!test.ok) { console.log('自動同期: トークン無効のためスキップ'); return; }
         } catch (_) { console.log('自動同期: トークン検証失敗のためスキップ'); return; }
 

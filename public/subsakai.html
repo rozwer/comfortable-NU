@@ -29,7 +29,7 @@ Category   : 認証・UI
 
 <body>
 
-<div id="subSakai" style="">
+<div id="subSakai">
 </div>
 
 <!-- Auth Section -->
@@ -73,13 +73,7 @@ Category   : 認証・UI
     </label>
     <button id="btnSyncNow" style="padding: 6px 12px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">今すぐ同期</button>
   </div>
-  <div style="display:flex; gap:12px; align-items:center; flex-wrap: wrap; margin-top:8px;">
-    <label style="display:flex; align-items:center; gap:6px;">
-      <input id="chkBypassEnabled" type="checkbox" /> テスト: 制限バイパス
-    </label>
-    <input id="txtBypassKey" type="password" placeholder="テストパスワード" style="min-width: 220px; padding:6px;" />
-    <span style="font-size:12px; color:#666;">※ テスト用途のみ。入力があると間隔/回数制限を無視</span>
-  </div>
+  <!-- 削除: テスト用の制限バイパスUI -->
   <div style="margin-top:8px; font-family: monospace; font-size: 12px; background:#f5f5f5; padding:8px; border-radius:4px;">
     <div id="lblLastSync">最終同期: なし</div>
     <div id="lblNextSync">次回同期予定: ー</div>

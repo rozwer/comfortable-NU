@@ -3,7 +3,6 @@
   "description": "__MSG_EXTENSION_DESCRIPTION__",
   "version": "2.0.0",
   "manifest_version": 3,
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7WavPEFPu+sysr8lZd9I5zUyyV0ynRA/ZuYgQEchh3jvIyDEAZVpKv3cnyh0uXV7jaI9qqAiBjjq3kzoXlf5JibQrid0HPwgD6DL6VRrPLiJA2dUIFJqc3w/31j61sCnHsQoQzACQ6VlO98OOgnv3czoV/4qC6wIt+A7JcblJ9hz9h8/88hZYGPeQJsvVBQ5sAQhqPFqVFbo0nj6jf81YjFHdPvnYzVqUpYaqnVtGBEsBmWNSrgOzmTbx48vbtnaNNFPPpp89hqca6QlW1pFhdc0YI9lSQs3JB4iQTMPaKtAfTdn59zCzv54oekqPH//8TWl1fwUYbA9aTx2musgnQIDAQAB",
   "default_locale": "en",
   "icons": {
     "16": "img/icon16.png",
@@ -26,8 +25,7 @@
         "css/calendar-sync.css"
       ],
       "matches": [
-        "http://*/*",
-        "https://*/*"
+        "https://tact.ac.thers.ac.jp/*"
       ]
     }
   ],

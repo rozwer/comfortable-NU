@@ -254,14 +254,11 @@ async function handleThersVerifyRequest() {
     try {
         console.log('[UI] calling requestVerification');
         const res = await callCloudFunction('requestVerification', { email });
-        console.log('[UI] requestVerification success', res);
-        // メールでの所有確認フローに統一。リンクを別タブで開かず、案内のみ表示
-        const url = res?.verificationUrl;
-        if (url) {
-            status.innerHTML = `✅ 認証メールを送信しました。メールのリンクを開いて確認を完了してください。<div style="margin-top:6px;font-size:12px;color:#666;">（送信未設定の場合、以下のリンクを手動で開いてください）<br/><a href="${url}" target="_blank" rel="noopener">${url}</a></div>`;
-        } else {
-            status.textContent = res?.message || '✅ 認証メールを送信しました。受信トレイを確認してください。';
-        }
+        console.log('[UI] requestVerification success');
+        // フロントに検証URLを表示しない（露出禁止）
+        status.textContent = (res?.message && typeof res.message === 'string')
+            ? res.message
+            : '✅ 認証メールを送信しました。受信トレイをご確認ください。';
     } catch (e) {
         console.error('[UI] requestVerification error', e);
         status.textContent = `❌ 送信失敗: ${e instanceof Error ? e.message : String(e)}`;
@@ -622,11 +619,10 @@ async function loadAutoSyncUI() {
     const lblNext = document.getElementById('lblNextSync');
     const lblToday = document.getElementById('lblTodayCount');
     const lblLastRes = document.getElementById('lblLastResult');
-    const chkBypass = document.getElementById('chkBypassEnabled') as HTMLInputElement | null;
-    const txtBypass = document.getElementById('txtBypassKey') as HTMLInputElement | null;
+    // バイパス機能は廃止
     try {
         await new Promise<void>((resolve) => {
-            chrome.storage.local.get(['autoSyncEnabled', 'calendarSyncInterval', 'lastSyncTime', 'sentEventKeys', 'syncBypassEnabled', 'syncBypassKey', 'usageDateJst', 'todayUsedCount', 'lastSyncResult'], (r) => {
+            chrome.storage.local.get(['autoSyncEnabled', 'calendarSyncInterval', 'lastSyncTime', 'sentEventKeys', 'usageDateJst', 'todayUsedCount', 'lastSyncResult'], (r) => {
                 if (chk) chk.checked = r?.autoSyncEnabled !== false;
                 if (num) num.value = String(r?.calendarSyncInterval || 60);
                 if (lblLast) {
@@ -634,8 +630,7 @@ async function loadAutoSyncUI() {
                     lblLast.textContent = '最終同期: ' + (t ? new Date(t).toLocaleString() : 'なし');
                 }
                 if (lblSent) lblSent.textContent = '送信済み件数: ' + ((r?.sentEventKeys as any[] | undefined)?.length || 0);
-                if (chkBypass) chkBypass.checked = !!r?.syncBypassEnabled;
-                if (txtBypass) txtBypass.value = (r?.syncBypassKey as string) || '';
+                // バイパス関連の状態は参照しない
 
                 // 今日の同期回数 n/4（JST）
                 if (lblToday) {
@@ -648,8 +643,6 @@ async function loadAutoSyncUI() {
                     const enabled = r?.autoSyncEnabled !== false;
                     if (!enabled) {
                         lblNext.textContent = '次回同期予定: 自動同期は無効です';
-                    } else if (r?.syncBypassEnabled && (typeof r?.syncBypassKey === 'string') && r.syncBypassKey.trim().length>0) {
-                        lblNext.textContent = '次回同期予定: バイパス有効中（条件に達し次第）';
                     } else {
                         const configured = Number(r?.calendarSyncInterval || 60);
                         const effectiveMin = Math.max(180, configured);
@@ -696,15 +689,7 @@ async function handleSyncNowClick() {
     await loadAutoSyncUI();
 }
 
-async function handleBypassToggle() {
-    const chk = document.getElementById('chkBypassEnabled') as HTMLInputElement | null;
-    chrome.storage.local.set({ syncBypassEnabled: !!chk?.checked });
-}
-
-async function handleBypassKeyChange() {
-    const txt = document.getElementById('txtBypassKey') as HTMLInputElement | null;
-    chrome.storage.local.set({ syncBypassKey: (txt?.value || '').trim() });
-}
+// バイパス機能のハンドラは削除
 
 // Initialize and setup event listeners
 initSubSakai();
@@ -723,10 +708,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (numInterval) numInterval.addEventListener('change', handleIntervalChange);
     const btnSyncNow = document.getElementById('btnSyncNow');
     if (btnSyncNow) btnSyncNow.addEventListener('click', handleSyncNowClick);
-    const chkBypass = document.getElementById('chkBypassEnabled');
-    if (chkBypass) chkBypass.addEventListener('change', handleBypassToggle);
-    const txtBypass = document.getElementById('txtBypassKey');
-    if (txtBypass) txtBypass.addEventListener('change', handleBypassKeyChange);
+    // バイパスUIは削除済み
     loadAutoSyncUI();
 
     // 同期テストUIは削除
@@ -780,9 +762,6 @@ setTimeout(() => {
     if (numInterval2) numInterval2.addEventListener('change', handleIntervalChange);
     const btnSyncNow2 = document.getElementById('btnSyncNow');
     if (btnSyncNow2) btnSyncNow2.addEventListener('click', handleSyncNowClick);
-    const chkBypass2 = document.getElementById('chkBypassEnabled');
-    if (chkBypass2) chkBypass2.addEventListener('change', handleBypassToggle);
-    const txtBypass2 = document.getElementById('txtBypassKey');
-    if (txtBypass2) txtBypass2.addEventListener('change', handleBypassKeyChange);
+    // バイパスUIは削除済み
     loadAutoSyncUI();
 }, 100);
