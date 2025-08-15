@@ -1,43 +1,15 @@
 /**
  * -----------------------------------------------------------------
  * Modified by: roz
- * Date       : 2025-08-12
- * Changes    : アカウント選択対応/スコープ統一 + Googleステータス検出を改善（非対話でも確認） + Chooserで id_token も取得
- * Category   : バックグラウンド処理・認証
+ * Date       : 2025-05-28
+ * Changes    : カレンダー同期機能とGoogle OAuth認証システムの実装
+ * Category   : バックグラウンド処理
  * -----------------------------------------------------------------
  */
 // For debugging
 
 // カレンダー同期用のアラーム名 
 const CALENDAR_SYNC_ALARM_NAME = 'calendarSyncAlarm';
-// 既存（レガシー）カレンダー同期機能の一時無効化フラグ
-const LEGACY_CALENDAR_SYNC_DISABLED = true;
-
-// Google OAuth クライアントID
-// - MANIFEST_OAUTH_CLIENT_ID: chrome.identity.getAuthToken 用（manifest.jsonのoauth2.client_id）
-// - GOOGLE_OAUTH_CLIENT_ID  : launchWebAuthFlow 用（WebアプリのOAuthクライアントIDを推奨）
-import { WEB_OAUTH_CLIENT_ID, HOSTED_DOMAIN_HINT } from './config/google-oauth';
-/**
- * -----------------------------------------------------------------
- * Modified by: roz
- * Date       : 2025-08-14
- * Changes    : Move MANIFEST_OAUTH_CLIENT_ID to env var
- * Category   : バックグラウンド処理・認証
- * -----------------------------------------------------------------
- */
-// 環境変数が未設定でも manifest.oauth2.client_id をフォールバックとして使用
-const MANIFEST_OAUTH_CLIENT_ID = (process.env.MANIFEST_OAUTH_CLIENT_ID || (() => {
-  try {
-    // MV3 Service Worker 上でのみ利用可能
-    // @ts-ignore
-    const m = chrome.runtime.getManifest?.();
-    // @ts-ignore
-    return (m && m.oauth2 && m.oauth2.client_id) ? m.oauth2.client_id as string : '';
-  } catch { return ''; }
-})());
-const GOOGLE_OAUTH_CLIENT_ID = WEB_OAUTH_CLIENT_ID || MANIFEST_OAUTH_CLIENT_ID;
-
-// NUSS関連のwebRequestロジックは撤去（CORS回避の試行は中止）
 
 // 通知を表示する関数
 function showNotification(title: string, message: string) {
@@ -53,15 +25,12 @@ function showNotification(title: string, message: string) {
 // 初期化処理
 function init() {
   console.log('Service Worker初期化');
-  // 既存同期機能は無効化中のため、アラーム設定をスキップ
-  if (!LEGACY_CALENDAR_SYNC_DISABLED) {
-    setupCalendarSyncAlarm();
-  }
+  // アラームの設定
+  setupCalendarSyncAlarm();
 }
 
 // カレンダー同期用のアラームをセットアップ
 async function setupCalendarSyncAlarm() {
-  if (LEGACY_CALENDAR_SYNC_DISABLED) return;
   return new Promise<void>((resolve) => {
     chrome.storage.local.get(['calendarSyncInterval', 'autoSyncEnabled'], (result) => {
       const autoSyncEnabled = result.autoSyncEnabled !== false; // デフォルトはtrue
@@ -95,10 +64,10 @@ async function getSyncInterval(): Promise<number> {
 }
 
 // Google Calendar sync background script
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    (async () => {
-      try {
-        switch (request.action) {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  (async () => {
+    try {
+      switch (request.action) {
         case 'authenticateGoogle': {
           console.log('[DEBUG] authenticateGoogle action received');
           // Use incremental authentication with minimal required scopes
@@ -113,50 +82,9 @@ async function getSyncInterval(): Promise<number> {
           sendResponse({ success: true, token });
           break;
         }
-        case 'authenticateGoogleChooser': {
-          console.log('[DEBUG] authenticateGoogleChooser action received');
-          const scopes: string[] = request.scopes || [
-            'openid',
-            'email',
-            'profile',
-            'https://www.googleapis.com/auth/calendar',
-            'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/userinfo.profile'
-          ];
-          // Do not default to HOSTED_DOMAIN_HINT; only use if explicitly provided
-          const hd: string | undefined = request.hd; // e.g., 'thers.ac.jp'
-          const forceConsent: boolean = !!request.forceConsent;
-          try {
-            const result = await authenticateGoogleWithChooser(scopes, hd, forceConsent);
-            sendResponse({ success: true, ...result });
-          } catch (e: any) {
-            sendResponse({ success: false, error: e?.message || String(e) });
-          }
-          break;
-        }
         case 'syncToCalendar': {
-          // 既存（レガシー）同期を無効化
-          if (LEGACY_CALENDAR_SYNC_DISABLED) {
-            sendResponse({ success: false, error: 'Legacy calendar sync is currently disabled' });
-            break;
-          }
           const result = await syncToCalendar(request.data, request.token);
           sendResponse({ success: true, result });
-          break;
-        }
-        case 'manualSyncToCalendar': {
-          // 手動同期用のエンドポイント（レガシーフラグに関係なく実行）
-          try {
-            const result = await syncToCalendar(request.data, request.token);
-            try {
-              const created = (result?.assignments?.length || 0) + (result?.quizzes?.length || 0);
-              if (created > 0) await incrementDailyUsageLocal();
-              chrome.storage.local.set({ lastSyncResult: { ts: Date.now(), assignments: (result?.assignments?.length||0), quizzes: (result?.quizzes?.length||0), errors: (result?.errors?.length||0) } });
-            } catch {}
-            sendResponse({ success: true, result });
-          } catch (e: any) {
-            sendResponse({ success: false, error: e?.message || String(e) });
-          }
           break;
         }
         case 'getGoogleAccounts': {
@@ -215,38 +143,16 @@ async function getSyncInterval(): Promise<number> {
 
 // アラームイベントのリスナー
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (LEGACY_CALENDAR_SYNC_DISABLED) return;
   if (alarm.name === CALENDAR_SYNC_ALARM_NAME) {
     console.log('カレンダー同期アラームが発火しました');
     await performCalendarSync();
   }
 });
 
-// JST当日キー（YYYY-MM-DD）
-function getTodayKeyJst(): string {
-  const ms = Date.now() + 9 * 60 * 60 * 1000; // JST補正
-  return new Date(ms).toISOString().slice(0, 10);
-}
-
-// 1日あたりの最大同期回数
-const DAILY_MAX_SYNC = 4;
-
-// 日次使用回数をインクリメント
-async function incrementDailyUsageLocal(): Promise<void> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['todayUsedCount', 'usageDateJst'], (r) => {
-      const today = getTodayKeyJst();
-      const isSame = r?.usageDateJst === today;
-      const cnt = (isSame ? (r?.todayUsedCount || 0) : 0) + 1;
-      chrome.storage.local.set({ usageDateJst: today, todayUsedCount: cnt }, () => resolve());
-    });
-  });
-}
-
-// 最後の同期から設定間隔以上経過、かつ日次上限未満かをチェック
+// 最後の同期から設定間隔以上経過しているかチェック
 async function shouldAutoSync(): Promise<boolean> {
   return new Promise((resolve) => {
-    chrome.storage.local.get(['lastSyncTime', 'calendarSyncInterval', 'autoSyncEnabled', 'todayUsedCount', 'usageDateJst'], (result) => {
+    chrome.storage.local.get(['lastSyncTime', 'calendarSyncInterval', 'autoSyncEnabled'], (result) => {
       // 自動同期が無効化されている場合は同期しない
       const autoSyncEnabled = result.autoSyncEnabled !== false; // デフォルトはtrue
       if (!autoSyncEnabled) {
@@ -254,24 +160,14 @@ async function shouldAutoSync(): Promise<boolean> {
         return;
       }
 
-  // バイパス機能は廃止
-
       const lastSyncTime = result.lastSyncTime || 0;
-      // 最小間隔180分（3時間）を強制
-      const MIN_INTERVAL_MIN = 180;
-      const configured = (result.calendarSyncInterval || 60);
-      const effectiveMinutes = Math.max(MIN_INTERVAL_MIN, configured);
-      const interval = effectiveMinutes * 60 * 1000;
+      // デフォルト60分、ミリ秒に変換
+      const interval = (result.calendarSyncInterval || 60) * 60 * 1000;
       const now = Date.now();
       
-      // 日次上限チェック
-      const today = getTodayKeyJst();
-      const used = (result.usageDateJst === today) ? (result.todayUsedCount || 0) : 0;
-      const hasQuota = used < DAILY_MAX_SYNC;
-
-      // 最終同期時間 + 同期間隔 < 現在時刻 なら同期が必要（未同期=0なら即判定）
+      // 最終同期時間 + 同期間隔 < 現在時刻 なら同期が必要
       const needsSync = lastSyncTime + interval < now;
-      resolve(needsSync && hasQuota);
+      resolve(needsSync);
     });
   });
 }
@@ -283,17 +179,6 @@ async function authenticateGoogle(): Promise<string> {
   // 既存トークンを削除してから新規認証を行う
   await new Promise<void>((resolve) => {
     chrome.identity.getAuthToken({ interactive: false }, (token) => {
-      const err = chrome.runtime.lastError;
-      if (err) {
-        // Benign when no grant exists yet or user revoked it; proceed silently
-        if (err.message?.includes('OAuth2 not granted') || err.message?.includes('not signed in') || err.message?.includes('User not signed in')) {
-          resolve();
-          return;
-        }
-        console.warn('[AUTH DEBUG] getAuthToken(non-interactive) error:', err.message || err);
-        resolve();
-        return;
-      }
       if (token) {
         chrome.identity.removeCachedAuthToken({ token }, () => resolve());
       } else {
@@ -314,7 +199,7 @@ async function authenticateGoogle(): Promise<string> {
         interactive: true,
         // Add state parameter for CSRF protection where possible
         scopes: [
-          'https://www.googleapis.com/auth/calendar.events',
+          'https://www.googleapis.com/auth/calendar',
           'https://www.googleapis.com/auth/userinfo.email',
           'https://www.googleapis.com/auth/userinfo.profile'
         ]
@@ -362,96 +247,6 @@ async function authenticateGoogle(): Promise<string> {
   });
 }
 
-// Helper: parse URL hash fragment like '#access_token=...&...'
-function parseFragment(fragment: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  const frag = fragment.startsWith('#') ? fragment.substring(1) : fragment;
-  for (const pair of frag.split('&')) {
-    const [k, v] = pair.split('=');
-    if (k) out[decodeURIComponent(k)] = decodeURIComponent(v || '');
-  }
-  return out;
-}
-
-// OAuth via account chooser and optional hosted-domain hint using launchWebAuthFlow
-/**
- * -----------------------------------------------------------------
- * Modified by: roz
- * Date       : 2025-08-14
- * Changes    : 非強制時のアカウント選択プロンプトを抑止（prompt未指定）。
- * Category   : 認証・UX
- * -----------------------------------------------------------------
- */
-async function authenticateGoogleWithChooser(scopes: string[], hdHint?: string, forceConsent = false): Promise<{ token: string; idToken?: string; }> {
-  const redirectUri = chrome.identity.getRedirectURL('oauth2');
-  const nonce = generateSecureState();
-  const params = new URLSearchParams({
-    client_id: GOOGLE_OAUTH_CLIENT_ID,
-    response_type: 'token id_token',
-    redirect_uri: redirectUri,
-    scope: scopes.join(' '),
-    include_granted_scopes: forceConsent ? 'false' : 'true',
-    nonce
-  });
-  // 非強制時はアカウント選択を毎回促さない（既存セッションを尊重）
-  if (forceConsent) params.set('prompt', 'select_account consent');
-  if (hdHint) params.set('hd', hdHint);
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-
-  const redirectResponse = await new Promise<string>((resolve, reject) => {
-    chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, (responseUrl) => {
-      if (chrome.runtime.lastError || !responseUrl) {
-        reject(new Error(chrome.runtime.lastError?.message || 'launchWebAuthFlow failed'));
-        return;
-      }
-      resolve(responseUrl);
-    });
-  });
-
-  const url = new URL(redirectResponse);
-  const frag = parseFragment(url.hash);
-  const token = frag['access_token'];
-  const idToken = frag['id_token'];
-  if (!token) throw new Error('No access_token in OAuth response');
-
-  // Verify token
-  await verifyTokenSecurity(token);
-
-  // Fetch userinfo for status caching (no domain enforcement by default)
-  try {
-    const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: 'no-store'
-    });
-    if (resp.ok) {
-      const ui = await resp.json();
-      chrome.storage.local.set({ 'google_user_info': {
-        id: ui?.sub || ui?.id,
-        email: ui?.email,
-        name: ui?.name,
-        picture: ui?.picture,
-        verified_email: ui?.email_verified,
-        hd: ui?.hd || null,
-        ts: Date.now()
-      }, 'google_auth_token': token });
-      if (hdHint) {
-        const email: string | undefined = ui?.email;
-        const verified: boolean | undefined = ui?.email_verified;
-        const hd: string | undefined = ui?.hd;
-        if (!verified || !email) throw new Error('Unverified Google account');
-        const domainOk = (hd && hd === hdHint) || (!!email && email.endsWith(`@${hdHint}`));
-        if (!domainOk) throw new Error(`This account is not in ${hdHint}`);
-      }
-    }
-  } catch (e) {
-    console.warn('userinfo caching skipped:', e);
-  }
-
-  // Mark explicit auth
-  chrome.storage.local.set({ 'userAuthenticatedExplicitly': true });
-  return { token, idToken };
-}
-
 // Generate cryptographically secure state parameter
 function generateSecureState(): string {
   const array = new Uint8Array(32);
@@ -463,8 +258,8 @@ function generateSecureState(): string {
 async function verifyTokenSecurity(token: string): Promise<void> {
   console.log('🔧 [TOKEN DEBUG] Starting token security verification...');
   try {
-    // Verify token by making a test API call (preferred endpoint)
-  const response = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + token, { cache: 'no-store' });
+    // Verify token by making a test API call
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + token);
     console.log('🔧 [TOKEN DEBUG] Token info response status:', response.status);
     
     if (!response.ok) {
@@ -478,30 +273,28 @@ async function verifyTokenSecurity(token: string): Promise<void> {
       expires_in: tokenInfo.expires_in
     });
     
-    // Verify token audience (client_id): accept manifest client and WEB_OAUTH_CLIENT_ID
-    const manifestClientId = MANIFEST_OAUTH_CLIENT_ID || '';
-    const accepted = new Set<string>(manifestClientId ? [manifestClientId] : []);
-    try { if (WEB_OAUTH_CLIENT_ID) accepted.add(WEB_OAUTH_CLIENT_ID); } catch {}
-    if (!accepted.has(tokenInfo.aud)) {
-      console.error('🔧 [TOKEN DEBUG] Client ID mismatch:', tokenInfo.aud, 'vs accepted:', Array.from(accepted).join(', '));
+    // Verify token audience (client_id)
+    const expectedClientId = '320934121909-3mo570972bcc19chatsu8pcp6bevj7fm.apps.googleusercontent.com';
+    if (tokenInfo.aud !== expectedClientId) {
+      console.error('🔧 [TOKEN DEBUG] Client ID mismatch:', tokenInfo.aud, 'vs expected:', expectedClientId);
       throw new Error('Token audience verification failed');
     }
     console.log('🔧 [TOKEN DEBUG] Client ID verification passed');
     
     // Verify required scopes are present
-    const requiredUserScopes = [
+    const requiredScopes = [
+      'https://www.googleapis.com/auth/calendar',
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/userinfo.profile'
     ];
     
     const tokenScopes = tokenInfo.scope ? tokenInfo.scope.split(' ') : [];
-    const hasCalendarAny = tokenScopes.includes('https://www.googleapis.com/auth/calendar') || tokenScopes.includes('https://www.googleapis.com/auth/calendar.events');
-    const missingUserScopes = requiredUserScopes.filter(scope => !tokenScopes.includes(scope));
+    const missingScopes = requiredScopes.filter(scope => !tokenScopes.includes(scope));
     console.log('🔧 [TOKEN DEBUG] Granted scopes:', tokenScopes);
-    console.log('🔧 [TOKEN DEBUG] Has calendar(any):', hasCalendarAny, 'Missing user scopes:', missingUserScopes);
-    if (!hasCalendarAny || missingUserScopes.length > 0) {
-      const missing = [!hasCalendarAny ? 'calendar or calendar.events' : '', ...missingUserScopes].filter(Boolean).join(', ');
-      throw new Error('Required scopes not granted: ' + missing);
+    console.log('🔧 [TOKEN DEBUG] Missing scopes:', missingScopes);
+    
+    if (missingScopes.length > 0) {
+      throw new Error('Required scopes not granted: ' + missingScopes.join(', '));
     }
     console.log('🔧 [TOKEN DEBUG] Scope verification passed');
     
@@ -525,125 +318,10 @@ async function getGoogleAccounts(): Promise<any[]> {
     chrome.storage.local.get(['userAuthenticatedExplicitly'], (result) => {
       console.log('🔧 [AUTH DEBUG] userAuthenticatedExplicitly flag:', result.userAuthenticatedExplicitly);
       
-      const proceed = async () => {
-        console.log('🔧 [AUTH DEBUG] Checking for existing tokens (non-interactive)...');
-        chrome.identity.getAuthToken({ interactive: false }, async (token) => {
-          console.log('🔧 [AUTH DEBUG] getAuthToken (non-interactive) callback executed');
-          console.log('🔧 [AUTH DEBUG] Token exists:', !!token);
-          console.log('🔧 [AUTH DEBUG] Chrome runtime error:', chrome.runtime.lastError);
-          
-          const tryFetchUserInfo = async (tokenToUse: string, on401: () => void) => {
-            try {
-              // Query Google OAuth userinfo; success implies token is valid for status purposes
-              const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { 
-                  'Authorization': `Bearer ${tokenToUse}`,
-                  'Accept': 'application/json',
-                  'Cache-Control': 'no-cache'
-                },
-                cache: 'no-store'
-              });
-              
-              console.log('[DEBUG] User info fetch response status:', response.status);
-              
-              if (response.ok) {
-                const userInfo = await response.json();
-                console.log('[DEBUG] User info received:', { 
-                  email: userInfo.email, 
-                  name: userInfo.name, 
-                  verified: userInfo.email_verified 
-                });
-                
-                // Validate user info structure
-                if (!userInfo.email || !userInfo.email_verified) {
-                  throw new Error('Invalid or unverified user info');
-                }
-                
-                resolve([
-                  {
-                    id: userInfo.sub || userInfo.id, // Use 'sub' (subject) as primary ID
-                    email: userInfo.email,
-                    name: userInfo.name,
-                    picture: userInfo.picture,
-                    verified_email: userInfo.email_verified
-                  }
-                ]);
-              } else if (response.status === 401) {
-                console.log('[DEBUG] Token expired (401), attempting cached user info fallback');
-                chrome.storage.local.get(['google_user_info'], (r) => {
-                  const ui = r.google_user_info;
-                  if (ui && ui.email) {
-                    resolve([{ id: ui.id, email: ui.email, name: ui.name, picture: ui.picture, verified_email: ui.verified_email }]);
-                  } else {
-                    // No cache, clear flag and require reauth
-                    chrome.storage.local.remove('userAuthenticatedExplicitly');
-                    console.log('Token expired and no cache; user needs to re-authenticate');
-                    resolve([]);
-                  }
-                });
-              } else {
-                console.error('[DEBUG] User info fetch failed:', response.status, response.statusText);
-                // Fall back to cached user info if available
-                chrome.storage.local.get(['google_user_info'], (r) => {
-                  const ui = r.google_user_info;
-                  if (ui && ui.email) {
-                    resolve([{ id: ui.id, email: ui.email, name: ui.name, picture: ui.picture, verified_email: ui.verified_email }]);
-                  } else {
-                    resolve([]);
-                  }
-                });
-              }
-            } catch (e) {
-              console.error('[DEBUG] User info fetch error:', e);
-              // Fall back to cached user info if available
-              chrome.storage.local.get(['google_user_info'], (r) => {
-                const ui = r.google_user_info;
-                if (ui && ui.email) {
-                  resolve([{ id: ui.id, email: ui.email, name: ui.name, picture: ui.picture, verified_email: ui.verified_email }]);
-                } else {
-                  resolve([]);
-                }
-              });
-            }
-          };
-          
-          if (!token) {
-            console.log('[DEBUG] No existing token');
-            // Try using stored token or cached user info
-            chrome.storage.local.get(['google_auth_token', 'google_user_info'], async (r) => {
-              const storedToken = r.google_auth_token as string | undefined;
-              if (storedToken) {
-                await tryFetchUserInfo(storedToken, () => resolve([]));
-                return;
-              }
-              const ui = r.google_user_info;
-              if (ui && ui.email) {
-                resolve([{ id: ui.id, email: ui.email, name: ui.name, picture: ui.picture, verified_email: ui.verified_email }]);
-              } else {
-                resolve([]);
-              }
-            });
-            return;
-          }
-          
-          await tryFetchUserInfo(token, () => {
-            console.log('[DEBUG] Token is invalid; attempting cached user info fallback');
-            chrome.storage.local.get(['google_user_info'], (r) => {
-              const ui = r.google_user_info;
-              if (ui && ui.email) {
-                resolve([{ id: ui.id, email: ui.email, name: ui.name, picture: ui.picture, verified_email: ui.verified_email }]);
-              } else {
-                chrome.storage.local.remove('userAuthenticatedExplicitly');
-                resolve([]);
-              }
-            });
-          });
-        });
-      };
-
       if (!result.userAuthenticatedExplicitly) {
-        console.log('🔧 [AUTH DEBUG] User has not explicitly authenticated; attempting passive status check');
-        proceed();
+        console.log('🔧 [AUTH DEBUG] User has not explicitly authenticated, returning empty array');
+        // User has not explicitly authenticated, return empty array
+        resolve([]);
         return;
       }
 
@@ -654,16 +332,20 @@ async function getGoogleAccounts(): Promise<any[]> {
         console.log('🔧 [AUTH DEBUG] Token exists:', !!token);
         console.log('🔧 [AUTH DEBUG] Chrome runtime error:', chrome.runtime.lastError);
         
-          const tryFetchUserInfo = async (tokenToUse: string, on401: () => void) => {
-            try {
-            // Direct userinfo fetch for explicit flow as well
+        const tryFetchUserInfo = async (tokenToUse: string, on401: () => void) => {
+          try {
+            console.log('[DEBUG] Verifying token security...');
+            // Verify token before use
+            await verifyTokenSecurity(tokenToUse);
+            console.log('[DEBUG] Token security verified, fetching user info...');
+            
+            // Use secure endpoint with proper validation
             const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: { 
                 'Authorization': `Bearer ${tokenToUse}`,
                 'Accept': 'application/json',
                 'Cache-Control': 'no-cache'
-              },
-              cache: 'no-store'
+              }
             });
             
             console.log('[DEBUG] User info fetch response status:', response.status);
@@ -707,21 +389,10 @@ async function getGoogleAccounts(): Promise<any[]> {
         };
         
         if (!token) {
-          console.log('[DEBUG] No existing token, attempting stored token/cached info');
-          chrome.storage.local.get(['google_auth_token', 'google_user_info'], async (r) => {
-            const storedToken = r.google_auth_token as string | undefined;
-            if (storedToken) {
-              await tryFetchUserInfo(storedToken, () => resolve([]));
-              return;
-            }
-            const ui = r.google_user_info;
-            if (ui && ui.email) {
-              resolve([{ id: ui.id, email: ui.email, name: ui.name, picture: ui.picture, verified_email: ui.verified_email }]);
-            } else {
-              chrome.storage.local.remove('userAuthenticatedExplicitly');
-              resolve([]);
-            }
-          });
+          console.log('[DEBUG] No existing token, clearing auth flag');
+          // No existing token, clear explicit auth flag and return empty array
+          chrome.storage.local.remove('userAuthenticatedExplicitly');
+          resolve([]);
           return;
         }
         
@@ -754,31 +425,8 @@ function makeEventKey(item: any, type: string): string {
   return `${type}:${item.id || ''}:${item.title || ''}:${item.context || item.courseName || ''}`;
 }
 
-// 既存イベントの有無をsakaiAssignmentIdで確認
-async function findEventBySakaiId(sakaiId: string, token: string): Promise<any | null> {
-  if (!sakaiId) return null;
-  try {
-    const params = new URLSearchParams({
-      maxResults: '1',
-      privateExtendedProperty: `sakaiAssignmentId=${encodeURIComponent(sakaiId)}`
-    });
-    const resp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: 'no-store'
-    });
-    if (!resp.ok) return null;
-    const j = await resp.json();
-    const item = Array.isArray(j?.items) ? j.items[0] : null;
-    return item || null;
-  } catch {
-    return null;
-  }
-}
-
 // Sync assignments and quizzes to Google Calendar with enhanced security
 async function syncToCalendar(data: any, token?: string): Promise<any> {
-  // テスト用: 送信済みマークによる重複スキップを無効化するフラグ
-  const DEDUPLICATION_ENABLED = false;
   if (!token) {
     // No token provided, cannot proceed with sync
     throw new Error('Authentication token required. Please login to Google first.');
@@ -789,15 +437,7 @@ async function syncToCalendar(data: any, token?: string): Promise<any> {
     throw new Error('Invalid sync data provided');
   }
   
-  const results = {
-    assignments: [] as any[],
-    quizzes: [] as any[],
-    existed: { assignments: [] as any[], quizzes: [] as any[] },
-    previouslySent: { assignments: [] as any[], quizzes: [] as any[] },
-    skipped: { assignments: [] as any[], quizzes: [] as any[] },
-    inputCounts: { assignments: Array.isArray(data.assignments) ? data.assignments.length : 0, quizzes: Array.isArray(data.quizzes) ? data.quizzes.length : 0 },
-    errors: [] as any[]
-  };
+  const results = { assignments: [], quizzes: [], errors: [] } as any;
   const sentKeys = await getSentEventKeys();
   const now = Math.floor(Date.now() / 1000);
   
@@ -821,21 +461,15 @@ async function syncToCalendar(data: any, token?: string): Promise<any> {
       }
       
       const due = assignment.dueTime || assignment.dueDate;
-      if (!due || due <= now) { results.skipped.assignments.push({ title: assignment.title, reason: 'past_or_missing_due' }); continue; }
+      if (!due || due <= now) continue; // 過去はスキップ
       
       const key = makeEventKey(assignment, 'assignment');
-      if (DEDUPLICATION_ENABLED && sentKeys.has(key)) { results.previouslySent.assignments.push({ title: assignment.title }); continue; }
-
-      // 既存イベント確認（sakaiAssignmentId）
-      try {
-        const existed = await findEventBySakaiId(String(assignment.id || ''), token);
-        if (existed) { results.existed.assignments.push({ title: assignment.title, eventId: existed.id, link: existed.htmlLink }); continue; }
-      } catch {}
+      if (sentKeys.has(key)) continue;
       
       try {
         const event = await createCalendarEvent(assignment, 'assignment', token!);
         results.assignments.push({ title: assignment.title, success: true, eventId: event.id });
-        if (DEDUPLICATION_ENABLED) await addSentEventKey(key);
+        await addSentEventKey(key);
         operationCount++;
       } catch (error: any) {
         results.errors.push({ type: 'assignment', title: assignment.title, error: error.message });
@@ -859,20 +493,15 @@ async function syncToCalendar(data: any, token?: string): Promise<any> {
       }
       
       const due = quiz.dueTime || quiz.dueDate;
-      if (!due || due <= now) { results.skipped.quizzes.push({ title: quiz.title, reason: 'past_or_missing_due' }); continue; }
+      if (!due || due <= now) continue; // 過去はスキップ
       
       const key = makeEventKey(quiz, 'quiz');
-      if (DEDUPLICATION_ENABLED && sentKeys.has(key)) { results.previouslySent.quizzes.push({ title: quiz.title }); continue; }
-
-      try {
-        const existed = await findEventBySakaiId(String(quiz.id || ''), token);
-        if (existed) { results.existed.quizzes.push({ title: quiz.title, eventId: existed.id, link: existed.htmlLink }); continue; }
-      } catch {}
+      if (sentKeys.has(key)) continue;
       
       try {
         const event = await createCalendarEvent(quiz, 'quiz', token!);
         results.quizzes.push({ title: quiz.title, success: true, eventId: event.id });
-        if (DEDUPLICATION_ENABLED) await addSentEventKey(key);
+        await addSentEventKey(key);
         operationCount++;
       } catch (error: any) {
         results.errors.push({ type: 'quiz', title: quiz.title, error: error.message });
@@ -937,7 +566,7 @@ async function createCalendarEvent(item: any, type: string, token: string): Prom
     extendedProperties: {
       private: {
         sakaiAssignmentId: item.id || '',
-        extensionVersion: '2.0.0',
+        extensionVersion: '1.0.4',
         syncTimestamp: new Date().toISOString(),
         itemType: type
       }
@@ -960,7 +589,6 @@ async function createCalendarEvent(item: any, type: string, token: string): Prom
         'Accept': 'application/json',
         'Cache-Control': 'no-cache'
       },
-      cache: 'no-store',
       body: requestBody
     });
     let responseBody = '';
@@ -1030,13 +658,6 @@ async function logoutGoogle(): Promise<void> {
   return new Promise((resolve) => {
     // Step 1: Get and remove all cached auth tokens
     chrome.identity.getAuthToken({ interactive: false }, (token) => {
-      const err = chrome.runtime.lastError;
-      if (err && (err.message?.includes('OAuth2 not granted') || err.message?.includes('not signed in') || err.message?.includes('User not signed in'))) {
-        console.log('🔧 [LOGOUT DEBUG] No OAuth grant (benign):', err.message);
-      } else if (err) {
-        console.warn('🔧 [LOGOUT DEBUG] getAuthToken(non-interactive) error:', err.message);
-      }
-
       console.log('🔧 [LOGOUT DEBUG] Found existing token:', !!token);
       
       if (token) {

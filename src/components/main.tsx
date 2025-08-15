@@ -152,10 +152,6 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
         
         getStoredSettings(this.props.hostname).then((s) => {
             this.setState({ settings: s }, () => {
-                // ダークモード適用
-                try {
-                    document.documentElement.classList.toggle('cs-dark', !!s.appInfo.useDarkTheme);
-                } catch {}
                 this.reloadEntities();
             });
         });
@@ -271,22 +267,11 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
      * Category   : UI改善
      * -----------------------------------------------------------------
      */
-    private onCheck(entry: EntryUnion, checked: boolean, requestDate?: boolean, permanent?: boolean) {
+    private onCheck(entry: EntryUnion, checked: boolean, requestDate?: boolean) {
         const newEntry = _.cloneDeep(entry);
         
         // マイナスボタンをクリックした時の処理（日付ピッカーを表示）
-        if (permanent) {
-            // 永久非表示（現在から1年後）を即時設定
-            const oneYearLater = new Date();
-            oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
-            const y = oneYearLater.getFullYear();
-            const m = String(oneYearLater.getMonth() + 1).padStart(2, '0');
-            const d = String(oneYearLater.getDate()).padStart(2, '0');
-            const h = String(oneYearLater.getHours()).padStart(2, '0');
-            (newEntry as any).checkTimestamp = `${y}/${m}/${d}/${h}`;
-            newEntry.save(this.props.hostname).then(() => this.reloadEntities());
-            return;
-        } else if (requestDate) {
+        if (requestDate) {
             // 日付ピッカーモーダルを表示するための状態をセット
             this.setState({
                 datepickerModalOpen: true,
@@ -427,10 +412,6 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
             resetFavoritesBar();
             createFavoritesBar(this.state.settings, this.state.entities);
             applyColorSettings(this.state.settings, this.props.subset);
-            // ダークモード適用
-            try {
-                document.documentElement.classList.toggle('cs-dark', !!this.state.settings.appInfo.useDarkTheme);
-            } catch {}
         }
     }
 
@@ -507,8 +488,7 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                  */}
                 {this.state.shownTab === "submitted" ? (
                     <>
-                        {/* i18n: 提出済みタブの見出し */}
-                        <h3>{i18nMessage('tab_submitted')}</h3>
+                        <h3>提出済みの課題</h3>
                         {this.state.filteredEntities.submitted.length > 0 ? (
                             <SubmittedEntryList
                                 entriesWithCourse={this.state.filteredEntities.submitted.map(entry => {
@@ -518,7 +498,7 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                                     );
                                     return {
                                         entry: entry,
-                                        course: entityWithCourse ? entityWithCourse.getCourse() : { id: "", name: i18nMessage('unknown_course'), link: "" }
+                                        course: entityWithCourse ? entityWithCourse.getCourse() : { id: "", name: "Unknown", link: "" }
                                     };
                                 })}
                                 isSubset={this.props.subset}
@@ -530,15 +510,13 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                                 }}
                             />
                         ) : (
-                            // i18n: 提出済み課題がない場合の表示
-                            <div className="cs-empty-message">{i18nMessage('empty_submitted')}</div>
+                            <div className="cs-empty-message">提出済みの課題はありません</div>
                         )}
                     </>
                 ) : null}
                 {this.state.shownTab === "dismissed" ? (
                     <>
-                        {/* i18n: 非表示タブの見出し */}
-                        <h3>{i18nMessage('dismissed_heading')}</h3>
+                        <h3>非表示の課題</h3>
                         {this.state.filteredEntities.dismissed.length > 0 ? (
                             <DismissedEntryList
                                 entriesWithCourse={this.state.filteredEntities.dismissed.map(entry => {
@@ -548,7 +526,7 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                                     );
                                     return {
                                         entry: entry,
-                                        course: entityWithCourse ? entityWithCourse.getCourse() : { id: "", name: i18nMessage('unknown_course'), link: "" }
+                                        course: entityWithCourse ? entityWithCourse.getCourse() : { id: "", name: "Unknown", link: "" }
                                     };
                                 })}
                                 isSubset={this.props.subset}
@@ -567,8 +545,7 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                                 }}
                             />
                         ) : (
-                            // i18n: 非表示課題がない場合の表示
-                            <div className="cs-empty-message">{i18nMessage('empty_dismissed')}</div>
+                            <div className="cs-empty-message">非表示に設定した課題はありません</div>
                         )}
                     </>
                 ) : null}
@@ -593,22 +570,13 @@ function MiniSakaiLogo() {
 
 function MiniSakaiVersion() {
     const ctx = useContext(MiniSakaiContext);
-    /**
-     * -----------------------------------------------------------------
-     * Modified by: roz
-     * Date       : 2025-08-14
-     * Changes    : バージョン表記をi18n対応（placeholders使用）
-     * Category   : i18n
-     * -----------------------------------------------------------------
-     */
-    return <p className='cs-version'>{i18nMessage('version_label', [ctx.settings.appInfo.version])}</p>;
+    return <p className='cs-version'>Version {ctx.settings.appInfo.version}</p>;
 }
 
 function MiniSakaiClose(props: { onClose: () => void }) {
     return (
         <button type="button" className="closebtn q" onClick={props.onClose}>
-            {/* i18n: 代替テキスト */}
-            <img src={chrome.runtime.getURL("img/closeBtn.svg")} alt={i18nMessage('alt_close')} />
+            <img src={chrome.runtime.getURL("img/closeBtn.svg")} alt="close" />
         </button>
     );
 }

@@ -57,8 +57,6 @@
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  line-height: 1; /* グリフの余白でズレないように */
-  transform: translateY(0); /* 中央に揃える */
 }
 
 .cs-sync-close:hover {
@@ -303,31 +301,6 @@
   border: 1px solid #fecaca;
 }
 
-/* 説明モーダル用の簡易スタイル */
-.cs-sync-guide {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 16px;
-  margin-bottom: 16px;
-  color: #374151;
-}
-
-.cs-sync-steps {
-  margin: 10px 0 0 18px;
-  padding: 0;
-}
-
-.cs-sync-steps li {
-  margin: 6px 0;
-}
-
-.cs-sync-note {
-  margin-top: 12px;
-  font-size: 13px;
-  color: #4b5563;
-}
-
 /* Radio button styling */
 .cs-sync-account input[type="radio"] {
   width: 16px;
@@ -382,61 +355,3 @@
     flex-direction: column;
   }
 }
-
-/* Dark mode overrides */
-html.cs-dark .cs-sync-modal-content {
-  background: #111827; /* gray-900 */
-  color: #e5e7eb; /* gray-200 */
-}
-html.cs-dark .cs-sync-header {
-  background: #1f2937; /* gray-800 */
-  border-bottom-color: #374151; /* gray-700 */
-}
-html.cs-dark .cs-sync-header h3 { color: #e5e7eb; }
-html.cs-dark .cs-sync-close { color: #9ca3af; }
-html.cs-dark .cs-sync-close:hover { background: #374151; color: #e5e7eb; }
-html.cs-dark .cs-sync-body { color: #e5e7eb; }
-html.cs-dark .cs-sync-account { border-bottom-color: #374151; }
-html.cs-dark .cs-sync-account:hover { background: #111827; }
-html.cs-dark .cs-sync-account-name { color: #e5e7eb; }
-html.cs-dark .cs-sync-account-email { color: #9ca3af; }
-html.cs-dark .cs-sync-options label { color: #e5e7eb; }
-html.cs-dark .cs-sync-auto-settings { background: #111827; border-color: #374151; }
-html.cs-dark .cs-sync-interval-settings label { color: #9ca3af; }
-html.cs-dark .cs-sync-interval-settings input[type="number"] { background: #111827; color: #e5e7eb; border-color: #4b5563; }
-html.cs-dark .cs-sync-btn-secondary { background: #1f2937; color: #e5e7eb; border-color: #374151; }
-html.cs-dark .cs-sync-btn-secondary:hover { background: #374151; }
-html.cs-dark .cs-sync-status-info { background: #1e3a8a; color: #dbeafe; border-color: #1d4ed8; }
-html.cs-dark .cs-sync-status-success { background: #14532d; color: #bbf7d0; border-color: #16a34a; }
-html.cs-dark .cs-sync-status-error { background: #7f1d1d; color: #fecaca; border-color: #dc2626; }
-html.cs-dark .cs-sync-guide { background: #0f172a; border-color: #334155; color: #e5e7eb; }
-html.cs-dark .cs-link-title { color: #93c5fd; }
-html.cs-dark .cs-sync-no-account { color: #e5e7eb; }
-html.cs-dark .cs-auth-notice h4 { color: #e5e7eb; }
-html.cs-dark .cs-auth-notice p, html.cs-dark .cs-sync-note { color: #9ca3af; }
-
-/* モーダル単体でのダーク適用（html.cs-dark が無くても反映させる） */
-.cs-dark-scope .cs-sync-modal-content { background: #111827; color: #e5e7eb; }
-.cs-dark-scope .cs-sync-header { background: #1f2937; border-bottom-color: #374151; }
-.cs-dark-scope .cs-sync-header h3 { color: #e5e7eb; }
-.cs-dark-scope .cs-sync-close { color: #9ca3af; }
-.cs-dark-scope .cs-sync-close:hover { background: #374151; color: #e5e7eb; }
-.cs-dark-scope .cs-sync-body { color: #e5e7eb; }
-.cs-dark-scope .cs-sync-account { border-bottom-color: #374151; }
-.cs-dark-scope .cs-sync-account:hover { background: #111827; }
-.cs-dark-scope .cs-sync-account-name { color: #e5e7eb; }
-.cs-dark-scope .cs-sync-account-email { color: #9ca3af; }
-.cs-dark-scope .cs-sync-options label { color: #e5e7eb; }
-.cs-dark-scope .cs-sync-auto-settings { background: #111827; border-color: #374151; }
-.cs-dark-scope .cs-sync-interval-settings label { color: #9ca3af; }
-.cs-dark-scope .cs-sync-interval-settings input[type="number"] { background: #111827; color: #e5e7eb; border-color: #4b5563; }
-.cs-dark-scope .cs-sync-btn-secondary { background: #1f2937; color: #e5e7eb; border-color: #374151; }
-.cs-dark-scope .cs-sync-btn-secondary:hover { background: #374151; }
-.cs-dark-scope .cs-sync-status-info { background: #1e3a8a; color: #dbeafe; border-color: #1d4ed8; }
-.cs-dark-scope .cs-sync-status-success { background: #14532d; color: #bbf7d0; border-color: #16a34a; }
-.cs-dark-scope .cs-sync-status-error { background: #7f1d1d; color: #fecaca; border-color: #dc2626; }
-.cs-dark-scope .cs-sync-guide { background: #0f172a; border-color: #334155; color: #e5e7eb; }
-.cs-dark-scope .cs-link-title { color: #93c5fd; }
-.cs-dark-scope .cs-sync-no-account { color: #e5e7eb; }
-.cs-dark-scope .cs-auth-notice h4 { color: #e5e7eb; }
-.cs-dark-scope .cs-auth-notice p, .cs-dark-scope .cs-sync-note { color: #9ca3af; }

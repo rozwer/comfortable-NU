@@ -9,7 +9,7 @@
 // filepath: /home/rozwer/sakai/comfortable-sakai/src/content_script.ts
 import { saveHostName } from "./features/storage";
 import { createMiniSakai, addMiniSakaiBtn } from "./minisakai";
-import { isLoggedIn, miniSakaiReady, getCourseSiteID } from "./utils";
+import { isLoggedIn, miniSakaiReady } from "./utils";
 /**
  * -----------------------------------------------------------------
  * Modified by: roz
@@ -22,19 +22,8 @@ import { isTactPortal, initializeTactFeatures } from "./features/tact/index-new"
 import { fetchCourse } from "./features/api/fetch";
 import { getAssignments } from "./features/entity/assignment/getAssignment";
 import { getQuizzes } from "./features/entity/quiz/getQuiz";
-import { getFetchTime, shouldUseCache, formatCount, formatDate } from "./utils";
+import { getFetchTime, shouldUseCache } from "./utils";
 import { Settings } from "./features/setting/types";
-import { i18nMessage } from "./features/chrome";
-/**
- * -----------------------------------------------------------------
- * Modified by: roz
- * Date       : 2025-08-14
- * Changes    : コースページを開いた際に返却通知（Bullhorn）を既読化し、黄色バッジを消去
- * Category   : 通知・UX
- * -----------------------------------------------------------------
- */
-import { fetchBullhornAlerts, extractReturnAlerts, dedupeLatestByAssignment } from "./features/notification/bullhorn";
-import { getReadMap, isUnread, markReadBulk } from "./features/notification/store";
 
 /**
  * Creates miniSakai.
@@ -47,30 +36,6 @@ async function main() {
 
         miniSakaiReady();
         await saveHostName(hostname);
-
-        // コースページを開いたら、そのコースに紐づく未読返却通知を既読化し、黄色バッジを消す
-        try {
-            const courseId = getCourseSiteID(window.location.href);
-            if (courseId) {
-                const readMap = await getReadMap(hostname);
-                const alerts = await fetchBullhornAlerts(true);
-                const returns = dedupeLatestByAssignment(extractReturnAlerts(alerts));
-                const target = returns.filter(a => a.siteId === courseId && isUnread(readMap, a.id));
-                if (target.length > 0) {
-                    await markReadBulk(hostname, target.map(t => t.id));
-                    // 見た目上の即時反映：該当タブから黄色バッジクラスを除去
-                    const tabs = document.querySelectorAll(".Mrphs-sitesNav__menuitem");
-                    for (let j = 0; j < tabs.length; j++) {
-                        const aTag = (tabs[j] as HTMLElement).getElementsByClassName("link-container")[0] as HTMLAnchorElement | undefined;
-                        const href = aTag?.href;
-                        const hrefContent = href?.match("(https?://[^/]+)/portal/site-?[a-z]*/([^/]+)");
-                        if (hrefContent && hrefContent[2] === courseId) {
-                            (tabs[j] as HTMLElement).classList.remove("cs-return-badge");
-                        }
-                    }
-                }
-            }
-        } catch {}
         
         /**
          * -----------------------------------------------------------------
@@ -80,7 +45,7 @@ async function main() {
          * Category   : 機能拡張
          * -----------------------------------------------------------------
          */
-        // 自動同期（ページ滞在時に定期チェックして必要なら実行）
+        // 自動同期チェックを設定
         setupAutoSyncCheck();
     }
     
@@ -159,9 +124,6 @@ function setupAutoSyncCheck() {
     
     // 初期同期チェック
     setTimeout(checkAndSyncIfNeeded, 5000);
-    // 周期チェック（運用: 5分ごと）
-    const PERIOD_MS = 5 * 60 * 1000;
-    setInterval(checkAndSyncIfNeeded, PERIOD_MS);
 }
 
 // 自動同期の条件をチェックし、必要なら同期を実行
@@ -192,43 +154,50 @@ async function checkAndSyncIfNeeded() {
 // 自動同期を実行
 async function performAutoSync() {
     try {
-        // 1) ページからデータ取得（未来のみ）
-        const data = await getSakaiDataForSync();
-        if ((!data?.assignments || data.assignments.length === 0) && (!data?.quizzes || data.quizzes.length === 0)) {
-            console.log('自動同期: 同期対象なし');
-            // 情報通知（新規なし）
-            try { showSyncNotification({ assignments: 0, quizzes: 0, errors: 0 as any }); } catch {}
+        // 課題データを取得（キャッシュを適切に使用）
+        const hostname = window.location.hostname;
+        const courses = fetchCourse();
+        const settings = new Settings();
+        const fetchTime = await getFetchTime(hostname);
+        const currentTime = Math.floor(Date.now() / 1000);
+        
+        // キャッシュ利用判定
+        const useAssignmentCache = shouldUseCache(fetchTime.assignment, currentTime, settings.cacheInterval.assignment);
+        const useQuizCache = shouldUseCache(fetchTime.quiz, currentTime, settings.cacheInterval.quiz);
+        
+        // デバッグ情報をログ出力
+        console.log('=== キャッシュ状態確認 ===');
+        console.log('課題最終取得時刻:', fetchTime.assignment ? new Date(fetchTime.assignment * 1000).toLocaleString() : '未取得');
+        console.log('クイズ最終取得時刻:', fetchTime.quiz ? new Date(fetchTime.quiz * 1000).toLocaleString() : '未取得');
+        console.log('課題キャッシュ間隔:', settings.cacheInterval.assignment, '秒');
+        console.log('クイズキャッシュ間隔:', settings.cacheInterval.quiz, '秒');
+        console.log('課題キャッシュ使用:', useAssignmentCache);
+        console.log('クイズキャッシュ使用:', useQuizCache);
+        console.log('現在時刻:', new Date().toLocaleString());
+        
+        const assignments = await getAssignments(hostname, courses, useAssignmentCache);
+        const quizzes = await getQuizzes(hostname, courses, useQuizCache);
+        
+        // 締切が今より前のものは除外
+        const totalAssignmentEntries = assignments.flatMap((assignment: any) => assignment.entries)
+            .filter((e: any) => (e.dueTime || e.dueDate) > currentTime);
+        const totalQuizEntries = quizzes.flatMap((quiz: any) => quiz.entries)
+            .filter((e: any) => (e.dueTime || e.dueDate) > currentTime);
+        
+        if (totalAssignmentEntries.length === 0 && totalQuizEntries.length === 0) {
+            console.log('同期するデータが見つかりませんでした');
             return;
         }
-        // 2) 既存トークンのみ使用（非対話）。無ければ自動同期はスキップ
-        const token = await new Promise<string | null>((resolve) => {
-            try { chrome.storage.local.get(['google_auth_token'], r => resolve((r?.google_auth_token as string) || null)); }
-            catch { resolve(null); }
-        });
-        if (!token) { console.log('自動同期: トークンなしのためスキップ'); return; }
-        // 軽量に有効性チェック
-        try {
-            const testParams = new URLSearchParams({ maxResults: '1', timeMin: new Date(Date.now() - 5*60*1000).toISOString() });
-            const test = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${testParams.toString()}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
-            if (!test.ok) { console.log('自動同期: トークン無効のためスキップ'); return; }
-        } catch (_) { console.log('自動同期: トークン検証失敗のためスキップ'); return; }
 
-        // 3) Background 経由で同期（手動用エンドポイントを使用）
-        const result = await new Promise<any>((resolve, reject) => {
-            chrome.runtime.sendMessage({ action: 'manualSyncToCalendar', data, token }, (r) => {
-                if (chrome.runtime.lastError) { reject(new Error(chrome.runtime.lastError.message)); return; }
-                if (!r || !r.success) { reject(new Error(r?.error || 'manualSyncToCalendar 失敗')); return; }
-                resolve(r.result);
-            });
+        // Googleカレンダーに同期
+        const result = await syncToCalendar({
+            assignments: totalAssignmentEntries,
+            quizzes: totalQuizEntries
         });
-        const totalA = (result?.assignments?.length||0);
-        const totalQ = (result?.quizzes?.length||0);
-        const totalE = (result?.errors?.length||0);
-        console.log(`自動同期完了: ${totalA+totalQ}件作成 / エラー${totalE}`);
-        // UI通知
-        try { showSyncNotification({ assignments: totalA, quizzes: totalQ, errors: totalE }); } catch {}
-        // 4) 最終同期時刻を保存
-        chrome.storage.local.set({ lastSyncTime: Date.now(), lastSyncResult: { ts: Date.now(), assignments: totalA, quizzes: totalQ, errors: totalE } });
+        
+        // 注: 最終同期時刻の保存はバックグラウンドスクリプトからの通知で行うため、ここでは行わない
+        
+        console.log(`自動同期完了: ${result.assignments.length + result.quizzes.length}件作成`);
     } catch (error) {
         console.error('自動同期に失敗:', error);
     }
@@ -305,11 +274,11 @@ function showSyncNotification(result: { assignments: number, quizzes: number, er
         notification.innerHTML = `
             <div class="cs-sync-notification-header">
                 <span class="cs-sync-icon">⚠️</span>
-                <span>${i18nMessage('sync_error_title')}</span>
+                <span>カレンダー同期の警告</span>
                 <button class="cs-sync-close-btn">×</button>
             </div>
             <div class="cs-sync-notification-body">
-                ${i18nMessage('sync_warning_body', [formatCount(totalEvents), formatCount(result.errors || 0)])}
+                ${totalEvents}件のイベントを同期しました。${result.errors}件のエラーが発生しました。
             </div>
         `;
     } else if (totalEvents > 0) {
@@ -317,11 +286,11 @@ function showSyncNotification(result: { assignments: number, quizzes: number, er
         notification.innerHTML = `
             <div class="cs-sync-notification-header">
                 <span class="cs-sync-icon">✅</span>
-                <span>${i18nMessage('sync_success_title')}</span>
+                <span>カレンダー同期完了</span>
                 <button class="cs-sync-close-btn">×</button>
             </div>
             <div class="cs-sync-notification-body">
-                ${i18nMessage('sync_success_body', [formatCount(result.assignments), formatCount(result.quizzes)])}
+                ${result.assignments}件の課題と${result.quizzes}件のクイズをカレンダーに追加しました
             </div>
         `;
     } else {
@@ -329,11 +298,11 @@ function showSyncNotification(result: { assignments: number, quizzes: number, er
         notification.innerHTML = `
             <div class="cs-sync-notification-header">
                 <span class="cs-sync-icon">ℹ️</span>
-                <span>${i18nMessage('sync_info_title')}</span>
+                <span>カレンダー同期情報</span>
                 <button class="cs-sync-close-btn">×</button>
             </div>
             <div class="cs-sync-notification-body">
-                ${i18nMessage('sync_info_body')}
+                同期すべき新しいイベントはありませんでした
             </div>
         `;
     }
@@ -368,10 +337,10 @@ function updateLastSyncTimeDisplay() {
         if (!label) return;
         const t = result.lastSyncTime;
         if (!t) {
-            label.textContent = i18nMessage('last_sync_none');
+            label.textContent = '最終同期: なし';
         } else {
             const d = new Date(t);
-            label.textContent = i18nMessage('last_sync_at', [formatDate(d)]);
+            label.textContent = '最終同期: ' + d.toLocaleString();
         }
     });
 }
@@ -379,13 +348,3 @@ function updateLastSyncTimeDisplay() {
 
 
 main();
-
-// 手動同期用: ポップアップからのデータ取得要求に応答
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request && request.action === 'getSakaiDataForSync') {
-        getSakaiDataForSync()
-            .then((data) => sendResponse({ success: true, data }))
-            .catch((err) => sendResponse({ success: false, error: String(err) }));
-        return true; // async response
-    }
-});

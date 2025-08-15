@@ -19,7 +19,7 @@ import { fromStorage } from "./features/storage";
 import { AssignmentFetchTimeStorage, CurrentTime, MaxTimestamp, QuizFetchTimeStorage } from "./constant";
 import { saveAssignments } from "./features/entity/assignment/saveAssignment";
 import { EntryProtocol } from "./features/entity/type";
-import { i18nMessage } from "./features/chrome";
+import {i18nMessage} from "./features/chrome";
 
 /**
  * -----------------------------------------------------------------
@@ -316,25 +316,6 @@ export function createDateString(seconds: number | null | undefined): string {
     if (seconds === MaxTimestamp || seconds === undefined || seconds === null) return "----/--/--";
     const date = new Date(seconds * 1000);
     return date.toLocaleDateString() + " " + date.getHours() + ":" + ("00" + date.getMinutes()).slice(-2);
-}
-/**
- * -----------------------------------------------------------------
- * Modified by: roz
- * Date       : 2025-08-14
- * Changes    : 日付/数値の整形ユーティリティを追加（Intlベース）
- * Category   : ユーティリティ
- * -----------------------------------------------------------------
- */
-export function formatDate(value: Date | number, options?: Intl.DateTimeFormatOptions, locale?: string): string {
-    const d = typeof value === "number" ? new Date(value) : value;
-    const lang = locale || (chrome?.i18n?.getUILanguage?.() || (typeof navigator !== 'undefined' ? navigator.language : 'en'));
-    const fmt = new Intl.DateTimeFormat(lang, options ?? { dateStyle: 'medium', timeStyle: 'short' });
-    return fmt.format(d);
-}
-
-export function formatCount(value: number, locale?: string): string {
-    const lang = locale || (chrome?.i18n?.getUILanguage?.() || (typeof navigator !== 'undefined' ? navigator.language : 'en'));
-    return new Intl.NumberFormat(lang).format(value);
 }
 
 export { getDaysUntil, formatTimestamp, isLoggedIn, miniSakaiReady };

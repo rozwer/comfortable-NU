@@ -2,14 +2,6 @@
  * TACTポータル拡張機能用スタイルシート
  * メモ機能とフォルダ機能のUI用CSS
  */
-/**
- * -----------------------------------------------------------------
- * Modified by: roz
- * Date       : 2025-08-14
- * Changes    : モーダル系の旧ブルー(#265B81系)を正規カラー #002C94 に統一
- * Category   : UI/カラー統一（モーダル）
- * -----------------------------------------------------------------
- */
 /* TACT Portal 拡張用のスタイル */
 
 /* カスタムタブのスタイル */
@@ -31,7 +23,7 @@
 
 /* カスタムアイコンのスタイル */
 .cs-custom-icon {
-  color: #002C94; /* 公式カラーに統一 */
+  color: #265b81; /* TACTの青色に合わせる */
   font-size: 18px;
   margin-right: 8px;
   position: relative;
@@ -83,7 +75,7 @@
   align-items: center;
   padding: 15px 20px;
   border-bottom: 1px solid #e0e0e0;
-  background-color: #002C94;
+  background-color: #265b81;
   color: white;
 }
 
@@ -131,13 +123,13 @@
 
 .cs-folder-header h4 {
   margin: 0;
-  color: #002C94;
+  color: #265b81;
   font-size: 16px;
 }
 
 .cs-folder-add-btn {
   padding: 5px 10px;
-  background-color: #002C94;
+  background-color: #265b81;
   color: white;
   border: none;
   border-radius: 4px;
@@ -147,7 +139,7 @@
 }
 
 .cs-folder-add-btn:hover {
-  background-color: #001F75;
+  background-color: #1d4561;
 }
 
 .cs-folder-list {
@@ -215,12 +207,12 @@
 
 .cs-forum-header h3 {
   margin: 0;
-  color: #002C94;
+  color: #265b81;
 }
 
 .cs-forum-new-post-btn {
   padding: 8px 15px;
-  background-color: #002C94;
+  background-color: #265b81;
   color: white;
   border: none;
   border-radius: 4px;
@@ -230,7 +222,7 @@
 }
 
 .cs-forum-new-post-btn:hover {
-  background-color: #001F75;
+  background-color: #1d4561;
 }
 
 .cs-forum-category-tabs {
@@ -251,9 +243,9 @@
 }
 
 .cs-forum-category-tab.active {
-  background-color: #002C94;
+  background-color: #265b81;
   color: white;
-  border-color: #002C94;
+  border-color: #265b81;
 }
 
 .cs-forum-category-tab:hover:not(.active) {
@@ -284,7 +276,7 @@
 
 .cs-forum-post-title {
   margin: 0 0 5px 0;
-  color: #002C94;
+  color: #265b81;
   font-size: 16px;
 }
 
@@ -401,48 +393,6 @@
   transition: all 0.2s ease;
 }
 
-/* Dark mode overrides */
-html.cs-dark .cs-tact-modal { background: #111827; color: #e5e7eb; }
-html.cs-dark .cs-tact-modal-header { background-color: #1f2937; border-bottom-color: #374151; }
-html.cs-dark .cs-tact-modal-close { color: #e5e7eb; }
-html.cs-dark .cs-folder-section { border-color: #374151; }
-html.cs-dark .cs-folder-header { background-color: #111827; border-bottom-color: #374151; }
-html.cs-dark .cs-folder-add-btn { background-color: #2563eb; }
-html.cs-dark .cs-folder-item { border-bottom-color: #374151; }
-html.cs-dark .cs-folder-item:hover { background-color: #1f2937; }
-html.cs-dark .cs-forum-category-tabs { border-bottom-color: #374151; }
-html.cs-dark .cs-forum-category-tab { border-color: #4b5563; color: #e5e7eb; }
-html.cs-dark .cs-forum-category-tab:hover:not(.active) { background-color: #1f2937; }
-html.cs-dark .cs-forum-post { border-color: #374151; background-color: #111827; }
-html.cs-dark .cs-forum-post-title { color: #93c5fd; }
-html.cs-dark .cs-forum-post-meta { color: #9ca3af; }
-html.cs-dark .cs-forum-reply-btn { background-color: #1f2937; border-color: #4b5563; color: #e5e7eb; }
-html.cs-dark .cs-timetable-selector select { background-color: #111827; color: #e5e7eb; border-color: #4b5563; }
-html.cs-dark .cs-timetable-table th, html.cs-dark .cs-timetable-table td { border-color: #374151; color: #e5e7eb; }
-html.cs-dark .cs-timetable-table th { background-color: #1f2937; color: #e5e7eb; }
-html.cs-dark .cs-timetable-period { background-color: #1f2937; color: #e5e7eb; }
-
-/*
- * tree-display（フォルダ構造の生HTMLレンダリング部分）
- * ここには既存スタイルを当てず、ダーク時は色反転のみを適用する
- */
-/*
-  反転の適用は子要素にも直接指定（親だけにfilterを当てると、
-  ブラウザや要素構造によってテキストが反転されないケースがあるため）
-*/
-html.cs-dark .tree-display,
-html.cs-dark .tree-display * {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-/* メディアは反転を打ち消して元の見た目を維持 */
-html.cs-dark .tree-display img,
-html.cs-dark .tree-display video,
-html.cs-dark .tree-display svg,
-html.cs-dark .tree-display canvas,
-html.cs-dark .tree-display iframe {
-  filter: none !important;
-}
-
 /* 時間割セル背景色のCSS変数（透明度付き） */
 .cs-timetable-cell[data-category="due24h"] {
   background-color: rgba(232, 85, 85, 0.1) !important; /* フォールバック */
@@ -496,21 +446,21 @@ html.cs-dark .tree-display iframe {
 .cs-timetable-title {
   font-size: 12px;
   font-weight: bold;
-  color: #002C94;
+  color: #265b81;
   margin-bottom: 3px;
   padding: 2px 0;
   transition: all 0.2s ease;
 }
 
 .cs-timetable-cell:hover .cs-timetable-title {
-  color: #001A66; /* 公式カラーに合わせた濃色 */
+  color: #1a3f5c; /* ホバー時に色を少し濃くする */
 }
 
 .cs-timetable-course {
   font-size: 11px;
   margin-bottom: 3px;
   font-weight: bold;
-  color: #002C94;
+  color: #265b81;
   word-break: break-word;
   overflow: hidden;
   display: -webkit-box;
@@ -518,7 +468,7 @@ html.cs-dark .tree-display iframe {
 
 .cs-timetable-title {
   font-weight: bold;
-  color: #002C94;
+  color: #265b81;
   cursor: pointer;
   transition: color 0.2s;
   -webkit-box-orient: vertical;
@@ -529,14 +479,14 @@ html.cs-dark .tree-display iframe {
 }
 
 .cs-timetable-link {
-  color: #002C94;
+  color: #265b81;
   text-decoration: none;
   transition: color 0.2s;
   display: block;
 }
 
 .cs-timetable-link:hover {
-  color: #001A66;
+  color: #1a3f5c;
   text-decoration: underline;
 }
 

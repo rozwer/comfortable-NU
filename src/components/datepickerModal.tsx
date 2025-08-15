@@ -3,7 +3,6 @@
  * 課題完了時の日時入力用UI
  */
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from './helper';
 
 interface DatepickerModalProps {
@@ -79,7 +78,7 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
 
   const daysInSelectedMonth = getDaysInMonth(year, month);
 
-  const content = (
+  return (
     <div className="cs-datepicker-overlay" onClick={handleOutsideClick}>
       <div className="cs-datepicker-modal">
         <div className="cs-datepicker-header">
@@ -169,7 +168,4 @@ export const DatepickerModal: React.FC<DatepickerModalProps> = ({ isOpen, onClos
       </div>
     </div>
   );
-
-  // 変換済み祖先の影響を避けるため、ポータルで<body>直下に描画
-  return createPortal(content, document.body);
 };

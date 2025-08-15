@@ -1,8 +1,8 @@
 # Comfortable NU
-[![License](https://img.shields.io/github/license/rozwer/comfortable-NU?color=orange)](https://github.com/rozwer/comfortable-NU/blob/master/LICENSE)
-[![Release](https://img.shields.io/github/v/release/rozwer/comfortable-NU?include_prereleases)](https://github.com/rozwer/comfortable-NU/releases)
-[![CodeQL](https://github.com/rozwer/comfortable-NU/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/rozwer/comfortable-NU/actions/workflows/codeql-analysis.yml)  
-[![npm test](https://github.com/rozwer/comfortable-NU/actions/workflows/npm_tests.yml/badge.svg)](https://github.com/rozwer/comfortable-NU/actions/workflows/npm_tests.yml)
+[![License](https://img.shields.io/github/license/kyoto-u/comfortable-sakai?color=orange)](https://github.com/kyoto-u/comfortable-sakai/blob/master/LICENSE)
+[![Release](https://img.shields.io/github/v/release/kyoto-u/comfortable-sakai?include_prereleases)](https://github.com/kyoto-u/comfortable-sakai/releases)
+[![CodeQL](https://github.com/kyoto-u/comfortable-sakai/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/kyoto-u/comfortable-sakai/actions/workflows/codeql-analysis.yml)  
+[![npm test](https://github.com/kyoto-u/comfortable-sakai/actions/workflows/npm_tests.yml/badge.svg)](https://github.com/kyoto-u/comfortable-sakai/actions/workflows/npm_tests.yml)
 
 A Web browser Extension for managing assignments and quizzes on Sakai LMS for Nagoya University.  
 Originated from [Comfortable PandA](https://github.com/comfortable-panda/ComfortablePandATS) for Kyoto Univ.
@@ -16,8 +16,8 @@ Originated from [Comfortable PandA](https://github.com/comfortable-panda/Comfort
 ## Google Chrome & Edge
 Download from [Chrome Web Store](https://chrome.google.com/webstore/detail/comfortable-sakai/dljchadmceknaijmdmnaaodjkkidhakh)
 <!--
-1. Download latest version of `comfortable-NU.zip` from [HERE](https://github.com/rozwer/comfortable-NU/releases).
-2. Unzip `comfortable-NU.zip`.
+1. Download latest version of `Comfortable-Sakai.zip` from [HERE](https://github.com/kyoto-u/comfortable-sakai/releases).
+2. Unzip `Comfortable-Sakai.zip`.
 3. Go to `chrome://extensions/` on your Google Chrome.
 4. Enable **developer mode**.
 5. Click **LOAD UNPACKED** button on upper left corner.
@@ -28,7 +28,7 @@ Download from [Chrome Web Store](https://chrome.google.com/webstore/detail/comfo
 ## Firefox
 Download from [Firefox Addons](https://addons.mozilla.org/ja/firefox/addon/comfortable-sakai/)
 <!--
-1. Download latest version of `comfortable-NU.zip` from [HERE](https://github.com/rozwer/comfortable-NU/releases).
+1. Download latest version of `Comfortable-Sakai.zip` from [HERE](https://github.com/kyoto-u/comfortable-sakai/releases).
 3. Go to `about:debugging#/runtime/this-firefox` on your Firefox.
 5. Click **Load Temporary Add-on...** button in `Temporary Extensions` section.
 6. Select the zip file you downloaded and install.
@@ -39,8 +39,8 @@ Download from [Firefox Addons](https://addons.mozilla.org/ja/firefox/addon/comfo
 Download from [App Store](https://apps.apple.com/jp/app/comfortable-panda/id1572408187?mt=12)
 
 # Documents
-Documentation for developers is available at GitHub.  
-[GitHub repository](https://github.com/rozwer/comfortable-NU)
+Documentation for developers is available at GitHub pages.  
+[Comfortable NU Document](https://das08.github.io/comfortable-sakai-document/)
 
 # Features
 

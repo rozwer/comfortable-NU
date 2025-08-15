@@ -89,7 +89,7 @@ export default function DismissedEntryView(props: {
                 )}
                 <span style={{ color: "#464646", opacity: 1 }}>{entry.title}</span>
                 <span className="cs-badge cs-badge-dismissed" style={{ opacity: 1 }}>
-                    {useTranslation('badge_hidden')}
+                    非表示
                 </span>
             </p>
         </>

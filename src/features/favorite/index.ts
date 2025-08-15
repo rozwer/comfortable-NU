@@ -95,7 +95,7 @@ export const addFavoritedCourseSites = (baseURL: string): Promise<void> => {
 };
 
 /**
- * Displays a message that Comfortable NU has added more Courses to favorites bar.
+ * Displays a message that Comfortable Sakai has added more Courses to favorites bar.
  */
 async function editFavoritesMessage(): Promise<void> {
     // Wait 200ms until jQuery finishes generating message.

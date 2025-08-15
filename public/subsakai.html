@@ -6,19 +6,11 @@ Changes    : date-picker.cssのリンク追加
 Category   : スタイルシート追加
 -----------------------------------------------------------------
 -->
-<!-- 
------------------------------------------------------------------
-Modified by: roz
-Date       : 2025-08-12
-Changes    : 認証UI（Googleログイン/ログアウト・状態表示）を追加
-Category   : 認証・UI
------------------------------------------------------------------
--->
 <!doctype html>
 <html lang="ja">
 
 <head>
-    <title>Comfortable NU</title>
+    <title>Comfortable Sakai</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <!-- ローカルのCSS ファイルのみ使用 (Manifest V3 要件) -->
@@ -29,63 +21,8 @@ Category   : 認証・UI
 
 <body>
 
-<div id="subSakai">
+<div id="subSakai" style="">
 </div>
-
-<!-- Auth Section -->
-<div style="margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
-  <h3>🔐 認証</h3>
-  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
-    <button id="btnGoogleLogin" style="padding: 8px 16px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">Googleにログイン</button>
-    <button id="btnGoogleLogout" style="padding: 8px 16px; background: #d93025; color: white; border: none; border-radius: 4px; cursor: pointer;">ログアウト</button>
-    <button id="btnAuthRefresh" style="padding: 8px 16px; background: #5f6368; color: white; border: none; border-radius: 4px; cursor: pointer;">状態更新</button>
-  </div>
-  <div id="authStatus" style="margin-top: 6px; padding: 10px; font-family: monospace; font-size: 12px; background: #f5f5f5; border-radius: 4px; max-height: 200px; overflow-y: auto;">
-    認証状態がここに表示されます
-  </div>
-</div>
-
-<!-- THERSメール所有確認 -->
-<div style="margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
-  <h3>🏫 THERSメールの所有確認</h3>
-  <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px;">
-    <input id="thersEmail" type="email" placeholder="your.name@s.thers.ac.jp" style="flex: 1; min-width: 240px; padding: 8px;" />
-    <button id="btnThersRequest" style="padding: 8px 16px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">認証リンクを発行</button>
-  </div>
-  
-  <div id="thersVerifyStatus" style="margin-top: 8px; font-family: monospace; font-size: 12px; background: #f5f5f5; padding: 8px; border-radius: 4px;">
-    THERSメール確認の状態がここに表示されます
-  </div>
-</div>
-
-
-<!-- Sync Test Section: 削除 -->
-
-<!-- Auto Sync Settings -->
-<div style="margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
-  <h3>⏱️ 自動同期</h3>
-  <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-    <label style="display:flex; align-items:center; gap:6px;">
-      <input id="chkAutoSyncEnabled" type="checkbox" /> 有効にする
-    </label>
-    <label>
-      間隔(分): <input id="numSyncInterval" type="number" min="180" max="720" value="180" style="width:80px;" />
-    </label>
-    <button id="btnSyncNow" style="padding: 6px 12px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">今すぐ同期</button>
-  </div>
-  <!-- 削除: テスト用の制限バイパスUI -->
-  <div style="margin-top:8px; font-family: monospace; font-size: 12px; background:#f5f5f5; padding:8px; border-radius:4px;">
-    <div id="lblLastSync">最終同期: なし</div>
-    <div id="lblNextSync">次回同期予定: ー</div>
-    <div id="lblTodayCount">本日の同期回数: 0/4</div>
-    <div id="lblSentCount">送信済み件数: 0</div>
-    <div id="lblLastResult">前回結果: なし</div>
-  </div>
-</div>
-
-<!-- App Check/疎通テスト: 削除 -->
-
-<!-- バックエンド疎通テスト: 削除 -->
 
 <script src="subsakai.js"></script>
 </body>

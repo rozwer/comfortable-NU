@@ -201,7 +201,5 @@ export const initializeTactFeatures = (): void => {
     // フォルダ機能を追加（メモの後、掲示板の前に配置）
     addFolderTab();
     
-    // NUSS共有リンクは既存のダウンロード機能で対応（追加UIは挿入しない）
-    
     console.log('TACT Portal カスタム機能が初期化されました');
 };

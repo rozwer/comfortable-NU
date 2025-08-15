@@ -25,8 +25,6 @@ export class FolderUI {
         this.addTabSwitchListeners();
         // 初期化時にデフォルトタブのデータを読み込み
         this.loadActiveTabData();
-        // 初期描画時に最終更新ラベルを更新
-        this.updateLastUpdatedLabel();
     }
 
     private render() {
@@ -63,9 +61,6 @@ export class FolderUI {
                         🔄 再読み込み
                     </button>
                     <span class="refresh-info">最新のデータを取得します</span>
-                    <span class="last-updated" id="folder-last-updated" style="margin-left: 8px; color: #666;">
-                        最終更新: ー
-                    </span>
                 </div>
                 <div class="tact-structure-container" id="tact-structure-container">
                     <p class="loading-message">🔄 TACT APIから構造を読み込み中...</p>
@@ -174,13 +169,11 @@ export class FolderUI {
                     if (elapsed < this.FOLDER_FORCE_REFRESH_INTERVAL) {
                         tree = JSON.parse(cached);
                         useCache = true;
-                        this.updateLastUpdatedLabelFromTimestamp(parseInt(cachedTime, 10));
                     }
                 } else {
                     if (elapsed < this.FOLDER_CACHE_EXPIRE_SECONDS) {
                         tree = JSON.parse(cached);
                         useCache = true;
-                        this.updateLastUpdatedLabelFromTimestamp(parseInt(cachedTime, 10));
                     }
                 }
             }
@@ -191,7 +184,6 @@ export class FolderUI {
                 tree = this.tactApiClient.buildFileTreeFromStorage();
                 localStorage.setItem(cacheKey, JSON.stringify(tree));
                 localStorage.setItem(cacheTimeKey, now.toString());
-                this.updateLastUpdatedLabelFromTimestamp(now);
             }
             const treeHTML = this.tactApiClient.renderTreeAsHTML(tree, this.isEditMode);
             containerElement.innerHTML = `
@@ -216,37 +208,6 @@ export class FolderUI {
                     <p>💡 ログインしているか、正しい講義ページにいるかを確認してください</p>
                 </div>
             `;
-        }
-    }
-
-    /**
-     * 最終更新ラベルを更新（localStorageの時刻から）
-     */
-    private updateLastUpdatedLabel(): void {
-        try {
-            const siteId = this.tactApiClient.getCurrentSiteId();
-            if (!siteId) return;
-            const cacheTimeKey = `folder-structure-cache-time-${siteId}`;
-            const tsStr = localStorage.getItem(cacheTimeKey);
-            if (tsStr) {
-                const ts = parseInt(tsStr, 10);
-                this.updateLastUpdatedLabelFromTimestamp(ts);
-            }
-        } catch {}
-    }
-
-    /**
-     * 最終更新ラベルを特定のタイムスタンプで更新
-     */
-    private updateLastUpdatedLabelFromTimestamp(timestampMs: number): void {
-        const label = this.container.querySelector('#folder-last-updated');
-        if (!label) return;
-        try {
-            const d = new Date(timestampMs);
-            const text = `最終更新: ${d.toLocaleString()}`;
-            (label as HTMLElement).textContent = text;
-        } catch {
-            (label as HTMLElement).textContent = '最終更新: ー';
         }
     }
 
@@ -287,8 +248,6 @@ export class FolderUI {
                 } finally {
                     refreshButton.disabled = false;
                     refreshButton.textContent = '🔄 再読み込み';
-                    // 取得後に最終更新ラベルを同期
-                    this.updateLastUpdatedLabel();
                 }
             });
         }
@@ -599,7 +558,7 @@ export class FolderUI {
      */
     private async downloadSingleFile(url: string, filename: string): Promise<void> {
         try {
-            // NUSS共有直リンクを先に判定
+            // NUSSファイルかどうか判定
             if (this.isNussLink(url)) {
                 await this.handleNussFile(url, filename);
                 return;
@@ -639,16 +598,18 @@ export class FolderUI {
         return url.includes('nuss.nagoy') || url.includes('https%3A__nuss.nagoy');
     }
 
-    // NUSSの .URL 探索等の処理は行わない（従来どおり案内のみ）
-
     /**
      * NUSSファイルの警告表示とリンク開き
      */
     private async handleNussFile(url: string, filename: string): Promise<void> {
         console.log(`⚠️ NUSSファイル検出: ${filename}`);
+        
+        // 警告メッセージを表示
         const message = `NUSSファイル「${filename}」は現在ダウンロードできません。\n\nブラウザの別タブでNUSSサイトを開きます。\n手動でダウンロードしてください。`;
+        
         if (confirm(message)) {
-            try { window.open(url, '_blank'); } catch {}
+            console.log(`🌐 NUSSリンクを新しいタブで開きます: ${url}`);
+            window.open(url, '_blank');
         } else {
             console.log('👤 ユーザーがNUSSリンクを開くのをキャンセルしました');
         }
@@ -993,8 +954,6 @@ export class FolderUI {
         this.addTabSwitchListeners();
         switch (tabType) {
             case 'class-materials':
-                // 先に最終更新ラベルを即時反映（キャッシュ時刻があれば）
-                this.updateLastUpdatedLabel();
                 this.loadFolderStructure();
                 break;
             case 'assignments':

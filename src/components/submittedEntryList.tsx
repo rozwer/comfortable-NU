@@ -278,7 +278,7 @@ export function SubmittedEntryList(props: {
 
     const courses: JSX.Element[] = [];
     for (const [courseID, entries] of courseIdMap.entries()) {
-        const courseName = courseNameMap.get(courseID) ?? useTranslation('unknown_course');
+        const courseName = courseNameMap.get(courseID) ?? "<unknown>";
         courses.push(
             <SubmittedCourse
                 key={courseID}
@@ -310,7 +310,7 @@ export function SubmittedEntryList(props: {
                     courses={getSakaiCourses()}
                     onMemoAdd={(memo) => props.onMemoAdd && props.onMemoAdd(memo)}
                     onClose={() => props.onToggleMemoBox && props.onToggleMemoBox(false)}
-                    initialContent={(props.selectedEntry || selectedEntry) ? `[${useTranslation('prefix_submitted')}] ${(props.selectedEntry || selectedEntry)?.title}` : ""}
+                    initialContent={(props.selectedEntry || selectedEntry) ? `[提出済課題] ${(props.selectedEntry || selectedEntry)?.title}` : ""}
                     initialCourseId={(props.selectedCourse || selectedCourse)?.id}
                     initialDueTime={(() => {
                         const entry = props.selectedEntry || selectedEntry;

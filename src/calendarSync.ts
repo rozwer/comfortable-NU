@@ -52,8 +52,14 @@ export async function logoutGoogle(): Promise<void> {
 
 // Sync data to Google Calendar
 export async function syncToCalendar(assignments: any[], quizzes: any[], token?: string): Promise<SyncResult> {
-  // 旧カレンダー同期は一時的に無効化
-  throw new Error('旧カレンダー同期は現在無効化されています（バックエンド連携検証のため）');
+  const response = await sendMessage('syncToCalendar', {
+    data: { assignments, quizzes },
+    token
+  });
+  if (!response.result) {
+    throw new Error('No sync result received');
+  }
+  return response.result;
 }
 
 // 追加: ストレージ操作用ユーティリティ
@@ -102,45 +108,66 @@ function formatDateTime(ts: number | null): string {
 export function createSyncModal(): HTMLElement {
   const modal = document.createElement('div');
   modal.className = 'cs-sync-modal';
-  // ダークモードの適用を確実にする（html.cs-dark だけに依存しない）
-  try {
-    if (document.documentElement.classList.contains('cs-dark')) {
-      modal.classList.add('cs-dark-scope');
-    }
-  } catch {}
   modal.innerHTML = `
     <div class="cs-sync-modal-content">
       <div class="cs-sync-header">
-  <h3>Googleカレンダー同期</h3>
+        <h3>Googleカレンダー同期</h3>
+        <button class="cs-sync-close">&times;</button>
       </div>
       <div class="cs-sync-body">
-        <div class="cs-sync-guide">
-          <p>この機能の設定・認証は、拡張機能のポップアップから行います。</p>
-          <ol class="cs-sync-steps">
-            <li>ブラウザ右上の拡張機能アイコンから「Comfortable NU」を開く</li>
-            <li>Googleアカウント登録（ログイン）を実施</li>
-            <li>THERS認証を完了させる</li>
-            <li>同期設定を確認し、同期を実行</li>
-          </ol>
-          <p class="cs-sync-note">ポップアップを開いて手順に沿って進めてください。認証後は自動同期設定も利用できます。</p>
+        <div class="cs-sync-account-section">
+          <h4>アカウント選択</h4>
+          <div class="cs-sync-accounts" id="syncAccounts">
+            <div class="cs-sync-loading">アカウント情報を取得中...</div>
+          </div>
+        </div>
+        <div class="cs-sync-options">
+          <label>
+            <input type="checkbox" id="syncAssignments" checked>
+            課題を同期
+          </label>
+          <label>
+            <input type="checkbox" id="syncQuizzes" checked>
+            クイズを同期
+          </label>
+        </div>
+        <div class="cs-sync-auto-settings">
+          <label class="cs-auto-sync-toggle">
+            <input type="checkbox" id="autoSyncEnabled" checked>
+            <span class="cs-toggle-slider"></span>
+            自動同期を有効にする
+          </label>
+          <div class="cs-sync-interval-settings" id="syncIntervalSettings">
+            <label>同期間隔(分): <input type="number" id="syncIntervalInput" min="240" max="1440" value="240" style="width:60px;"> </label>
+          </div>
+        </div>
+        <div class="cs-sync-settings">
+          <span id="lastSyncTimeLabel">最終同期: ---</span>
+          <button id="refreshLastSyncBtn" class="cs-sync-btn cs-sync-btn-secondary" style="margin-left:8px;">再取得</button>
         </div>
         <div class="cs-sync-actions">
-          <button class="cs-sync-btn cs-sync-btn-secondary cs-sync-close-btn">閉じる</button>
+          <button class="cs-sync-btn cs-sync-btn-primary" id="syncButton">
+            同期開始
+          </button>
+          <button class="cs-sync-btn cs-sync-btn-danger" id="clearSentBtn">
+            送信済み履歴クリア
+          </button>
         </div>
+        <div class="cs-sync-status" id="syncStatus"></div>
       </div>
     </div>
   `;
 
-  const close = () => modal.remove();
-  const closeBtn2 = modal.querySelector('.cs-sync-close-btn');
-  closeBtn2?.addEventListener('click', close);
-
-  // 説明のみのため「ポップアップを開く」ボタンは設置しない
+  // Close modal
+  const closeBtn = modal.querySelector('.cs-sync-close');
+  closeBtn?.addEventListener('click', () => {
+    modal.remove();
+  });
 
   // Click outside to close
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
-      close();
+      modal.remove();
     }
   });
 
@@ -383,8 +410,6 @@ export function showSyncModal() {
 
   const modal = createSyncModal();
   document.body.appendChild(modal);
-  // 説明モーダルのため、以降の同期UI初期化はスキップ
-  return;
 
   // Load Google accounts
   loadGoogleAccounts(modal);

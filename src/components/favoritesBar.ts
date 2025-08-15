@@ -7,20 +7,10 @@
  * -----------------------------------------------------------------
  */
 // filepath: /home/rozwer/sakai/comfortable-sakai/src/components/favoritesBar.ts
-/**
- * -----------------------------------------------------------------
- * Modified by: roz
- * Date       : 2025-08-14
- * Changes    : 返却通知（Bullhorn）の未読があるコースに黄色ビックリバッジを付与
- * Category   : 通知・UI
- * -----------------------------------------------------------------
- */
 import { DueCategory, getClosestTime, getDaysUntil } from "../utils";
 import { Settings } from "../features/setting/types";
 import { EntityProtocol, EntryProtocol } from "../features/entity/type";
 import { MaxTimestamp } from "../constant";
-import { dedupeLatestByAssignment, extractReturnAlerts, fetchBullhornAlerts, groupBySite } from "../features/notification/bullhorn";
-import { getReadMap, isUnread } from "../features/notification/store";
 
 /**
  * -----------------------------------------------------------------
@@ -230,31 +220,6 @@ export async function createFavoritesBar(settings: Settings, entities: EntityPro
         if (!courseInfo.isRead) {
             defaultTab[j].classList.add("cs-notification-badge");
         }
-    }
-
-    // Yellow return-badge for courses with unread returned assignments
-    try {
-        const hostname = settings.appInfo.hostname;
-        const readMap = await getReadMap(hostname);
-        const alerts = await fetchBullhornAlerts(true);
-        const returns = dedupeLatestByAssignment(extractReturnAlerts(alerts));
-        const grouped = groupBySite(returns);
-        for (let j = 0; j < defaultTabCount; j++) {
-            const aTag = defaultTab[j].getElementsByClassName("link-container")[0] as HTMLAnchorElement | undefined;
-            const href = aTag?.href;
-            const hrefContent = href?.match("(https?://[^/]+)/portal/site-?[a-z]*/([^/]+)");
-            if (!hrefContent) continue;
-            const courseID = hrefContent[2];
-            const list = grouped.get(courseID) || [];
-            // unread判定（通知ID単位）
-            const hasUnread = list.some(a => isUnread(readMap, a.id));
-            if (hasUnread) {
-                defaultTab[j].classList.add("cs-return-badge");
-            }
-        }
-    } catch (e) {
-        // fail silently
-        console.warn("return badge apply failed:", e);
     }
     
     /**

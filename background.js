@@ -519,7 +519,7 @@ async function createCalendarEvent(item, type, token) {
         extendedProperties: {
             private: {
                 sakaiAssignmentId: item.id || '',
-                extensionVersion: '2.0.0',
+                extensionVersion: '1.0.4',
                 syncTimestamp: new Date().toISOString(),
                 itemType: type
             }
