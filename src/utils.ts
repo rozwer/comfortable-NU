@@ -165,6 +165,22 @@ function getDaysUntil(dt1: number, dt2: number, entryInfo?: { openTimeString?: s
 }
 
 /**
+ * Format Date object to consistent string format
+ * モバイルでの表示不具合を修正: 環境に依存しない明示的なフォーマットを使用
+ * @param {Date} date - Date object to format
+ * @returns {string} - Formatted date string (YYYY/M/D HH:MM:SS)
+ */
+export function formatDateToString(date: Date): string {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = ("00" + date.getMinutes()).slice(-2);
+    const seconds = ("00" + date.getSeconds()).slice(-2);
+    return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+}
+
+/**
  * Format timestamp for miniSakai.
  * @param {number | undefined} timestamp - Target timestamp
  * @returns {string}
@@ -172,15 +188,7 @@ function getDaysUntil(dt1: number, dt2: number, entryInfo?: { openTimeString?: s
 function formatTimestamp(timestamp: number | undefined): string {
     if (timestamp === undefined) return "---";
     const date = new Date(timestamp * 1000);
-    return (
-        date.toLocaleDateString() +
-        " " +
-        date.getHours() +
-        ":" +
-        ("00" + date.getMinutes()).slice(-2) +
-        ":" +
-        ("00" + date.getSeconds()).slice(-2)
-    );
+    return formatDateToString(date);
 }
 
 /**
@@ -315,7 +323,13 @@ export function getRemainTimeString(dueInSeconds: number): string {
 export function createDateString(seconds: number | null | undefined): string {
     if (seconds === MaxTimestamp || seconds === undefined || seconds === null) return "----/--/--";
     const date = new Date(seconds * 1000);
-    return date.toLocaleDateString() + " " + date.getHours() + ":" + ("00" + date.getMinutes()).slice(-2);
+    // モバイルでの表示不具合を修正: toLocaleDateString()の代わりに明示的なフォーマットを使用
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = ("00" + date.getMinutes()).slice(-2);
+    return `${year}/${month}/${day} ${hours}:${minutes}`;
 }
 
 export { getDaysUntil, formatTimestamp, isLoggedIn, miniSakaiReady };

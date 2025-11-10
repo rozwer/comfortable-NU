@@ -378,7 +378,9 @@ export class MemoUI {
 
         const noteDate = document.createElement('div');
         noteDate.className = 'cs-note-date';
-        noteDate.textContent = note.updatedAt.toLocaleDateString('ja-JP');
+        // モバイルでの表示不具合を修正: toLocaleDateString()の代わりに明示的なフォーマットを使用
+        const date = note.updatedAt;
+        noteDate.textContent = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
 
         const noteActions = document.createElement('div');
         noteActions.className = 'cs-note-actions';

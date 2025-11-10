@@ -547,6 +547,48 @@
     .cs-tab label {
         padding: 0.5em;
     }
+
+    /* モバイルでの表示不具合を修正: 日付と時間の表示を最適化 */
+    .cs-assignment-date {
+        font-size: 10px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+    }
+
+    .cs-assignment-time-remain {
+        font-size: 10px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+        display: block;
+        margin-top: 2px;
+    }
+
+    .cs-assignment-title {
+        font-size: 11px !important;
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .cs-minisakai {
+        width: 0;
+    }
+
+    .cs-show {
+        width: 280px !important;
+    }
+
+    .cs-badge {
+        font-size: 65% !important;
+        padding: 0.2em 0.3em !important;
+    }
+
+    .cs-badge-timestamp {
+        font-size: 0.7em !important;
+    }
 }
 
 .cs-memo-box {

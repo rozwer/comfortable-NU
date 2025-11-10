@@ -6,6 +6,7 @@
 import { getAssignments } from './features/entity/assignment/getAssignment';
 import { getQuizzes } from './features/entity/quiz/getQuiz';
 import { fetchCourse } from './features/api/fetch';
+import { formatDateToString } from './utils';
 import type { GoogleAccount, SyncResult, ChromeMessage, ChromeResponse } from '../types/calendar-sync';
 
 // Send message to background script
@@ -101,7 +102,7 @@ function getLastSyncTime(): Promise<number | null> {
 function formatDateTime(ts: number | null): string {
   if (!ts) return '---';
   const d = new Date(ts);
-  return d.toLocaleString();
+  return formatDateToString(d);
 }
 
 // Create sync modal
