@@ -3,6 +3,7 @@
  * フォルダ表示・編集・操作のユーザーインターフェース
  */
 import { TactApiClient } from './tact-api';
+import { formatDateToString } from '../../utils';
 
 export class FolderUI {
     private container: HTMLElement;
@@ -1208,7 +1209,7 @@ export class FolderUI {
                     ${(announcements as any[]).map((a: any) => `
                         <div class="announcement-item clickable-card" data-announcement-id="${a.announcementId}">
                             <h4>📢 ${a.title || '無題のお知らせ'}</h4>
-                            <p class="date">${a.createdOn ? (new Date(a.createdOn)).toLocaleString() : ''}</p>
+                            <p class="date">${a.createdOn ? formatDateToString(new Date(a.createdOn)) : ''}</p>
                             <p class="content">${a.body ? a.body.replace(/<[^>]+>/g, '').slice(0, 60) : ''}</p>
                             <div class="card-footer">
                                 <span class="click-hint">クリックで詳細表示</span>
@@ -1604,7 +1605,7 @@ export class FolderUI {
                 <div class="announcement-meta">
                     <div class="meta-row">
                         <div class="meta-item">
-                            <strong>投稿日:</strong> ${announcementData.createdOn ? (new Date(announcementData.createdOn)).toLocaleString() : '未設定'}
+                            <strong>投稿日:</strong> ${announcementData.createdOn ? formatDateToString(new Date(announcementData.createdOn)) : '未設定'}
                         </div>
                         <div class="meta-item">
                             <strong>投稿者:</strong> ${announcementData.createdByDisplayName || '不明'}

@@ -22,7 +22,7 @@ import { isTactPortal, initializeTactFeatures } from "./features/tact/index-new"
 import { fetchCourse } from "./features/api/fetch";
 import { getAssignments } from "./features/entity/assignment/getAssignment";
 import { getQuizzes } from "./features/entity/quiz/getQuiz";
-import { getFetchTime, shouldUseCache } from "./utils";
+import { getFetchTime, shouldUseCache, formatDateToString } from "./utils";
 import { Settings } from "./features/setting/types";
 
 /**
@@ -167,13 +167,13 @@ async function performAutoSync() {
         
         // デバッグ情報をログ出力
         console.log('=== キャッシュ状態確認 ===');
-        console.log('課題最終取得時刻:', fetchTime.assignment ? new Date(fetchTime.assignment * 1000).toLocaleString() : '未取得');
-        console.log('クイズ最終取得時刻:', fetchTime.quiz ? new Date(fetchTime.quiz * 1000).toLocaleString() : '未取得');
+        console.log('課題最終取得時刻:', fetchTime.assignment ? formatDateToString(new Date(fetchTime.assignment * 1000)) : '未取得');
+        console.log('クイズ最終取得時刻:', fetchTime.quiz ? formatDateToString(new Date(fetchTime.quiz * 1000)) : '未取得');
         console.log('課題キャッシュ間隔:', settings.cacheInterval.assignment, '秒');
         console.log('クイズキャッシュ間隔:', settings.cacheInterval.quiz, '秒');
         console.log('課題キャッシュ使用:', useAssignmentCache);
         console.log('クイズキャッシュ使用:', useQuizCache);
-        console.log('現在時刻:', new Date().toLocaleString());
+        console.log('現在時刻:', formatDateToString(new Date()));
         
         const assignments = await getAssignments(hostname, courses, useAssignmentCache);
         const quizzes = await getQuizzes(hostname, courses, useQuizCache);
@@ -340,7 +340,7 @@ function updateLastSyncTimeDisplay() {
             label.textContent = '最終同期: なし';
         } else {
             const d = new Date(t);
-            label.textContent = '最終同期: ' + d.toLocaleString();
+            label.textContent = '最終同期: ' + formatDateToString(d);
         }
     });
 }
