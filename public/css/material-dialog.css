@@ -9,11 +9,18 @@
   left: 0;
   width: 100%;
   height: 100%;
+  height: 100dvh; /* iOS対応: 動的ビューポート高さ */
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  /* iOS対応: 固定要素のちらつき防止 */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  /* iOS対応: スムーズスクロール */
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
 }
 
 .cs-material-dialog-modal {

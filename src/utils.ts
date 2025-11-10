@@ -140,8 +140,9 @@ function getDaysUntil(dt1: number, dt2: number, entryInfo?: { openTimeString?: s
     
     // 公開日より前ならnotPublishedカテゴリを割り当て
     if (entryInfo && entryInfo.openTimeString) {
-        const openTime = new Date(entryInfo.openTimeString).getTime() / 1000;
-        if (dt1 < openTime) {
+        // iOS対応: 日付文字列を堅牢にパース
+        const openTime = parseDateStringSafely(entryInfo.openTimeString);
+        if (openTime !== null && dt1 < openTime / 1000) {
             return "notPublished";
         }
     }
@@ -162,6 +163,51 @@ function getDaysUntil(dt1: number, dt2: number, entryInfo?: { openTimeString?: s
         category = "duePassed";
     }
     return category;
+}
+
+/**
+ * iOS対応: 日付文字列を安全にパース
+ * iOSのSafariは日付文字列の形式に厳格なため、複数の形式を試行
+ * @param {string} dateString - パース対象の日付文字列
+ * @returns {number | null} - パース成功時はタイムスタンプ（ミリ秒）、失敗時はnull
+ */
+function parseDateStringSafely(dateString: string): number | null {
+    try {
+        // まず、ISO 8601形式を試行
+        let date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
+            return date.getTime();
+        }
+
+        // スラッシュをハイフンに置換して再試行（iOS対応）
+        const normalized = dateString.replace(/\//g, '-');
+        date = new Date(normalized);
+        if (!isNaN(date.getTime())) {
+            return date.getTime();
+        }
+
+        // yyyy/mm/dd hh:mm:ss形式のパース
+        const match = dateString.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+        if (match) {
+            const year = parseInt(match[1], 10);
+            const month = parseInt(match[2], 10) - 1; // 0-indexed
+            const day = parseInt(match[3], 10);
+            const hours = match[4] ? parseInt(match[4], 10) : 0;
+            const minutes = match[5] ? parseInt(match[5], 10) : 0;
+            const seconds = match[6] ? parseInt(match[6], 10) : 0;
+
+            date = new Date(year, month, day, hours, minutes, seconds);
+            if (!isNaN(date.getTime())) {
+                return date.getTime();
+            }
+        }
+
+        console.warn('Failed to parse date string:', dateString);
+        return null;
+    } catch (e) {
+        console.error('Error parsing date string:', dateString, e);
+        return null;
+    }
 }
 
 /**

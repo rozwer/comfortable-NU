@@ -7,6 +7,37 @@
  * -----------------------------------------------------------------
  */
 
+/**
+ * iOS/モバイル対応のグローバルスタイル
+ */
+* {
+    /* iOS対応: タップハイライトの制御 */
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    /* iOS対応: テキストサイズの自動調整を防止 */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+}
+
+html, body {
+    /* iOS対応: スクロールのバウンス効果を制御 */
+    overscroll-behavior: none;
+    /* iOS対応: フォントのスムージング */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+button, a, [role="button"] {
+    /* iOS対応: タップ可能な要素のハイライト */
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    /* iOS対応: タッチアクションの最適化 */
+    touch-action: manipulation;
+}
+
+input, textarea, select {
+    /* iOS対応: フォーカス時のズームを防止（16px以上のフォントサイズで） */
+    font-size: 16px;
+}
+
 .cs-tab-danger {
     background: var(--topDanger) !important;
     color: #333435 !important;
@@ -69,6 +100,8 @@
     --dateColor: #b01011; */
 
     height: 100vh;
+    /* iOS対応: dvhが利用可能な場合は動的ビューポート高さを使用 */
+    height: 100dvh;
     width: 0;
     position: fixed;
     z-index: 9999;
@@ -78,7 +111,12 @@
     transition: 0.5s;
     padding-top: 60px;
     overflow: auto;
+    /* iOS対応: スムーズスクロール */
+    -webkit-overflow-scrolling: touch;
     border-radius: 8px;
+    /* iOS対応: 固定要素のちらつき防止 */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 .cs-minisakai::-webkit-scrollbar {
@@ -401,11 +439,15 @@
 #cs-cover {
     width: 100%;
     height: 100%;
+    height: 100dvh; /* iOS対応 */
     position: fixed;
     top: 0;
     left: 0;
     opacity: 0;
     z-index: 9998;
+    /* iOS対応: 固定要素のちらつき防止 */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 .cs-checkbox {
