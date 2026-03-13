@@ -1,0 +1,825 @@
+/* ========== ダッシュボード共通 ========== */
+.dashboard-ui {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #333;
+}
+
+.dashboard-nav {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+    padding: 4px 4px 0;
+    flex-wrap: wrap;
+}
+
+.dashboard-nav-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px 12px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px 6px 0 0;
+    white-space: nowrap;
+}
+
+.dashboard-nav-btn:hover {
+    background-color: #e8f0fe;
+}
+
+.dashboard-nav-btn.active {
+    background-color: #fff;
+    color: #265b81;
+    border-bottom-color: #265b81;
+    font-weight: 600;
+}
+
+.dashboard-content {
+    padding: 0 4px;
+}
+
+.loading-message {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.info-message {
+    text-align: center;
+    padding: 20px;
+    color: #888;
+}
+
+/* ========== 1. 週次ダッシュボード ========== */
+.weekly-gantt {
+    max-width: 100%;
+}
+
+.weekly-summary {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.summary-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 24px;
+    background: #f0f4f8;
+    border-radius: 8px;
+    min-width: 80px;
+}
+
+.summary-card.summary-alert {
+    background: #fff3e0;
+}
+
+.summary-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: #265b81;
+}
+
+.summary-alert .summary-number {
+    color: #e65100;
+}
+
+.summary-label {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.gantt-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.gantt-row {
+    display: flex;
+    align-items: stretch;
+    min-height: 36px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.gantt-row:hover {
+    background-color: #f5f5f5;
+}
+
+.gantt-day-today {
+    background-color: #e3f2fd !important;
+}
+
+.gantt-day-urgent {
+    border-left: 3px solid #e53935;
+}
+
+.gantt-day-soon {
+    border-left: 3px solid #fb8c00;
+}
+
+.gantt-weekend {
+    opacity: 0.7;
+}
+
+.gantt-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-right: 1px solid #e0e0e0;
+}
+
+.gantt-date-label {
+    font-weight: 600;
+    color: #333;
+}
+
+.gantt-day-name {
+    font-size: 11px;
+    color: #888;
+}
+
+.today-badge {
+    background: #265b81;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+}
+
+.gantt-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px 8px;
+    align-items: center;
+    flex: 1;
+}
+
+.gantt-empty {
+    color: #ccc;
+    font-size: 12px;
+}
+
+.gantt-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: transform 0.1s;
+    border: 1px solid transparent;
+}
+
+.gantt-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.gantt-item.badge-assignment {
+    background: #e3f2fd;
+    border-color: #90caf9;
+}
+
+.gantt-item.badge-quiz {
+    background: #fff3e0;
+    border-color: #ffcc80;
+}
+
+.gantt-item.item-submitted {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+.gantt-time {
+    font-weight: 600;
+    color: #555;
+    font-size: 11px;
+}
+
+.gantt-type-badge {
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.badge-assignment .gantt-type-badge {
+    background: #1565c0;
+    color: #fff;
+}
+
+.badge-quiz .gantt-type-badge {
+    background: #ef6c00;
+    color: #fff;
+}
+
+.gantt-item-title {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gantt-course {
+    font-size: 10px;
+    color: #888;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gantt-submitted-badge {
+    font-size: 10px;
+    background: #4caf50;
+    color: white;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+/* ========== 4. お知らせタイムライン ========== */
+.announcement-timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-date-group {
+    margin-bottom: 24px;
+}
+
+.timeline-date-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 6px 12px;
+    background: #f0f4f8;
+    border-radius: 6px;
+}
+
+.timeline-date {
+    font-weight: 700;
+    font-size: 14px;
+    color: #265b81;
+}
+
+.timeline-relative {
+    font-size: 12px;
+    color: #888;
+}
+
+.timeline-count {
+    font-size: 11px;
+    background: #265b81;
+    color: white;
+    padding: 1px 8px;
+    border-radius: 10px;
+    margin-left: auto;
+}
+
+.timeline-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+    border: 1px solid #eee;
+}
+
+.timeline-item:hover {
+    background-color: #f8f9fa;
+    border-color: #ddd;
+}
+
+.timeline-dot {
+    width: 10px;
+    height: 10px;
+    min-width: 10px;
+    background: #265b81;
+    border-radius: 50%;
+    margin-top: 6px;
+}
+
+.timeline-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.timeline-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.timeline-course-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: #e8f0fe;
+    color: #265b81;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.timeline-time {
+    font-size: 11px;
+    color: #888;
+}
+
+.timeline-title {
+    margin: 0 0 4px;
+    font-size: 14px;
+    color: #333;
+}
+
+.timeline-preview {
+    font-size: 12px;
+    color: #666;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.timeline-author {
+    font-size: 11px;
+    color: #999;
+}
+
+/* モーダル */
+.dashboard-detail-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+}
+
+.dashboard-modal-box {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.dashboard-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #265b81;
+    color: white;
+    border-radius: 8px 8px 0 0;
+}
+
+.dashboard-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.dashboard-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.dashboard-modal-body {
+    padding: 20px;
+}
+
+.dashboard-modal-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: #666;
+}
+
+.dashboard-modal-content {
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.dashboard-modal-attachments {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.dashboard-modal-attachments a {
+    display: block;
+    padding: 4px 0;
+    color: #1565c0;
+}
+
+/* ========== 5. 一括ダウンロード ========== */
+.bulk-download-section {
+    margin-top: 24px;
+    padding: 16px;
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.bulk-download-section h4 {
+    margin: 0 0 8px;
+}
+
+.bulk-download-desc {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.bulk-attachments {
+    margin-top: 12px;
+}
+
+.attachment-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+}
+
+.attachment-row label {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+}
+
+.att-course {
+    font-size: 11px;
+    padding: 2px 6px;
+    background: #e8f0fe;
+    border-radius: 3px;
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.att-assignment {
+    font-size: 11px;
+    color: #888;
+    white-space: nowrap;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.att-filename {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.att-size {
+    font-size: 11px;
+    color: #999;
+}
+
+/* ========== 6. 学習負荷ヒートマップ ========== */
+.workload-view {
+    max-width: 100%;
+}
+
+.heatmap-header {
+    display: flex;
+    gap: 4px;
+    padding-left: 60px;
+    margin-bottom: 4px;
+}
+
+.heatmap-day-label {
+    width: 44px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+}
+
+.heatmap-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.heatmap-week {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.heatmap-week-label {
+    width: 56px;
+    font-size: 11px;
+    color: #888;
+    text-align: right;
+    padding-right: 4px;
+}
+
+.heatmap-cell {
+    width: 44px;
+    height: 44px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    transition: transform 0.1s;
+    cursor: default;
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.1);
+}
+
+.heatmap-today {
+    outline: 2px solid #265b81;
+    outline-offset: 1px;
+}
+
+.heat-0 { background: #ebedf0; color: transparent; }
+.heat-1 { background: #9be9a8; color: #333; }
+.heat-2 { background: #40c463; color: #fff; }
+.heat-3 { background: #30a14e; color: #fff; }
+.heat-4 { background: #d73a49; color: #fff; }
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 24px;
+}
+
+.legend-cell {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+}
+
+.heatmap-count {
+    font-size: 12px;
+}
+
+/* 週間バーチャート */
+.weekly-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.weekly-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bar-label {
+    width: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: right;
+    color: #555;
+}
+
+.bar-container {
+    display: flex;
+    height: 20px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    flex: 1;
+    max-width: 300px;
+}
+
+.bar-segment {
+    height: 100%;
+    transition: width 0.3s;
+    min-width: 0;
+}
+
+.bar-assignment {
+    background: #1565c0;
+}
+
+.bar-quiz {
+    background: #ef6c00;
+}
+
+.bar-count {
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+}
+
+.workload-message {
+    padding: 12px 16px;
+    background: #f0f4f8;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+}
+
+/* ========== 7. 提出率トラッカー ========== */
+.submission-tracker {
+    max-width: 100%;
+}
+
+.overall-stats {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.overall-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.progress-ring {
+    width: 120px;
+    height: 120px;
+    transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+    fill: none;
+    stroke: #e0e0e0;
+    stroke-width: 8;
+}
+
+.progress-ring-fill {
+    fill: none;
+    stroke: #4caf50;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+.overall-rate {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    font-weight: 700;
+    color: #265b81;
+}
+
+.overall-detail h4 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    color: #333;
+}
+
+.overall-detail p {
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.course-submission-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.course-submission-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.course-submission-name {
+    width: 200px;
+    font-size: 13px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.course-submission-bar-container {
+    flex: 1;
+    height: 16px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 200px;
+}
+
+.course-submission-bar {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.3s ease;
+}
+
+.bar-success { background: #4caf50; }
+.bar-warning { background: #fb8c00; }
+.bar-danger { background: #e53935; }
+
+.course-submission-rate {
+    font-size: 12px;
+    color: #666;
+    min-width: 100px;
+    text-align: right;
+}
+
+/* ========== レスポンシブ ========== */
+@media (max-width: 600px) {
+    .dashboard-nav-btn {
+        font-size: 11px;
+        padding: 8px 6px;
+        min-width: 0;
+    }
+
+    .gantt-item-title {
+        max-width: 120px;
+    }
+
+    .gantt-course {
+        display: none;
+    }
+
+    .heatmap-cell {
+        width: 36px;
+        height: 36px;
+    }
+
+    .heatmap-day-label {
+        width: 36px;
+    }
+
+    .course-submission-name {
+        width: 120px;
+    }
+
+    .overall-stats {
+        flex-direction: column;
+        text-align: center;
+    }
+}

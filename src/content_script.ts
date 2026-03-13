@@ -70,6 +70,14 @@ function setupAutoSyncCheck() {
                 sendResponse({ success: false, error: String(error) });
             });
             return true; // 非同期レスポンスを示す
+        } else if (request.action === 'checkNewFiles') {
+            console.log('バックグラウンドから新着ファイルチェックリクエストを受信');
+            checkNewFilesForCourses().then(data => {
+                sendResponse({ success: true, data });
+            }).catch(error => {
+                sendResponse({ success: false, error: String(error) });
+            });
+            return true;
         } else if (request.action === 'syncCompleted') {
             console.log(`同期完了通知: 課題${request.result.assignments}件、クイズ${request.result.quizzes}件`);
             // 最終同期時刻を更新
@@ -250,5 +258,54 @@ function showSyncNotification(result: { assignments: number, quizzes: number, er
     }, 8000);
 }
 
+
+// 新着ファイル検知: 全コースのContent APIを叩いて前回との差分を検出
+async function checkNewFilesForCourses(): Promise<{ newFiles: Array<{ courseName: string; title: string; type: string }> }> {
+    const courses = fetchCourse();
+    const baseURL = location.href.match("(https?://[^/]+)/portal");
+    if (!baseURL) return { newFiles: [] };
+
+    const base = baseURL[1];
+    const newFiles: Array<{ courseName: string; title: string; type: string }> = [];
+
+    for (const course of courses) {
+        try {
+            const url = `${base}/direct/content/site/${course.id}.json`;
+            const res = await fetch(url, { cache: 'no-cache', credentials: 'include' });
+            if (!res.ok) continue;
+
+            const data = await res.json();
+            const items = data.content_collection || [];
+
+            // 前回チェック時のファイル一覧を取得
+            const storageKey = `new-file-check-${course.id}`;
+            const previousRaw = localStorage.getItem(storageKey);
+            const previousIds = previousRaw ? new Set(JSON.parse(previousRaw)) : new Set();
+
+            // 現在のファイルIDリスト
+            const currentIds: string[] = [];
+            for (const item of items) {
+                const itemId = item.contentId || item.url || item.title;
+                currentIds.push(itemId);
+
+                if (!previousIds.has(itemId) && previousRaw !== null) {
+                    // 前回チェック時に存在しなかったファイル = 新着
+                    newFiles.push({
+                        courseName: course.name || course.id,
+                        title: item.title || item.name || 'Unnamed',
+                        type: item.type === 'collection' ? 'folder' : 'file',
+                    });
+                }
+            }
+
+            // 現在のファイルリストを保存
+            localStorage.setItem(storageKey, JSON.stringify(currentIds));
+        } catch {
+            // skip failed courses
+        }
+    }
+
+    return { newFiles };
+}
 
 main();

@@ -5,6 +5,7 @@
 
 import { MemoUI } from './memo-ui';
 import { FolderUI } from './folder-ui';
+import { DashboardUI } from './dashboard';
 import { TACT_HOSTNAME } from '../../constant';
 
 /**
@@ -184,6 +185,27 @@ export const addMemoTab = (): void => {
 
 
 /**
+ * ダッシュボード機能タブを追加
+ */
+export const addDashboardTab = (): void => {
+    // ダッシュボードCSS読み込み
+    const cssPath = chrome.runtime.getURL('css/dashboard-styles.css');
+    loadCSS(cssPath);
+
+    addCustomToolTab(
+        'ダッシュボード',
+        'icon-sakai--sakai-syllabus',
+        '課題横断ダッシュボード・学習負荷・提出率',
+        () => {
+            const dashboardContainer = document.createElement('div');
+            dashboardContainer.className = 'dashboard-ui-container';
+            new DashboardUI(dashboardContainer);
+            showTabContent('📊 ダッシュボード', dashboardContainer);
+        }
+    );
+};
+
+/**
  * すべてのTACTカスタム機能を初期化
  */
 export const initializeTactFeatures = (): void => {
@@ -191,11 +213,14 @@ export const initializeTactFeatures = (): void => {
         return;
     }
 
+    // ダッシュボード機能を追加（最上位に配置）
+    addDashboardTab();
+
     // メモ機能を追加
     addMemoTab();
-    
+
     // フォルダ機能を追加（メモの後、掲示板の前に配置）
     addFolderTab();
-    
+
     console.log('TACT Portal カスタム機能が初期化されました');
 };
