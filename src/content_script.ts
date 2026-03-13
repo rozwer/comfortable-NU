@@ -5,7 +5,7 @@ import { isTactPortal, initializeTactFeatures } from "./features/tact/index";
 import { fetchCourse } from "./features/api/fetch";
 import { getAssignments } from "./features/entity/assignment/getAssignment";
 import { getQuizzes } from "./features/entity/quiz/getQuiz";
-import { getFetchTime, shouldUseCache, formatDateToString } from "./utils";
+import { getFetchTime, shouldUseCache } from "./utils";
 import { Settings } from "./features/setting/types";
 import { EntryProtocol, EntityProtocol } from "./features/entity/type";
 
@@ -103,49 +103,16 @@ async function checkAndSyncIfNeeded() {
 // 自動同期を実行
 async function performAutoSync() {
     try {
-        // 課題データを取得（キャッシュを適切に使用）
-        const hostname = window.location.hostname;
-        const courses = fetchCourse();
-        const settings = new Settings();
-        const fetchTime = await getFetchTime(hostname);
-        const currentTime = Math.floor(Date.now() / 1000);
-        
-        // キャッシュ利用判定
-        const useAssignmentCache = shouldUseCache(fetchTime.assignment, currentTime, settings.cacheInterval.assignment);
-        const useQuizCache = shouldUseCache(fetchTime.quiz, currentTime, settings.cacheInterval.quiz);
-        
-        // デバッグ情報をログ出力
-        console.log('=== キャッシュ状態確認 ===');
-        console.log('課題最終取得時刻:', fetchTime.assignment ? formatDateToString(new Date(fetchTime.assignment * 1000)) : '未取得');
-        console.log('クイズ最終取得時刻:', fetchTime.quiz ? formatDateToString(new Date(fetchTime.quiz * 1000)) : '未取得');
-        console.log('課題キャッシュ間隔:', settings.cacheInterval.assignment, '秒');
-        console.log('クイズキャッシュ間隔:', settings.cacheInterval.quiz, '秒');
-        console.log('課題キャッシュ使用:', useAssignmentCache);
-        console.log('クイズキャッシュ使用:', useQuizCache);
-        console.log('現在時刻:', formatDateToString(new Date()));
-        
-        const assignments = await getAssignments(hostname, courses, useAssignmentCache);
-        const quizzes = await getQuizzes(hostname, courses, useQuizCache);
-        
-        // 締切が今より前のものは除外
-        const totalAssignmentEntries = assignments.flatMap((assignment: EntityProtocol) => assignment.entries)
-            .filter((e: EntryProtocol) => e.dueTime > currentTime);
-        const totalQuizEntries = quizzes.flatMap((quiz: EntityProtocol) => quiz.entries)
-            .filter((e: EntryProtocol) => e.dueTime > currentTime);
-        
-        if (totalAssignmentEntries.length === 0 && totalQuizEntries.length === 0) {
+        const data = await getSakaiDataForSync();
+
+        if (data.assignments.length === 0 && data.quizzes.length === 0) {
             console.log('同期するデータが見つかりませんでした');
             return;
         }
 
         // Googleカレンダーに同期
-        const result = await syncToCalendar({
-            assignments: totalAssignmentEntries,
-            quizzes: totalQuizEntries
-        });
-        
-        // 注: 最終同期時刻の保存はバックグラウンドスクリプトからの通知で行うため、ここでは行わない
-        
+        const result = await syncToCalendar(data);
+
         console.log(`自動同期完了: ${result.assignments.length + result.quizzes.length}件作成`);
     } catch (error) {
         console.error('自動同期に失敗:', error);

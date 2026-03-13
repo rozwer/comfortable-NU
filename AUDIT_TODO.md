@@ -127,6 +127,31 @@ script not integrated into the test suite.
 
 ---
 
+## 9. Cache Strategy Unification (MEDIUM)
+
+### Problem
+miniSakai uses `chrome.storage` for assignment/quiz cache, while folder-ui uses
+`localStorage` for folder structure and assignment cache. This means the same
+assignment data can be fetched and stored twice via different mechanisms, and
+cache invalidation is not coordinated between them.
+
+### Current cache keys
+- **chrome.storage (miniSakai)**: assignment/quiz fetch times, settings
+- **localStorage (folder-ui)**: `folder-structure-cache-{siteId}`, `assignment-cache-{courseId}`
+
+### Recommended approach
+1. Choose a single storage backend (likely `chrome.storage.local` for consistency)
+2. Create a unified cache service with typed keys and expiration logic
+3. Share assignment data between miniSakai and folder-ui to avoid duplicate API calls
+4. Coordinate cache invalidation so a refresh in one view updates the other
+
+### Affected files
+- `src/content_script.ts` (miniSakai data fetching)
+- `src/features/tact/folder-ui.ts` (localStorage caching)
+- `src/utils.ts` (cache utility functions)
+
+---
+
 ## Priority Order
 1. Safari Compatibility (blocks Safari release)
 2. folder-ui.ts Refactoring (code quality)

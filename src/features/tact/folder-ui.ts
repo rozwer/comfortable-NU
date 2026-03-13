@@ -83,66 +83,6 @@ export class FolderUI {
     private readonly FOLDER_FORCE_REFRESH_INTERVAL = 10 * 60; // 10分
 
     /**
-     * TACT APIから講義構造を読み込み
-     */
-    private async loadTactStructure(forceRefresh: boolean = false): Promise<void> {
-        const containerElement = this.container.querySelector('#tact-structure-container');
-        if (!containerElement) return;
-
-        containerElement.innerHTML = '<p class="loading-message">🔄 TACT APIから構造を読み込み中...</p>';
-
-        try {
-            const siteId = this.tactApiClient.getCurrentSiteId();
-            if (!siteId) throw new Error('サイトIDを取得できませんでした');
-            const cacheKey = `tact-structure-cache-${siteId}`;
-            const cacheTimeKey = `tact-structure-cache-time-${siteId}`;
-            let useCache = false;
-            let tree: any = null;
-            const cached = localStorage.getItem(cacheKey);
-            const cachedTime = localStorage.getItem(cacheTimeKey);
-            if (!forceRefresh && cached && cachedTime) {
-                const elapsed = (Date.now() - parseInt(cachedTime, 10)) / 1000;
-                if (elapsed < this.CACHE_EXPIRE_SECONDS) {
-                    tree = JSON.parse(cached);
-                    useCache = true;
-                }
-            }
-            if (!useCache) {
-                // API fetch & build tree
-                this.tactApiClient.setSiteId(siteId);
-                const items = await this.tactApiClient.fetchSiteContent(siteId);
-                this.tactApiClient.generateStatistics(items);
-                tree = this.tactApiClient.buildFileTreeFromStorage();
-                localStorage.setItem(cacheKey, JSON.stringify(tree));
-                localStorage.setItem(cacheTimeKey, Date.now().toString());
-            }
-            const treeHTML = this.tactApiClient.renderTreeAsHTML(tree, this.isEditMode);
-            containerElement.innerHTML = `
-                <div class="tact-structure-results">
-                    <div class="tact-tree">
-                        <h4>🌲 フォルダ構造</h4>
-                        <div class="tree-display">${treeHTML || '<p>構造が見つかりませんでした</p>'}</div>
-                    </div>
-                    <div class="tact-raw-data" style="margin-top: 20px;"></div>
-                </div>
-            `;
-            this.addFolderToggleListeners(containerElement);
-            this.addEditListeners(containerElement);
-            this.addDownloadListeners(containerElement);
-            this.addMoveButtonListeners(containerElement);
-        } catch (error) {
-            console.error('TACT構造の読み込みに失敗:', error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            containerElement.innerHTML = `
-                <div class="error-message">
-                    <p>❌ エラーが発生しました: ${errorMessage}</p>
-                    <p>💡 ログインしているか、正しい講義ページにいるかを確認してください</p>
-                </div>
-            `;
-        }
-    }
-
-    /**
      * フォルダ構造データを取得（キャッシュ対応）
      * @param forceRefresh trueならキャッシュを無視してAPI取得
      * @param forceRefreshByButton trueなら「再読み込みボタン」からの強制リフレッシュ
@@ -240,7 +180,7 @@ export class FolderUI {
                 refreshButton.textContent = '🔄 実行中...';
                 try {
                     if (this.activeTab === 'assignments') {
-                        await this.fetchAndLogAssignmentsForCurrentSite();
+                        await this.loadAssignments(true);
                     } else {
                         await this.loadFolderStructure(false, true); // 再読み込みボタンからの呼び出し
                     }
@@ -251,63 +191,6 @@ export class FolderUI {
                     refreshButton.textContent = '🔄 再読み込み';
                 }
             });
-        }
-    }
-
-    /**
-     * 現在開いている講義サイトの課題データを取得し返す
-     */
-    private async fetchAssignmentsForCurrentSite(): Promise<any[]> {
-        try {
-            const match = location.href.match("(https?://[^/]+)/portal");
-            const baseURL = match ? match[1] : "";
-            const courseIdMatch = location.href.match("/portal/site-?[a-z]*/([^/]+)");
-            const courseId = courseIdMatch ? courseIdMatch[1] : null;
-            if (!baseURL || !courseId) {
-                console.warn("課題取得: サイトIDまたはベースURLが取得できませんでした");
-                return [];
-            }
-            const url = `${baseURL}/direct/assignment/site/${courseId}.json?n=100`;
-            const res = await fetch(url, { cache: "no-cache" });
-            if (res.ok) {
-                const data = await res.json();
-                if (Array.isArray(data.assignment_collection)) {
-                    return data.assignment_collection;
-                }
-            } else {
-                console.warn(`Failed to fetch assignments for ${courseId}: ${res.status}`);
-            }
-        } catch (e) {
-            console.error("Error fetching assignments for current site:", e);
-        }
-        return [];
-    }
-
-    /**
-     * 現在開いている講義サイトの課題データを取得しコンソールに出力
-     */
-    private async fetchAndLogAssignmentsForCurrentSite(): Promise<void> {
-        try {
-            // SakaiのベースURLを取得
-            const match = location.href.match("(https?://[^/]+)/portal");
-            const baseURL = match ? match[1] : "";
-            // 現在の講義サイトIDを取得
-            const courseIdMatch = location.href.match("/portal/site-?[a-z]*/([^/]+)");
-            const courseId = courseIdMatch ? courseIdMatch[1] : null;
-            if (!baseURL || !courseId) {
-                console.warn("課題取得: サイトIDまたはベースURLが取得できませんでした");
-                return;
-            }
-            const url = `${baseURL}/direct/assignment/site/${courseId}.json?n=100`;
-            const res = await fetch(url, { cache: "no-cache" });
-            if (res.ok) {
-                const data = await res.json();
-                console.log(`Course ID: ${courseId}`, data);
-            } else {
-                console.warn(`Failed to fetch assignments for ${courseId}: ${res.status}`);
-            }
-        } catch (e) {
-            console.error("Error fetching assignments for current site:", e);
         }
     }
 
@@ -634,11 +517,9 @@ export class FolderUI {
      */
     private toggleEditMode(): void {
         this.isEditMode = !this.isEditMode;
-        console.log(`編集モード切り替え: ${this.isEditMode ? 'ON' : 'OFF'}`);
-        
-        // UIを再描画
-        this.render();
-        this.loadTactStructure();
+
+        // ツリー表示のみ再描画（API再取得不要）
+        this.refreshTreeDisplay();
     }
 
     /**
@@ -969,7 +850,7 @@ export class FolderUI {
     /**
      * 課題データを読み込み
      */
-    private async loadAssignments(): Promise<void> {
+    private async loadAssignments(forceRefresh: boolean = false): Promise<void> {
         const containerElement = this.container.querySelector('#assignments-container');
         if (!containerElement) return;
 
@@ -984,7 +865,7 @@ export class FolderUI {
             const cacheTimeKey = `assignment-cache-time-${courseId}`;
             let assignments: any[] = [];
             let useCache = false;
-            if (courseId) {
+            if (!forceRefresh && courseId) {
                 const cached = localStorage.getItem(cacheKey);
                 const cachedTime = localStorage.getItem(cacheTimeKey);
                 if (cached && cachedTime) {

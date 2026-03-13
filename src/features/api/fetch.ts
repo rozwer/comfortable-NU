@@ -14,8 +14,10 @@ export const getBaseURL = (): string => {
     return baseURL;
 };
 
-/* Sakai のお気に入り欄からCourseを取得する */
+/* Sakai のお気に入り欄からCourseを取得する（結果はページ内でキャッシュ） */
+let cachedCourses: Array<Course> | null = null;
 export const fetchCourse = (): Array<Course> => {
+    if (cachedCourses) return cachedCourses;
     const baseURL = getBaseURL();
     const elementCollection = document.getElementsByClassName("fav-sites-entry");
     const elements = Array.prototype.slice.call(elementCollection);
@@ -32,6 +34,7 @@ export const fetchCourse = (): Array<Course> => {
             courses.push(course);
         }
     }
+    cachedCourses = courses;
     return courses;
 };
 
