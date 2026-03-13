@@ -273,9 +273,10 @@ async function verifyTokenSecurity(token: string): Promise<void> {
       expires_in: tokenInfo.expires_in
     });
     
-    // Verify token audience (client_id)
-    const expectedClientId = '320934121909-3mo570972bcc19chatsu8pcp6bevj7fm.apps.googleusercontent.com';
-    if (tokenInfo.aud !== expectedClientId) {
+    // Verify token audience (client_id) - read from manifest to avoid duplication
+    const manifest = chrome.runtime.getManifest() as any;
+    const expectedClientId = manifest.oauth2?.client_id;
+    if (!expectedClientId || tokenInfo.aud !== expectedClientId) {
       console.error('🔧 [TOKEN DEBUG] Client ID mismatch:', tokenInfo.aud, 'vs expected:', expectedClientId);
       throw new Error('Token audience verification failed');
     }

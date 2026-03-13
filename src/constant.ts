@@ -33,3 +33,4 @@ export const HostnameStorage = "Hostname";
 export const TimetableYearStorage = "TimetableYear";
 export const TimetableTermStorage = "TimetableTerm";
 export const MaxTimestamp = 99999999999999;
+export const TACT_HOSTNAME = "tact.ac.thers.ac.jp";

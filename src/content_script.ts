@@ -18,12 +18,13 @@ import { isLoggedIn, miniSakaiReady } from "./utils";
  * Category   : 機能拡張
  * -----------------------------------------------------------------
  */
-import { isTactPortal, initializeTactFeatures } from "./features/tact/index-new";
+import { isTactPortal, initializeTactFeatures } from "./features/tact/index";
 import { fetchCourse } from "./features/api/fetch";
 import { getAssignments } from "./features/entity/assignment/getAssignment";
 import { getQuizzes } from "./features/entity/quiz/getQuiz";
 import { getFetchTime, shouldUseCache, formatDateToString } from "./utils";
 import { Settings } from "./features/setting/types";
+import { EntryProtocol, EntityProtocol } from "./features/entity/type";
 
 /**
  * Creates miniSakai.
@@ -81,13 +82,18 @@ async function main() {
  */
 function initTactFeatures() {
     console.log('TACT Portal detected - initializing custom tabs');
-    // ツールナビゲーションが読み込まれるまで待つ
+    // ツールナビゲーションが読み込まれるまで待つ（最大30秒）
+    let attempts = 0;
+    const maxAttempts = 60;
     const checkToolMenu = setInterval(() => {
+        attempts++;
         const toolMenu = document.querySelector('#toolMenu ul');
         if (toolMenu) {
             clearInterval(checkToolMenu);
-            // TACT機能を初期化
             initializeTactFeatures();
+        } else if (attempts >= maxAttempts) {
+            clearInterval(checkToolMenu);
+            console.error('TACT tool menu not found after maximum attempts');
         }
     }, 500);
 }
@@ -179,10 +185,10 @@ async function performAutoSync() {
         const quizzes = await getQuizzes(hostname, courses, useQuizCache);
         
         // 締切が今より前のものは除外
-        const totalAssignmentEntries = assignments.flatMap((assignment: any) => assignment.entries)
-            .filter((e: any) => (e.dueTime || e.dueDate) > currentTime);
-        const totalQuizEntries = quizzes.flatMap((quiz: any) => quiz.entries)
-            .filter((e: any) => (e.dueTime || e.dueDate) > currentTime);
+        const totalAssignmentEntries = assignments.flatMap((assignment: EntityProtocol) => assignment.entries)
+            .filter((e: EntryProtocol) => e.dueTime > currentTime);
+        const totalQuizEntries = quizzes.flatMap((quiz: EntityProtocol) => quiz.entries)
+            .filter((e: EntryProtocol) => e.dueTime > currentTime);
         
         if (totalAssignmentEntries.length === 0 && totalQuizEntries.length === 0) {
             console.log('同期するデータが見つかりませんでした');
@@ -204,7 +210,16 @@ async function performAutoSync() {
 }
 
 // syncToCalendar関数の定義
-async function syncToCalendar(data: any): Promise<any> {
+interface SyncData {
+    assignments: EntryProtocol[];
+    quizzes: EntryProtocol[];
+}
+interface SyncResult {
+    assignments: { title: string; success: boolean; eventId: string }[];
+    quizzes: { title: string; success: boolean; eventId: string }[];
+    errors: { type: string; title: string; error: string }[];
+}
+async function syncToCalendar(data: SyncData): Promise<SyncResult> {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({
             action: 'syncToCalendar',
@@ -222,7 +237,7 @@ async function syncToCalendar(data: any): Promise<any> {
 }
 
 // Sakai LMSからの課題・クイズデータを同期のために取得
-async function getSakaiDataForSync(): Promise<any> {
+async function getSakaiDataForSync(): Promise<SyncData> {
     const hostname = window.location.hostname;
     const courses = fetchCourse();
     const settings = new Settings();
@@ -236,8 +251,8 @@ async function getSakaiDataForSync(): Promise<any> {
     // 締切が今より前のものは除外
     const totalAssignmentEntries = assignments.flatMap((assignment: any) => assignment.entries)
         .filter((e: any) => (e.dueTime || e.dueDate) > now);
-    const totalQuizEntries = quizzes.flatMap((quiz: any) => quiz.entries)
-        .filter((e: any) => (e.dueTime || e.dueDate) > now);
+    const totalQuizEntries = quizzes.flatMap((quiz: EntityProtocol) => quiz.entries)
+        .filter((e: EntryProtocol) => e.dueTime > now);
     return {
         assignments: totalAssignmentEntries,
         quizzes: totalQuizEntries
@@ -269,50 +284,53 @@ function showSyncNotification(result: { assignments: number, quizzes: number, er
     const hasErrors = result.errors && result.errors > 0;
     const totalEvents = result.assignments + result.quizzes;
     
+    let icon: string;
+    let title: string;
+    let body: string;
+
     if (hasErrors) {
         notification.classList.add('cs-sync-error');
-        notification.innerHTML = `
-            <div class="cs-sync-notification-header">
-                <span class="cs-sync-icon">⚠️</span>
-                <span>カレンダー同期の警告</span>
-                <button class="cs-sync-close-btn">×</button>
-            </div>
-            <div class="cs-sync-notification-body">
-                ${totalEvents}件のイベントを同期しました。${result.errors}件のエラーが発生しました。
-            </div>
-        `;
+        icon = '\u26A0\uFE0F';
+        title = '\u30AB\u30EC\u30F3\u30C0\u30FC\u540C\u671F\u306E\u8B66\u544A';
+        body = `${totalEvents}\u4EF6\u306E\u30A4\u30D9\u30F3\u30C8\u3092\u540C\u671F\u3057\u307E\u3057\u305F\u3002${result.errors}\u4EF6\u306E\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F\u3002`;
     } else if (totalEvents > 0) {
         notification.classList.add('cs-sync-success');
-        notification.innerHTML = `
-            <div class="cs-sync-notification-header">
-                <span class="cs-sync-icon">✅</span>
-                <span>カレンダー同期完了</span>
-                <button class="cs-sync-close-btn">×</button>
-            </div>
-            <div class="cs-sync-notification-body">
-                ${result.assignments}件の課題と${result.quizzes}件のクイズをカレンダーに追加しました
-            </div>
-        `;
+        icon = '\u2705';
+        title = '\u30AB\u30EC\u30F3\u30C0\u30FC\u540C\u671F\u5B8C\u4E86';
+        body = `${result.assignments}\u4EF6\u306E\u8AB2\u984C\u3068${result.quizzes}\u4EF6\u306E\u30AF\u30A4\u30BA\u3092\u30AB\u30EC\u30F3\u30C0\u30FC\u306B\u8FFD\u52A0\u3057\u307E\u3057\u305F`;
     } else {
         notification.classList.add('cs-sync-info');
-        notification.innerHTML = `
-            <div class="cs-sync-notification-header">
-                <span class="cs-sync-icon">ℹ️</span>
-                <span>カレンダー同期情報</span>
-                <button class="cs-sync-close-btn">×</button>
-            </div>
-            <div class="cs-sync-notification-body">
-                同期すべき新しいイベントはありませんでした
-            </div>
-        `;
+        icon = '\u2139\uFE0F';
+        title = '\u30AB\u30EC\u30F3\u30C0\u30FC\u540C\u671F\u60C5\u5831';
+        body = '\u540C\u671F\u3059\u3079\u304D\u65B0\u3057\u3044\u30A4\u30D9\u30F3\u30C8\u306F\u3042\u308A\u307E\u305B\u3093\u3067\u3057\u305F';
     }
+
+    const header = document.createElement('div');
+    header.className = 'cs-sync-notification-header';
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'cs-sync-icon';
+    iconSpan.textContent = icon;
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = title;
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'cs-sync-close-btn';
+    closeBtn.textContent = '\u00D7';
+    header.appendChild(iconSpan);
+    header.appendChild(titleSpan);
+    header.appendChild(closeBtn);
+
+    const bodyDiv = document.createElement('div');
+    bodyDiv.className = 'cs-sync-notification-body';
+    bodyDiv.textContent = body;
+
+    notification.appendChild(header);
+    notification.appendChild(bodyDiv);
     
     // 通知を表示
     document.body.appendChild(notification);
     
     // 閉じるボタンのイベントリスナー
-    const closeBtn = notification.querySelector('.cs-sync-close-btn');
-    closeBtn?.addEventListener('click', () => {
+    closeBtn.addEventListener('click', () => {
         notification.remove();
     });
     
@@ -328,23 +346,6 @@ function showSyncNotification(result: { assignments: number, quizzes: number, er
         }
     }, 8000);
 }
-
-
-// lastSyncTimeを取得して表示を更新
-function updateLastSyncTimeDisplay() {
-    chrome.storage.local.get(['lastSyncTime'], (result) => {
-        const label = document.getElementById('cs-last-sync-label');
-        if (!label) return;
-        const t = result.lastSyncTime;
-        if (!t) {
-            label.textContent = '最終同期: なし';
-        } else {
-            const d = new Date(t);
-            label.textContent = '最終同期: ' + formatDateToString(d);
-        }
-    });
-}
-
 
 
 main();

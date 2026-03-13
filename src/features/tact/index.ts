@@ -1,51 +1,22 @@
 /**
- * TACTポータル拡張機能のメインエントリーポイント
- * メモ機能とフォルダ機能の統合管理と初期化
+ * TACT新機能統合モジュール
+ * メモ機能とフォルダ機能をTACTポータルに統合
  */
 /**
- * TACTポータル拡張機能のメインエントリーポイント
- * メモ機能とフォルダ機能の統合管理
- */
-/**
- * TACT portal extension features
+ * TACT Portal extension features
  * このモジュールはTACTポータルに新しい機能を追加します
  */
 
-// メモ機能のインポート
-import { MemoManager } from './memo';
 import { MemoUI } from './memo-ui';
-import { i18nMessage } from '../chrome/index';
-
-/**
- * 講義メモのデータ構造
- */
-interface LectureNote {
-    id: string;
-    lectureId: string;
-    lectureName: string;
-    note: string;
-    links: LinkItem[];
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-/**
- * リンクアイテムのデータ構造
- */
-interface LinkItem {
-    id: string;
-    url: string;
-    title: string;
-    description?: string;
-}
+import { FolderUI } from './folder-ui';
+import { TACT_HOSTNAME } from '../../constant';
 
 /**
  * TACTポータルかどうかを判定する
  * @returns TACTポータルであればtrue、そうでなければfalse
  */
 export const isTactPortal = (): boolean => {
-    // URLに "tact.ac.thers.ac.jp" が含まれているかチェック
-    return window.location.href.includes('tact.ac.thers.ac.jp');
+    return window.location.href.includes(TACT_HOSTNAME);
 };
 
 /**
@@ -143,7 +114,7 @@ export const showTabContent = (title: string, content: string | HTMLElement): vo
     const modalContent = document.createElement('div');
     modalContent.className = 'cs-tact-modal-content';
     if (typeof content === 'string') {
-        modalContent.innerHTML = content;
+        modalContent.textContent = content;
     } else {
         modalContent.appendChild(content);
     }
@@ -157,188 +128,78 @@ export const showTabContent = (title: string, content: string | HTMLElement): vo
 };
 
 /**
- * CSS ファイルを動的に読み込む
- * @param cssFileName CSSファイル名
+ * CSSファイルを動的に読み込む
  */
-const loadMemoCSS = async (cssFileName: string): Promise<void> => {
-    return new Promise((resolve) => {
-        const existingLink = document.querySelector(`link[href*="${cssFileName}"]`);
-        if (existingLink) {
-            resolve();
-            return;
-        }
+function loadCSS(href: string): void {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    document.head.appendChild(link);
+}
 
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        link.href = chrome.runtime.getURL(`css/${cssFileName}`);
-        link.onload = () => resolve();
-        document.head.appendChild(link);
-    });
+/**
+ * フォルダ機能タブを追加
+ */
+export const addFolderTab = (): void => {
+    // フォルダ機能用のCSSを読み込み（無効化）
+    // const cssPath = chrome.runtime.getURL('css/folder-styles-new.css');
+    // loadCSS(cssPath);
+
+    // フォルダタブを追加
+    addCustomToolTab(
+        'フォルダ',
+        'icon-sakai--sakai-resources',
+        'フォルダ・ファイル管理',
+        () => {
+            // フォルダUI用のコンテナを作成
+            const folderContainer = document.createElement('div');
+            folderContainer.className = 'folder-ui-container';
+            
+            // FolderUIクラスのインスタンスを作成
+            const folderUI = new FolderUI(folderContainer);
+            
+            // モーダルに表示
+            showTabContent('📁 フォルダ・ファイル管理', folderContainer);
+        }
+    );
 };
 
 /**
- * カスタムタブを追加
+ * メモ機能タブを追加
  */
-export const addSampleCustomTabs = (): void => {
+export const addMemoTab = (): void => {
+    // メモ機能用のCSSを読み込み
+    const cssPath = chrome.runtime.getURL('css/memo-styles.css');
+    loadCSS(cssPath);
+
+    // メモタブを追加
+    addCustomToolTab(
+        'メモ',
+        'icon-sakai--sakai-assignment-grades',
+        '講義メモ管理',
+        () => {
+            const memoUI = new MemoUI();
+            const content = memoUI.createMemoTabContent();
+            showTabContent('📝 講義メモ管理', content);
+        }
+    );
+};
+
+
+
+/**
+ * すべてのTACTカスタム機能を初期化
+ */
+export const initializeTactFeatures = (): void => {
     if (!isTactPortal()) {
         return;
     }
 
-    // メモタブ
-    addCustomToolTab(
-        'メモ',
-        'icon-sakai--sakai-assignment-grades cs-custom-icon',
-        '講義メモ管理',
-        async () => {
-            try {
-                // CSS を読み込み
-                await loadMemoCSS('memo-styles.css');
-                
-                // メモUIを初期化
-                const memoUI = new MemoUI();
-                
-                // メモUIを表示
-                const memoContainer = memoUI.createMemoTabContent();
-                showTabContent(i18nMessage('memo_ui_title').replace('📝 ', ''), memoContainer);
-            } catch (error) {
-                console.error('メモ機能の初期化に失敗しました:', error);
-                showTabContent(i18nMessage('memo_ui_title').replace('📝 ', ''), '<p>メモ機能の読み込みに失敗しました。ページを再読み込みしてください。</p>');
-            }
-        }
-    );
-
-    // 掲示板タブ
-    addCustomToolTab(
-        '掲示板',
-        'icon-sakai--sakai-forums cs-custom-icon',
-        i18nMessage('tact_forum_title'),
-        () => {
-            // 掲示板のコンテンツ
-            const forumContainer = document.createElement('div');
-            forumContainer.className = 'cs-tact-forum';
-
-            const forumHeader = document.createElement('div');
-            forumHeader.className = 'cs-forum-header';
-            
-            const forumTitle = document.createElement('h3');
-            forumTitle.textContent = i18nMessage('tact_forum_title');
-            forumHeader.appendChild(forumTitle);
-            
-            const newPostButton = document.createElement('button');
-            newPostButton.textContent = i18nMessage('tact_forum_new_post');
-            newPostButton.className = 'cs-forum-new-post-btn';
-            newPostButton.addEventListener('click', () => {
-                alert(i18nMessage('tact_forum_new_post_development'));
-            });
-            
-            forumHeader.appendChild(newPostButton);
-            forumContainer.appendChild(forumHeader);
-
-            // 掲示板の説明
-            const forumDescription = document.createElement('p');
-            forumDescription.textContent = i18nMessage('tact_forum_description');
-            forumContainer.appendChild(forumDescription);
-            
-            // カテゴリータブ
-            const forumCategoryTabs = document.createElement('div');
-            forumCategoryTabs.className = 'cs-forum-category-tabs';
-            
-            const categories = [
-                { key: 'tact_forum_category_general', default: '一般' },
-                { key: 'tact_forum_category_class', default: '授業関連' },
-                { key: 'tact_forum_category_assignment', default: '課題質問' },
-                { key: 'tact_forum_category_campus', default: 'キャンパスライフ' }
-            ];
-            
-            categories.forEach((category, index) => {
-                const tab = document.createElement('button');
-                tab.className = index === 0 ? 'cs-forum-category-tab active' : 'cs-forum-category-tab';
-                tab.textContent = i18nMessage(category.key);
-                tab.addEventListener('click', (e) => {
-                    document.querySelectorAll('.cs-forum-category-tab').forEach(t => 
-                        t.classList.remove('active'));
-                    (e.target as HTMLElement).classList.add('active');
-                    // カテゴリの切り替え処理（実際の実装では）
-                });
-                forumCategoryTabs.appendChild(tab);
-            });
-            
-            forumContainer.appendChild(forumCategoryTabs);
-            
-            // 投稿リスト
-            const postList = document.createElement('div');
-            postList.className = 'cs-forum-post-list';
-            
-            // サンプル投稿
-            const samplePosts = [
-                {
-                    title: '期末レポートの提出方法について',
-                    author: '匿名',
-                    date: '2025/05/10',
-                    replies: 5,
-                    content: 'レポートの提出方法がわかりません。TACTのどこから提出するのでしょうか？'
-                },
-                {
-                    title: '明日の授業について',
-                    author: '学生A',
-                    date: '2025/05/11',
-                    replies: 3,
-                    content: '明日の授業は教室変更があるとの連絡がありましたが、新しい教室をご存知の方はいますか？'
-                },
-                {
-                    title: '参考書について質問です',
-                    author: '学生B',
-                    date: '2025/05/12',
-                    replies: 0,
-                    content: '授業で紹介された参考書を探しているのですが、図書館にはありませんでした。電子版などはありますか？'
-                }
-            ];
-            
-            samplePosts.forEach(post => {
-                const postItem = document.createElement('div');
-                postItem.className = 'cs-forum-post';
-                
-                const postHeader = document.createElement('div');
-                postHeader.className = 'cs-forum-post-header';
-                
-                const postTitle = document.createElement('h4');
-                postTitle.className = 'cs-forum-post-title';
-                postTitle.textContent = post.title;
-                
-                const postMeta = document.createElement('div');
-                postMeta.className = 'cs-forum-post-meta';
-                postMeta.innerHTML = `${i18nMessage('tact_forum_post_by')}${post.author} | ${i18nMessage('tact_forum_post_date')}${post.date} | ${i18nMessage('tact_forum_post_replies')}${post.replies}`;
-                
-                postHeader.appendChild(postTitle);
-                postHeader.appendChild(postMeta);
-                
-                const postContent = document.createElement('p');
-                postContent.className = 'cs-forum-post-content';
-                postContent.textContent = post.content;
-                
-                const postActions = document.createElement('div');
-                postActions.className = 'cs-forum-post-actions';
-                
-                const replyButton = document.createElement('button');
-                replyButton.className = 'cs-forum-reply-btn';
-                replyButton.textContent = i18nMessage('tact_forum_reply');
-                replyButton.addEventListener('click', () => {
-                    alert(i18nMessage('tact_forum_reply_development'));
-                });
-                
-                postActions.appendChild(replyButton);
-                
-                postItem.appendChild(postHeader);
-                postItem.appendChild(postContent);
-                postItem.appendChild(postActions);
-                
-                postList.appendChild(postItem);
-            });
-            
-            forumContainer.appendChild(postList);
-            
-            showTabContent(i18nMessage('tact_forum_title'), forumContainer);
-        }
-    );
+    // メモ機能を追加
+    addMemoTab();
+    
+    // フォルダ機能を追加（メモの後、掲示板の前に配置）
+    addFolderTab();
+    
+    console.log('TACT Portal カスタム機能が初期化されました');
 };
