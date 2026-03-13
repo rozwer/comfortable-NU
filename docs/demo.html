@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comfortable NU - ライブデモ</title>
+    <meta name="description" content="Comfortable NU拡張機能のライブデモ - miniSakaiの動作を体験できます">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="demo-live.css">
+    <link rel="icon" href="Image/128.png" type="image/png">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <img src="Image/128.png" alt="Comfortable NU" class="nav-logo">
+                    <span class="nav-title">Comfortable NU</span>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="index.html" class="nav-link">ホーム</a></li>
+                    <li><a href="index.html#features" class="nav-link">機能</a></li>
+                    <li><a href="index.html#download" class="nav-link">ダウンロード</a></li>
+                    <li><a href="#" class="nav-link active">ライブデモ</a></li>
+                    <li><a href="index.html#support" class="nav-link">サポート</a></li>
+                </ul>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- デモヒーロー -->
+    <section class="demo-hero">
+        <div class="container">
+            <h1>miniSakai ライブデモ</h1>
+            <p>拡張機能のReactコンポーネントをローカルモックデータで動作させています。<br>実際の拡張機能と同じUIを体験できます。</p>
+        </div>
+    </section>
+
+    <!-- デモ本体 -->
+    <section class="demo-live-section">
+        <div class="container">
+            <div class="demo-live-wrapper">
+                <div id="minisakai-live-root"></div>
+            </div>
+            <div class="demo-note">
+                <p>※ これは拡張機能のコンポーネントをローカルモックで動かしたデモです。データはすべてサンプルです。</p>
+                <a href="index.html" class="btn btn-secondary" style="color: var(--text-color); border-color: var(--border-color);">ホームに戻る</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Comfortable NU. Apache-2.0 License.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script type="text/babel" data-type="module">
+    // ============================================================
+    // モックデータ & ユーティリティ
+    // ============================================================
+
+    const NOW = Math.floor(Date.now() / 1000);
+    const MAX_TIMESTAMP = 99999999999999;
+
+    // 時間計算用ヘルパー
+    const hours = (h) => h * 3600;
+    const days = (d) => d * 86400;
+
+    function createDateString(seconds) {
+        if (seconds === MAX_TIMESTAMP || seconds == null) return "----/--/--";
+        const date = new Date(seconds * 1000);
+        const y = date.getFullYear();
+        const m = date.getMonth() + 1;
+        const d = date.getDate();
+        const h = date.getHours();
+        const min = ("00" + date.getMinutes()).slice(-2);
+        return `${y}/${m}/${d} ${h}:${min}`;
+    }
+
+    function getRemainTimeString(dueInSeconds) {
+        if (dueInSeconds === MAX_TIMESTAMP) return "期限未設定";
+        const seconds = dueInSeconds - NOW;
+        if (seconds <= 0) return "期限超過";
+        const day = Math.floor(seconds / 86400);
+        const hr = Math.floor((seconds - day * 86400) / 3600);
+        const mn = Math.floor((seconds - day * 86400 - hr * 3600) / 60);
+        return `あと${day}日${hr}時間${mn}分`;
+    }
+
+    function formatTimestamp(ts) {
+        if (ts == null) return "---";
+        const date = new Date(ts * 1000);
+        const y = date.getFullYear();
+        const m = date.getMonth() + 1;
+        const d = date.getDate();
+        const h = date.getHours();
+        const min = ("00" + date.getMinutes()).slice(-2);
+        const sec = ("00" + date.getSeconds()).slice(-2);
+        return `${y}/${m}/${d} ${h}:${min}:${sec}`;
+    }
+
+    function getDueType(dt1, dt2, entryInfo) {
+        if (entryInfo && entryInfo.submitted === true) return "submitted";
+        if (entryInfo && entryInfo.checkTimestamp) {
+            const parts = entryInfo.checkTimestamp.split('/');
+            if (parts.length === 4) {
+                const cd = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[3]));
+                if (cd.getTime() / 1000 > dt1) return "dismissed";
+            }
+        }
+        let diff = (dt2 - dt1) / 86400;
+        if (diff > 0 && diff <= 1) return "danger";
+        if (diff > 1 && diff <= 5) return "warning";
+        if (diff > 5 && diff <= 14) return "success";
+        if (diff > 14) return "other";
+        return "passed";
+    }
+
+    // ============================================================
+    // モックコース & エントリーデータ
+    // ============================================================
+
+    const MOCK_COURSES = [
+        { id: "n_2025_0846280", name: "アルゴリズムとデータ構造(2025年度春/金1限)", link: "#" },
+        { id: "n_2025_0846270", name: "真空電子工学(2025年度春/月2限)", link: "#" },
+        { id: "n_2025_0846230", name: "制御工学(2025年度春/金2限)", link: "#" },
+        { id: "n_2025_0846240", name: "ディジタル信号処理(2025年度春/木2限)", link: "#" },
+        { id: "n_2025_0846130", name: "[遠隔]電気電子情報工学実験第1(2025年度春/火3限,火4限)", link: "#" },
+        { id: "n_2025_0846300", name: "線形代数学II(2025年度春/水1限)", link: "#" },
+    ];
+
+    const MOCK_ASSIGNMENTS = [
+        // danger: 24h以内
+        { id: "a1", title: "第9回確認テスト(6/13)", courseId: "n_2025_0846280", type: "quiz", dueTime: NOW + hours(18), closeTime: NOW + hours(18), submitted: false, allowResubmitNumber: undefined },
+        // warning: 5日以内
+        { id: "a2", title: "6/16講義レポート", courseId: "n_2025_0846270", type: "assignment", dueTime: NOW + days(3) + hours(12), closeTime: NOW + days(3) + hours(12), submitted: false, allowResubmitNumber: "0" },
+        { id: "a3", title: "第7章 制御系の設計 予習課題", courseId: "n_2025_0846230", type: "assignment", dueTime: NOW + days(4), closeTime: NOW + days(4), submitted: false, allowResubmitNumber: "0" },
+        // success: 14日以内
+        { id: "a4", title: "レポート3", courseId: "n_2025_0846240", type: "assignment", dueTime: NOW + days(8) + hours(10), closeTime: NOW + days(8) + hours(10), submitted: false, allowResubmitNumber: "-1" },
+        { id: "a5", title: "レポート4", courseId: "n_2025_0846240", type: "assignment", dueTime: NOW + days(12), closeTime: NOW + days(12), submitted: false, allowResubmitNumber: "-1" },
+        { id: "a6", title: "第4-9回課題", courseId: "n_2025_0846270", type: "assignment", dueTime: NOW + days(10), closeTime: NOW + days(10), submitted: false, allowResubmitNumber: "-1" },
+        // other: 14日超
+        { id: "a7", title: "B5 光通信", courseId: "n_2025_0846130", type: "assignment", dueTime: NOW + days(20), closeTime: NOW + days(20), submitted: false, allowResubmitNumber: "0" },
+        { id: "a8", title: "A1B6 ダイオード・トランジスタの特性測定 レポート", courseId: "n_2025_0846130", type: "assignment", dueTime: NOW + days(25), closeTime: NOW + days(25), submitted: false, allowResubmitNumber: "-1" },
+        { id: "a9", title: "レポート5", courseId: "n_2025_0846240", type: "assignment", dueTime: NOW + days(22), closeTime: NOW + days(22), submitted: false, allowResubmitNumber: "-1" },
+        { id: "a10", title: "線形代数 期末レポート", courseId: "n_2025_0846300", type: "assignment", dueTime: NOW + days(30), closeTime: NOW + days(30), submitted: false, allowResubmitNumber: "5" },
+    ];
+
+    // 提出済みの課題
+    const MOCK_SUBMITTED = [
+        { id: "s1", title: "第8回確認テスト(5/30)", courseId: "n_2025_0846280", type: "quiz", dueTime: NOW - days(7), closeTime: NOW - days(7), submitted: true },
+        { id: "s2", title: "5/26講義レポート", courseId: "n_2025_0846270", type: "assignment", dueTime: NOW - days(5), closeTime: NOW - days(5), submitted: true, allowResubmitNumber: "0" },
+        { id: "s3", title: "第6章 制御系の安定性 課題", courseId: "n_2025_0846230", type: "assignment", dueTime: NOW - days(3), closeTime: NOW - days(3), submitted: true, allowResubmitNumber: "0" },
+    ];
+
+    // 非表示の課題
+    const nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    const permTimestamp = `${nextYear.getFullYear()}/${String(nextYear.getMonth()+1).padStart(2,'0')}/${String(nextYear.getDate()).padStart(2,'0')}/${String(nextYear.getHours()).padStart(2,'0')}`;
+
+    const MOCK_DISMISSED = [
+        { id: "d1", title: "レポート2（提出期限延長）", courseId: "n_2025_0846240", type: "assignment", dueTime: NOW + days(5), closeTime: NOW + days(5), submitted: false, checkTimestamp: permTimestamp, allowResubmitNumber: "-1" },
+    ];
+
+    // メモ
+    const MOCK_MEMOS = [
+        { id: "m1", title: "教科書7章を読む", courseId: "n_2025_0846230", type: "memo", dueTime: NOW + days(2) },
+    ];
+
+    // 設定
+    const DEFAULT_SETTINGS = {
+        color: {
+            miniDanger: "#e85555",
+            miniWarning: "#d7aa57",
+            miniSuccess: "#62b665",
+            miniOther: "#777777",
+        },
+        fetchTime: { assignment: NOW - 300, quiz: NOW - 120 },
+    };
+
+    // ============================================================
+    // React コンポーネント
+    // ============================================================
+
+    const { useState, useMemo, useCallback, useEffect } = React;
+
+    // --- バッジコンポーネント ---
+    function QuizBadge() {
+        return <span className="ms-badge ms-badge-quiz">クイズ</span>;
+    }
+    function MemoBadge() {
+        return <span className="ms-badge ms-badge-memo">メモ</span>;
+    }
+    function ResubmitBadge({ allowResubmitNumber }) {
+        if (!allowResubmitNumber) return null;
+        if (allowResubmitNumber === "-1") {
+            return <span className="ms-badge ms-badge-resubmit">再提出可能: 無制限</span>;
+        }
+        if (allowResubmitNumber === "0") {
+            return <span className="ms-badge ms-badge-resubmit-disabled">再提出不可</span>;
+        }
+        const n = parseInt(allowResubmitNumber);
+        if (!isNaN(n) && n > 0) {
+            return <span className="ms-badge ms-badge-resubmit">再提出可能: {n}回</span>;
+        }
+        return null;
+    }
+
+    // --- エントリー表示コンポーネント ---
+    function AssignmentEntryView({ entry, onMinusClick }) {
+        const dueDateString = createDateString(entry.dueTime);
+        const remainTimeString = getRemainTimeString(entry.dueTime);
+        return (
+            <>
+                <div className="ms-minus-button" onClick={() => onMinusClick(entry)} title="非表示にする"></div>
+                <p className="ms-assignment-date">{dueDateString}</p>
+                <span className="ms-assignment-time-remain">{remainTimeString}</span>
+                <p className="ms-assignment-title">{entry.title}</p>
+                <div className="ms-assignment-badges">
+                    <ResubmitBadge allowResubmitNumber={entry.allowResubmitNumber} />
+                </div>
+            </>
+        );
+    }
+
+    function QuizEntryView({ entry, onMinusClick }) {
+        const dueDateString = createDateString(entry.dueTime);
+        const remainTimeString = getRemainTimeString(entry.dueTime);
+        return (
+            <>
+                <div className="ms-minus-button" onClick={() => onMinusClick(entry)} title="非表示にする"></div>
+                <p className="ms-assignment-date">{dueDateString}</p>
+                <span className="ms-assignment-time-remain">{remainTimeString}</span>
+                <p className="ms-assignment-title"><QuizBadge />{entry.title}</p>
+            </>
+        );
+    }
+
+    function MemoEntryView({ entry, onDelete }) {
+        const dueDateString = createDateString(entry.dueTime);
+        const remainTimeString = getRemainTimeString(entry.dueTime);
+        return (
+            <>
+                <p className="ms-assignment-date" style={{paddingLeft: "15px"}}>{dueDateString}</p>
+                <span className="ms-assignment-time-remain">{remainTimeString}</span>
+                <p className="ms-assignment-title">
+                    <MemoBadge />
+                    <span className="ms-del-memo-btn" onClick={() => onDelete(entry)} title="メモを削除">&times;</span>
+                    {entry.title}
+                </p>
+            </>
+        );
+    }
+
+    // --- コース別グループ ---
+    function CourseGroup({ courseId, courseName, entries, dueType, onMinusClick, onMemoDelete }) {
+        const divClass = `ms-assignment-${dueType}`;
+        const aClass = `ms-course-${dueType} ms-course-name`;
+        return (
+            <div className={divClass}>
+                <a className={aClass} href="#">{courseName}</a>
+                {entries.map(entry => {
+                    if (entry.type === "quiz") {
+                        return <QuizEntryView key={entry.id} entry={entry} onMinusClick={onMinusClick} />;
+                    } else if (entry.type === "memo") {
+                        return <MemoEntryView key={entry.id} entry={entry} onDelete={onMemoDelete} />;
+                    } else {
+                        return <AssignmentEntryView key={entry.id} entry={entry} onMinusClick={onMinusClick} />;
+                    }
+                })}
+            </div>
+        );
+    }
+
+    // --- エントリーリスト（色分けレベル別） ---
+    function EntryList({ dueType, entriesWithCourse, onMinusClick, onMemoDelete }) {
+        const className = `ms-minisakai-list ms-minisakai-list-${dueType}`;
+        // コース別グループ化
+        const courseMap = new Map();
+        const courseNameMap = new Map();
+        entriesWithCourse.forEach(({ entry, course }) => {
+            if (!courseMap.has(course.id)) courseMap.set(course.id, []);
+            courseMap.get(course.id).push(entry);
+            courseNameMap.set(course.id, course.name);
+        });
+        // ソート: 締め切り近い順
+        const sorted = [...courseMap.entries()].sort((a, b) => {
+            const aMin = a[1].reduce((p, e) => Math.min(e.dueTime, p), MAX_TIMESTAMP);
+            const bMin = b[1].reduce((p, e) => Math.min(e.dueTime, p), MAX_TIMESTAMP);
+            return aMin - bMin;
+        });
+        return (
+            <div className={className}>
+                {sorted.map(([courseId, entries]) => (
+                    <CourseGroup
+                        key={courseId}
+                        courseId={courseId}
+                        courseName={courseNameMap.get(courseId)}
+                        entries={entries.sort((a, b) => a.dueTime - b.dueTime)}
+                        dueType={dueType}
+                        onMinusClick={onMinusClick}
+                        onMemoDelete={onMemoDelete}
+                    />
+                ))}
+            </div>
+        );
+    }
+
+    // --- 提出済みエントリー表示 ---
+    function SubmittedEntryView({ entry }) {
+        const dueDateString = createDateString(entry.dueTime);
+        return (
+            <>
+                <p className="ms-assignment-date" style={{paddingLeft: "15px"}}>{dueDateString}</p>
+                <p className="ms-assignment-title">
+                    {entry.type === "quiz" && <QuizBadge />}
+                    {entry.title}
+                </p>
+            </>
+        );
+    }
+
+    function SubmittedCourseGroup({ courseId, courseName, entries }) {
+        return (
+            <div className="ms-assignment-submitted">
+                <a className="ms-course-submitted ms-course-name" href="#">{courseName}</a>
+                {entries.map(e => <SubmittedEntryView key={e.id} entry={e} />)}
+            </div>
+        );
+    }
+
+    function SubmittedEntryList({ entriesWithCourse }) {
+        const courseMap = new Map();
+        const courseNameMap = new Map();
+        entriesWithCourse.forEach(({ entry, course }) => {
+            if (!courseMap.has(course.id)) courseMap.set(course.id, []);
+            courseMap.get(course.id).push(entry);
+            courseNameMap.set(course.id, course.name);
+        });
+        return (
+            <div className="ms-minisakai-list ms-minisakai-list-submitted">
+                {[...courseMap.entries()].map(([cid, entries]) => (
+                    <SubmittedCourseGroup key={cid} courseId={cid} courseName={courseNameMap.get(cid)} entries={entries} />
+                ))}
+            </div>
+        );
+    }
+
+    // --- 非表示エントリー表示 ---
+    function DismissedEntryView({ entry, onRestore }) {
+        const dueDateString = createDateString(entry.dueTime);
+        const remainTimeString = getRemainTimeString(entry.dueTime);
+        return (
+            <>
+                <div className="ms-dismissed-clear-btn" onClick={() => onRestore(entry)} title="課題一覧に戻す">&times;</div>
+                <p className="ms-assignment-date">{dueDateString}</p>
+                <span className="ms-assignment-time-remain">{remainTimeString}</span>
+                <p className="ms-assignment-title">
+                    {entry.type === "quiz" && <QuizBadge />}
+                    {entry.title}
+                </p>
+                <div className="ms-assignment-badges">
+                    <ResubmitBadge allowResubmitNumber={entry.allowResubmitNumber} />
+                </div>
+            </>
+        );
+    }
+
+    function DismissedCourseGroup({ courseId, courseName, entries, onRestore }) {
+        return (
+            <div className="ms-assignment-other">
+                <a className="ms-course-other ms-course-name" href="#">{courseName}</a>
+                {entries.map(e => <DismissedEntryView key={e.id} entry={e} onRestore={onRestore} />)}
+            </div>
+        );
+    }
+
+    function DismissedEntryList({ entriesWithCourse, onRestore }) {
+        const courseMap = new Map();
+        const courseNameMap = new Map();
+        entriesWithCourse.forEach(({ entry, course }) => {
+            if (!courseMap.has(course.id)) courseMap.set(course.id, []);
+            courseMap.get(course.id).push(entry);
+            courseNameMap.set(course.id, course.name);
+        });
+        return (
+            <div className="ms-minisakai-list ms-minisakai-list-dismissed">
+                {[...courseMap.entries()].map(([cid, entries]) => (
+                    <DismissedCourseGroup key={cid} courseId={cid} courseName={courseNameMap.get(cid)} entries={entries} onRestore={onRestore} />
+                ))}
+            </div>
+        );
+    }
+
+    // --- メモ追加ボックス ---
+    function AddMemoBox({ courses, onMemoAdd, onClose }) {
+        const [courseId, setCourseId] = useState(courses[0]?.id || "");
+        const [content, setContent] = useState("");
+        const defaultDue = () => {
+            const d = new Date();
+            d.setDate(d.getDate() + 1);
+            return d.toISOString().slice(0, 16);
+        };
+        const [due, setDue] = useState(defaultDue);
+
+        const handleAdd = () => {
+            if (!courseId || !due || !content.trim()) return;
+            const course = courses.find(c => c.id === courseId);
+            if (!course) return;
+            onMemoAdd({
+                id: "m_" + Date.now(),
+                title: content,
+                courseId: course.id,
+                type: "memo",
+                dueTime: Math.floor(Date.parse(due) / 1000),
+            });
+            setContent("");
+            setDue(defaultDue());
+            onClose();
+        };
+
+        return (
+            <div className="ms-memo-box">
+                <div className="ms-memo-item">
+                    <p>講義名</p>
+                    <select value={courseId} onChange={e => setCourseId(e.target.value)}>
+                        {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                </div>
+                <div className="ms-memo-item">
+                    <p>メモ</p>
+                    <input type="text" value={content} onChange={e => setContent(e.target.value)} placeholder="メモの内容..." />
+                </div>
+                <div className="ms-memo-item">
+                    <p>期限</p>
+                    <input type="datetime-local" value={due} onChange={e => setDue(e.target.value)} />
+                </div>
+                <div className="ms-memo-item">
+                    <button onClick={handleAdd} disabled={!content.trim()}>追加</button>
+                </div>
+            </div>
+        );
+    }
+
+    // --- 日付ピッカーモーダル ---
+    function DatepickerModal({ isOpen, onClose, onSave }) {
+        const now = new Date();
+        const [year, setYear] = useState(now.getFullYear());
+        const [month, setMonth] = useState(now.getMonth() + 1);
+        const [day, setDay] = useState(now.getDate());
+        const [hour, setHour] = useState(now.getHours());
+        const [isPermanent, setIsPermanent] = useState(false);
+
+        if (!isOpen) return null;
+
+        const daysInMonth = new Date(year, month, 0).getDate();
+
+        const handleSave = () => {
+            if (isPermanent) {
+                const later = new Date();
+                later.setFullYear(later.getFullYear() + 1);
+                onSave(`${later.getFullYear()}/${String(later.getMonth()+1).padStart(2,'0')}/${String(later.getDate()).padStart(2,'0')}/${String(later.getHours()).padStart(2,'0')}`);
+            } else {
+                onSave(`${year}/${String(month).padStart(2,'0')}/${String(day).padStart(2,'0')}/${String(hour).padStart(2,'0')}`);
+            }
+        };
+
+        return (
+            <div className="ms-datepicker-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+                <div className="ms-datepicker-modal">
+                    <div className="ms-datepicker-header">
+                        <h3>非表示期間を設定</h3>
+                        <button className="ms-datepicker-close" onClick={onClose}>&times;</button>
+                    </div>
+                    <div className="ms-datepicker-content">
+                        <label className="ms-datepicker-permanent">
+                            <input type="checkbox" checked={isPermanent} onChange={e => setIsPermanent(e.target.checked)} />
+                            永久に非表示
+                        </label>
+                        {!isPermanent && (
+                            <div className="ms-datepicker-row">
+                                <div className="ms-datepicker-field">
+                                    <label>年</label>
+                                    <select value={year} onChange={e => setYear(+e.target.value)}>
+                                        {Array.from({length: 5}, (_, i) => now.getFullYear() + i).map(y =>
+                                            <option key={y} value={y}>{y}</option>
+                                        )}
+                                    </select>
+                                </div>
+                                <div className="ms-datepicker-field">
+                                    <label>月</label>
+                                    <select value={month} onChange={e => setMonth(+e.target.value)}>
+                                        {Array.from({length: 12}, (_, i) => i+1).map(m =>
+                                            <option key={m} value={m}>{m}</option>
+                                        )}
+                                    </select>
+                                </div>
+                                <div className="ms-datepicker-field">
+                                    <label>日</label>
+                                    <select value={day} onChange={e => setDay(+e.target.value)}>
+                                        {Array.from({length: daysInMonth}, (_, i) => i+1).map(d =>
+                                            <option key={d} value={d}>{d}</option>
+                                        )}
+                                    </select>
+                                </div>
+                                <div className="ms-datepicker-field">
+                                    <label>時</label>
+                                    <select value={hour} onChange={e => setHour(+e.target.value)}>
+                                        {Array.from({length: 24}, (_, i) => i).map(h =>
+                                            <option key={h} value={h}>{h}</option>
+                                        )}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+                        {isPermanent && (
+                            <p className="ms-datepicker-info">この課題は1年間非表示になります。</p>
+                        )}
+                    </div>
+                    <div className="ms-datepicker-footer">
+                        <button className="ms-datepicker-cancel" onClick={onClose}>キャンセル</button>
+                        <button className="ms-datepicker-save" onClick={handleSave}>保存</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- 設定タブ ---
+    function SettingsTab({ settings, onSettingsChange }) {
+        return (
+            <div className="ms-settings-tab">
+                <div className="ms-settings-item">
+                    <p>遅延提出を許可する課題を表示</p>
+                    <label className="ms-toggle-btn">
+                        <input type="checkbox" checked={settings.showLateAccepted} onChange={e => onSettingsChange("showLateAccepted", e.target.checked)} />
+                        <span className="ms-toggle-slider"></span>
+                    </label>
+                </div>
+                <div className="ms-settings-item">
+                    <p>未公開の課題を非表示にする</p>
+                    <label className="ms-toggle-btn">
+                        <input type="checkbox" checked={settings.hideUnpublished} onChange={e => onSettingsChange("hideUnpublished", e.target.checked)} />
+                        <span className="ms-toggle-slider"></span>
+                    </label>
+                </div>
+                <div className="ms-settings-item">
+                    <p>課題キャッシュ間隔 (秒)</p>
+                    <input type="number" className="ms-settings-input" value={settings.cacheAssignment} onChange={e => onSettingsChange("cacheAssignment", +e.target.value)} />
+                </div>
+                <div className="ms-settings-item">
+                    <p>クイズキャッシュ間隔 (秒)</p>
+                    <input type="number" className="ms-settings-input" value={settings.cacheQuiz} onChange={e => onSettingsChange("cacheQuiz", +e.target.value)} />
+                </div>
+                <h4 style={{marginTop: "16px", marginBottom: "8px", color: "var(--ms-text)"}}>miniSakai カラー設定</h4>
+                {[
+                    ["miniDanger", "24時間以内"],
+                    ["miniWarning", "5日以内"],
+                    ["miniSuccess", "14日以内"],
+                    ["miniOther", "14日超"],
+                ].map(([key, label]) => (
+                    <div className="ms-settings-item" key={key}>
+                        <p>{label}</p>
+                        <input type="color" value={settings.colors[key]} onChange={e => onSettingsChange(`colors.${key}`, e.target.value)} />
+                    </div>
+                ))}
+                <div className="ms-settings-item">
+                    <button onClick={() => onSettingsChange("resetColors", null)}>色をリセット</button>
+                </div>
+            </div>
+        );
+    }
+
+    // ============================================================
+    // メインアプリケーション
+    // ============================================================
+
+    function MiniSakaiApp() {
+        const [tab, setTab] = useState("assignment");
+        const [memoBoxShown, setMemoBoxShown] = useState(false);
+        const [datepickerOpen, setDatepickerOpen] = useState(false);
+        const [currentEntry, setCurrentEntry] = useState(null);
+
+        // ステートで管理するエントリー（追加・削除・移動を反映）
+        const [assignments, setAssignments] = useState(MOCK_ASSIGNMENTS);
+        const [memos, setMemos] = useState(MOCK_MEMOS);
+        const [submitted, setSubmitted] = useState(MOCK_SUBMITTED);
+        const [dismissed, setDismissed] = useState(MOCK_DISMISSED);
+
+        const [settings, setSettings] = useState({
+            showLateAccepted: false,
+            hideUnpublished: true,
+            cacheAssignment: 120,
+            cacheQuiz: 600,
+            colors: { ...DEFAULT_SETTINGS.color },
+        });
+
+        // エントリー分類
+        const classified = useMemo(() => {
+            const all = [...assignments, ...memos];
+            const danger = [], warning = [], success = [], other = [];
+            all.forEach(entry => {
+                const course = MOCK_COURSES.find(c => c.id === entry.courseId);
+                if (!course) return;
+                const dt = getDueType(NOW, entry.dueTime, entry);
+                const item = { entry, course };
+                if (dt === "danger") danger.push(item);
+                else if (dt === "warning") warning.push(item);
+                else if (dt === "success") success.push(item);
+                else if (dt === "other") other.push(item);
+            });
+            return { danger, warning, success, other };
+        }, [assignments, memos]);
+
+        const submittedWithCourse = useMemo(() =>
+            submitted.map(e => ({ entry: e, course: MOCK_COURSES.find(c => c.id === e.courseId) || { id: "", name: "不明", link: "#" } })),
+            [submitted]
+        );
+
+        const dismissedWithCourse = useMemo(() =>
+            dismissed.map(e => ({ entry: e, course: MOCK_COURSES.find(c => c.id === e.courseId) || { id: "", name: "不明", link: "#" } })),
+            [dismissed]
+        );
+
+        // マイナスボタン → 日付ピッカーを開く
+        const handleMinusClick = useCallback((entry) => {
+            setCurrentEntry(entry);
+            setDatepickerOpen(true);
+        }, []);
+
+        // 日付ピッカーで保存 → 非表示リストに移動
+        const handleDatepickerSave = useCallback((dateString) => {
+            if (!currentEntry) return;
+            const updated = { ...currentEntry, checkTimestamp: dateString };
+            setAssignments(prev => prev.filter(a => a.id !== currentEntry.id));
+            setMemos(prev => prev.filter(m => m.id !== currentEntry.id));
+            setDismissed(prev => [...prev, updated]);
+            setDatepickerOpen(false);
+            setCurrentEntry(null);
+        }, [currentEntry]);
+
+        // 非表示リストから復元
+        const handleRestore = useCallback((entry) => {
+            const restored = { ...entry };
+            delete restored.checkTimestamp;
+            setDismissed(prev => prev.filter(d => d.id !== entry.id));
+            if (entry.type === "memo") {
+                setMemos(prev => [...prev, restored]);
+            } else {
+                setAssignments(prev => [...prev, restored]);
+            }
+        }, []);
+
+        // メモ追加
+        const handleMemoAdd = useCallback((memo) => {
+            setMemos(prev => [...prev, memo]);
+        }, []);
+
+        // メモ削除
+        const handleMemoDelete = useCallback((entry) => {
+            setMemos(prev => prev.filter(m => m.id !== entry.id));
+        }, []);
+
+        // 設定変更
+        const handleSettingsChange = useCallback((key, value) => {
+            if (key === "resetColors") {
+                setSettings(prev => ({ ...prev, colors: { ...DEFAULT_SETTINGS.color } }));
+                return;
+            }
+            if (key.startsWith("colors.")) {
+                const colorKey = key.split(".")[1];
+                setSettings(prev => ({ ...prev, colors: { ...prev.colors, [colorKey]: value } }));
+                return;
+            }
+            setSettings(prev => ({ ...prev, [key]: value }));
+        }, []);
+
+        // CSS変数を設定
+        const cssVars = {
+            "--ms-danger": settings.colors.miniDanger,
+            "--ms-warning": settings.colors.miniWarning,
+            "--ms-success": settings.colors.miniSuccess,
+            "--ms-other": settings.colors.miniOther,
+        };
+
+        return (
+            <div className="ms-minisakai" style={cssVars}>
+                {/* ロゴ・バージョン */}
+                <div className="ms-header-row">
+                    <img className="ms-minisakai-logo" alt="logo" src="Image/128.png" />
+                    <span className="ms-version">Version 1.0.4</span>
+                </div>
+
+                {/* タブ */}
+                <div className="ms-tabs">
+                    <input id="demo-assignmentTab" type="radio" name="ms-tab" checked={tab === "assignment"} onChange={() => setTab("assignment")} />
+                    <label htmlFor="demo-assignmentTab">課題一覧</label>
+                    <input id="demo-submittedTab" type="radio" name="ms-tab" checked={tab === "submitted"} onChange={() => setTab("submitted")} />
+                    <label htmlFor="demo-submittedTab">提出済み</label>
+                    <input id="demo-dismissedTab" type="radio" name="ms-tab" checked={tab === "dismissed"} onChange={() => setTab("dismissed")} />
+                    <label htmlFor="demo-dismissedTab">非表示</label>
+                    <input id="demo-settingsTab" type="radio" name="ms-tab" checked={tab === "settings"} onChange={() => setTab("settings")} />
+                    <label htmlFor="demo-settingsTab">詳細設定</label>
+
+                    {tab === "assignment" && (
+                        <button className="ms-add-memo-btn" onClick={() => setMemoBoxShown(!memoBoxShown)}>+</button>
+                    )}
+                </div>
+
+                {/* 課題一覧タブ */}
+                {tab === "assignment" && (
+                    <>
+                        <div className="ms-time-box">
+                            <p className="ms-time-text">課題取得日時: </p>
+                            <p className="ms-time-text">{formatTimestamp(DEFAULT_SETTINGS.fetchTime.assignment)}</p>
+                        </div>
+                        <div className="ms-time-box">
+                            <p className="ms-time-text">クイズ取得日時: </p>
+                            <p className="ms-time-text">{formatTimestamp(DEFAULT_SETTINGS.fetchTime.quiz)}</p>
+                        </div>
+
+                        {memoBoxShown && (
+                            <AddMemoBox courses={MOCK_COURSES} onMemoAdd={handleMemoAdd} onClose={() => setMemoBoxShown(false)} />
+                        )}
+
+                        {classified.danger.length > 0 && (
+                            <EntryList dueType="danger" entriesWithCourse={classified.danger} onMinusClick={handleMinusClick} onMemoDelete={handleMemoDelete} />
+                        )}
+                        {classified.warning.length > 0 && (
+                            <EntryList dueType="warning" entriesWithCourse={classified.warning} onMinusClick={handleMinusClick} onMemoDelete={handleMemoDelete} />
+                        )}
+                        {classified.success.length > 0 && (
+                            <EntryList dueType="success" entriesWithCourse={classified.success} onMinusClick={handleMinusClick} onMemoDelete={handleMemoDelete} />
+                        )}
+                        {classified.other.length > 0 && (
+                            <EntryList dueType="other" entriesWithCourse={classified.other} onMinusClick={handleMinusClick} onMemoDelete={handleMemoDelete} />
+                        )}
+                    </>
+                )}
+
+                {/* 提出済みタブ */}
+                {tab === "submitted" && (
+                    <>
+                        <h3 className="ms-tab-heading">提出済みの課題</h3>
+                        {submittedWithCourse.length > 0 ? (
+                            <SubmittedEntryList entriesWithCourse={submittedWithCourse} />
+                        ) : (
+                            <div className="ms-empty-message">提出済みの課題はありません</div>
+                        )}
+                    </>
+                )}
+
+                {/* 非表示タブ */}
+                {tab === "dismissed" && (
+                    <>
+                        <h3 className="ms-tab-heading">非表示の課題</h3>
+                        {dismissedWithCourse.length > 0 ? (
+                            <DismissedEntryList entriesWithCourse={dismissedWithCourse} onRestore={handleRestore} />
+                        ) : (
+                            <div className="ms-empty-message">非表示に設定した課題はありません</div>
+                        )}
+                    </>
+                )}
+
+                {/* 設定タブ */}
+                {tab === "settings" && (
+                    <SettingsTab settings={settings} onSettingsChange={handleSettingsChange} />
+                )}
+
+                {/* 日付ピッカーモーダル */}
+                <DatepickerModal
+                    isOpen={datepickerOpen}
+                    onClose={() => { setDatepickerOpen(false); setCurrentEntry(null); }}
+                    onSave={handleDatepickerSave}
+                />
+            </div>
+        );
+    }
+
+    // ============================================================
+    // マウント
+    // ============================================================
+    const root = ReactDOM.createRoot(document.getElementById("minisakai-live-root"));
+    root.render(<MiniSakaiApp />);
+    </script>
+
+    <script>
+    // ハンバーガーメニュー
+    document.addEventListener('DOMContentLoaded', function() {
+        const hamburger = document.querySelector('.hamburger');
+        const navMenu = document.querySelector('.nav-menu');
+        if (hamburger && navMenu) {
+            hamburger.addEventListener('click', function() {
+                hamburger.classList.toggle('active');
+                navMenu.classList.toggle('active');
+            });
+        }
+    });
+    </script>
+</body>
+</html>
