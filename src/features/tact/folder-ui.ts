@@ -83,66 +83,6 @@ export class FolderUI {
     private readonly FOLDER_FORCE_REFRESH_INTERVAL = 10 * 60; // 10分
 
     /**
-     * TACT APIから講義構造を読み込み
-     */
-    private async loadTactStructure(forceRefresh: boolean = false): Promise<void> {
-        const containerElement = this.container.querySelector('#tact-structure-container');
-        if (!containerElement) return;
-
-        containerElement.innerHTML = '<p class="loading-message">🔄 TACT APIから構造を読み込み中...</p>';
-
-        try {
-            const siteId = this.tactApiClient.getCurrentSiteId();
-            if (!siteId) throw new Error('サイトIDを取得できませんでした');
-            const cacheKey = `tact-structure-cache-${siteId}`;
-            const cacheTimeKey = `tact-structure-cache-time-${siteId}`;
-            let useCache = false;
-            let tree: any = null;
-            const cached = localStorage.getItem(cacheKey);
-            const cachedTime = localStorage.getItem(cacheTimeKey);
-            if (!forceRefresh && cached && cachedTime) {
-                const elapsed = (Date.now() - parseInt(cachedTime, 10)) / 1000;
-                if (elapsed < this.CACHE_EXPIRE_SECONDS) {
-                    tree = JSON.parse(cached);
-                    useCache = true;
-                }
-            }
-            if (!useCache) {
-                // API fetch & build tree
-                this.tactApiClient.setSiteId(siteId);
-                const items = await this.tactApiClient.fetchSiteContent(siteId);
-                this.tactApiClient.generateStatistics(items);
-                tree = this.tactApiClient.buildFileTreeFromStorage();
-                localStorage.setItem(cacheKey, JSON.stringify(tree));
-                localStorage.setItem(cacheTimeKey, Date.now().toString());
-            }
-            const treeHTML = this.tactApiClient.renderTreeAsHTML(tree, this.isEditMode);
-            containerElement.innerHTML = `
-                <div class="tact-structure-results">
-                    <div class="tact-tree">
-                        <h4>🌲 フォルダ構造</h4>
-                        <div class="tree-display">${treeHTML || '<p>構造が見つかりませんでした</p>'}</div>
-                    </div>
-                    <div class="tact-raw-data" style="margin-top: 20px;"></div>
-                </div>
-            `;
-            this.addFolderToggleListeners(containerElement);
-            this.addEditListeners(containerElement);
-            this.addDownloadListeners(containerElement);
-            this.addMoveButtonListeners(containerElement);
-        } catch (error) {
-            console.error('TACT構造の読み込みに失敗:', error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            containerElement.innerHTML = `
-                <div class="error-message">
-                    <p>❌ エラーが発生しました: ${errorMessage}</p>
-                    <p>💡 ログインしているか、正しい講義ページにいるかを確認してください</p>
-                </div>
-            `;
-        }
-    }
-
-    /**
      * フォルダ構造データを取得（キャッシュ対応）
      * @param forceRefresh trueならキャッシュを無視してAPI取得
      * @param forceRefreshByButton trueなら「再読み込みボタン」からの強制リフレッシュ
@@ -240,7 +180,7 @@ export class FolderUI {
                 refreshButton.textContent = '🔄 実行中...';
                 try {
                     if (this.activeTab === 'assignments') {
-                        await this.fetchAndLogAssignmentsForCurrentSite();
+                        await this.loadAssignments(true);
                     } else {
                         await this.loadFolderStructure(false, true); // 再読み込みボタンからの呼び出し
                     }
@@ -251,63 +191,6 @@ export class FolderUI {
                     refreshButton.textContent = '🔄 再読み込み';
                 }
             });
-        }
-    }
-
-    /**
-     * 現在開いている講義サイトの課題データを取得し返す
-     */
-    private async fetchAssignmentsForCurrentSite(): Promise<any[]> {
-        try {
-            const match = location.href.match("(https?://[^/]+)/portal");
-            const baseURL = match ? match[1] : "";
-            const courseIdMatch = location.href.match("/portal/site-?[a-z]*/([^/]+)");
-            const courseId = courseIdMatch ? courseIdMatch[1] : null;
-            if (!baseURL || !courseId) {
-                console.warn("課題取得: サイトIDまたはベースURLが取得できませんでした");
-                return [];
-            }
-            const url = `${baseURL}/direct/assignment/site/${courseId}.json?n=100`;
-            const res = await fetch(url, { cache: "no-cache" });
-            if (res.ok) {
-                const data = await res.json();
-                if (Array.isArray(data.assignment_collection)) {
-                    return data.assignment_collection;
-                }
-            } else {
-                console.warn(`Failed to fetch assignments for ${courseId}: ${res.status}`);
-            }
-        } catch (e) {
-            console.error("Error fetching assignments for current site:", e);
-        }
-        return [];
-    }
-
-    /**
-     * 現在開いている講義サイトの課題データを取得しコンソールに出力
-     */
-    private async fetchAndLogAssignmentsForCurrentSite(): Promise<void> {
-        try {
-            // SakaiのベースURLを取得
-            const match = location.href.match("(https?://[^/]+)/portal");
-            const baseURL = match ? match[1] : "";
-            // 現在の講義サイトIDを取得
-            const courseIdMatch = location.href.match("/portal/site-?[a-z]*/([^/]+)");
-            const courseId = courseIdMatch ? courseIdMatch[1] : null;
-            if (!baseURL || !courseId) {
-                console.warn("課題取得: サイトIDまたはベースURLが取得できませんでした");
-                return;
-            }
-            const url = `${baseURL}/direct/assignment/site/${courseId}.json?n=100`;
-            const res = await fetch(url, { cache: "no-cache" });
-            if (res.ok) {
-                const data = await res.json();
-                console.log(`Course ID: ${courseId}`, data);
-            } else {
-                console.warn(`Failed to fetch assignments for ${courseId}: ${res.status}`);
-            }
-        } catch (e) {
-            console.error("Error fetching assignments for current site:", e);
         }
     }
 
@@ -614,31 +497,6 @@ export class FolderUI {
         } else {
             console.log('👤 ユーザーがNUSSリンクを開くのをキャンセルしました');
         }
-    }
-
-    /**
-     * 編集モードのリスナーを追加
-     */
-    private addEditModeListeners(container: Element): void {
-        const toggleButton = container.querySelector('#toggle-edit-mode') as HTMLButtonElement;
-        
-        if (toggleButton) {
-            toggleButton.addEventListener('click', () => {
-                this.toggleEditMode();
-            });
-        }
-    }
-
-    /**
-     * 編集モードを切り替え
-     */
-    private toggleEditMode(): void {
-        this.isEditMode = !this.isEditMode;
-        console.log(`編集モード切り替え: ${this.isEditMode ? 'ON' : 'OFF'}`);
-        
-        // UIを再描画
-        this.render();
-        this.loadTactStructure();
     }
 
     /**
@@ -969,7 +827,7 @@ export class FolderUI {
     /**
      * 課題データを読み込み
      */
-    private async loadAssignments(): Promise<void> {
+    private async loadAssignments(forceRefresh: boolean = false): Promise<void> {
         const containerElement = this.container.querySelector('#assignments-container');
         if (!containerElement) return;
 
@@ -984,7 +842,7 @@ export class FolderUI {
             const cacheTimeKey = `assignment-cache-time-${courseId}`;
             let assignments: any[] = [];
             let useCache = false;
-            if (courseId) {
+            if (!forceRefresh && courseId) {
                 const cached = localStorage.getItem(cacheKey);
                 const cachedTime = localStorage.getItem(cacheTimeKey);
                 if (cached && cachedTime) {
@@ -1262,199 +1120,6 @@ export class FolderUI {
     }
 
     /**
-     * 課題詳細モーダルを表示
-     */
-    private async showAssignmentDetailModal(assignmentId: string): Promise<void> {
-        // キャッシュから課題詳細を取得、なければAPIから取得
-        const assignmentData = await this.getAssignmentDetail(assignmentId);
-        
-        const overlay = document.createElement('div');
-        overlay.className = 'dialog-overlay';
-        
-        const modal = document.createElement('div');
-        modal.className = 'assignment-detail-modal';
-        
-        modal.innerHTML = `
-            <div class="modal-header">
-                <h3>📝 ${assignmentData.title}</h3>
-                <button class="close-btn" id="close-assignment-modal">×</button>
-            </div>
-            <div class="modal-content">
-                <div class="assignment-meta">
-                    <div class="meta-item">
-                        <strong>提出期限:</strong> ${assignmentData.dueDate}
-                    </div>
-                    <div class="meta-item">
-                        <strong>状態:</strong> 
-                        <span class="status-badge ${assignmentData.status === '提出済み' ? 'status-submitted' : 'status-pending'}">
-                            ${assignmentData.status}
-                        </span>
-                    </div>
-                    <div class="meta-item">
-                        <strong>遅延提出:</strong> ${assignmentData.lateSubmission ? '可' : '不可'}
-                    </div>
-                    <div class="meta-item">
-                        <strong>再提出:</strong> ${assignmentData.resubmission.allowed ? `可 (${assignmentData.resubmission.maxCount}回まで)` : '不可'}
-                    </div>
-                </div>
-                
-                <div class="assignment-description">
-                    <h4>課題説明</h4>
-                    <div class="description-content">
-                        ${assignmentData.description}
-                    </div>
-                </div>
-                
-                <div class="assignment-attachments">
-                    <h4>添付ファイル・リンク</h4>
-                    <div class="attachments-list">
-                        ${assignmentData.attachments.map((attachment: any) => `
-                            <div class="attachment-item">
-                                <span class="attachment-icon">${attachment.type === 'file' ? '📄' : '🔗'}</span>
-                                <a href="${attachment.url}" target="_blank" class="attachment-link">
-                                    ${attachment.name}
-                                </a>
-                                ${attachment.type === 'file' ? `<span class="file-size">(${attachment.size})</span>` : ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="close-assignment-modal-footer">閉じる</button>
-            </div>
-        `;
-        
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
-        
-        // モーダルを閉じる処理
-        const closeModal = () => {
-            document.body.removeChild(overlay);
-        };
-        
-        const closeButtons = [
-            modal.querySelector('#close-assignment-modal'),
-            modal.querySelector('#close-assignment-modal-footer')
-        ];
-        
-        closeButtons.forEach(button => {
-            if (button) {
-                button.addEventListener('click', closeModal);
-            }
-        });
-        
-        // オーバーレイクリックで閉じる
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                closeModal();
-            }
-        });
-        
-        // ESCキーで閉じる
-        document.addEventListener('keydown', function escHandler(e) {
-            if (e.key === 'Escape') {
-                closeModal();
-                document.removeEventListener('keydown', escHandler);
-            }
-        });
-    }
-
-    /**
-     * お知らせ詳細モーダルを表示
-     */
-    private showAnnouncementDetailModal(announcementId: string): void {
-        // TODO: 実際のAPIからお知らせ詳細を取得
-        const announcementData = this.getMockAnnouncementData(announcementId);
-        
-        const overlay = document.createElement('div');
-        overlay.className = 'dialog-overlay';
-        
-        const modal = document.createElement('div');
-        modal.className = 'announcement-detail-modal';
-        
-        modal.innerHTML = `
-            <div class="modal-header">
-                <h3>📢 ${announcementData.title}</h3>
-                <button class="close-btn" id="close-announcement-modal">×</button>
-            </div>
-            <div class="modal-content">
-                <div class="announcement-meta">
-                    <div class="meta-row">
-                        <div class="meta-item">
-                            <strong>投稿日:</strong> ${announcementData.date}
-                        </div>
-                        <div class="meta-item">
-                            <strong>投稿者:</strong> ${announcementData.author}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="announcement-content">
-                    <h4>お知らせ内容</h4>
-                    <div class="content-body">
-                        ${announcementData.content}
-                    </div>
-                </div>
-                
-                ${announcementData.attachments && announcementData.attachments.length > 0 ? `
-                    <div class="announcement-attachments">
-                        <h4>添付ファイル</h4>
-                        <div class="attachments-list">
-                            ${announcementData.attachments.map((attachment: any) => `
-                                <div class="attachment-item">
-                                    <span class="attachment-icon">📄</span>
-                                    <a href="${attachment.url}" target="_blank" class="attachment-link">
-                                        ${attachment.name}
-                                    </a>
-                                    <span class="file-size">(${attachment.size})</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="close-announcement-modal-footer">閉じる</button>
-            </div>
-        `;
-        
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
-        
-        // モーダルを閉じる処理
-        const closeModal = () => {
-            document.body.removeChild(overlay);
-        };
-        
-        const closeButtons = [
-            modal.querySelector('#close-announcement-modal'),
-            modal.querySelector('#close-announcement-modal-footer')
-        ];
-        
-        closeButtons.forEach(button => {
-            if (button) {
-                button.addEventListener('click', closeModal);
-            }
-        });
-        
-        // オーバーレイクリックで閉じる
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                closeModal();
-            }
-        });
-        
-        // ESCキーで閉じる
-        document.addEventListener('keydown', function escHandler(e) {
-            if (e.key === 'Escape') {
-                closeModal();
-                document.removeEventListener('keydown', escHandler);
-            }
-        });
-    }
-
-    /**
      * 課題詳細の表示/非表示を切り替え
      */
     private async toggleAssignmentDetail(cardElement: HTMLElement, assignmentId: string): Promise<void> {
@@ -1474,7 +1139,6 @@ export class FolderUI {
         // キャッシュ優先で課題詳細を取得
         const assignmentData = await this.getAssignmentDetail(assignmentId);
         // データがなければデフォルト
-        const title = assignmentData?.title || '課題情報';
         const dueDate = assignmentData?.dueTimeString ? assignmentData.dueTimeString.replace('T', ' ').replace('Z', '') : '未設定';
         const status = assignmentData?.submissions && assignmentData.submissions.length > 0 ? '提出済み' : '未提出';
         const lateSubmission = assignmentData?.allowResubmission ? '可' : '不可';
@@ -1874,81 +1538,6 @@ export class FolderUI {
             lateSubmission: false,
             resubmission: { allowed: false, maxCount: 0 },
             description: '詳細情報を取得できませんでした。',
-            attachments: []
-        };
-    }
-
-    /**
-     * モックお知らせデータを取得
-     */
-    private getMockAnnouncementData(announcementId: string): any {
-        const mockData: { [key: string]: any } = {
-            'announce-1': {
-                title: '重要なお知らせ',
-                date: '2025年6月5日 10:30',
-                author: '田中教授',
-                content: `
-                    <p>お疲れ様です。</p>
-                    <p>来週6月12日（木）の授業についてお知らせします。</p>
-                    <p><strong>変更内容:</strong></p>
-                    <ul>
-                        <li>6月12日の授業は休講となります</li>
-                        <li>補講日: 6月26日（木）同時間</li>
-                        <li>場所: 通常と同じ教室</li>
-                    </ul>
-                    <p><strong>理由:</strong><br>
-                    学会出張のため、誠に申し訳ございませんが休講とさせていただきます。</p>
-                    <p>ご不明な点がございましたら、メールでお問い合わせください。</p>
-                    <p>よろしくお願いいたします。</p>
-                `,
-                attachments: []
-            },
-            'announce-2': {
-                title: '試験日程について',
-                date: '2025年6月3日 14:15',
-                author: '田中教授',
-                content: `
-                    <p>期末試験の日程が確定しましたのでお知らせします。</p>
-                    
-                    <p><strong>試験日程:</strong></p>
-                    <ul>
-                        <li>日時: 7月18日（金） 13:00〜14:30</li>
-                        <li>場所: A棠201教室</li>
-                        <li>試験時間: 90分</li>
-                        <li>持込: 不可（電卓含む）</li>
-                    </ul>
-                    
-                    <p><strong>出題範囲:</strong></p>
-                    <ul>
-                        <li>第1回〜第15回の授業内容</li>
-                        <li>配布資料すべて</li>
-                        <li>指定教科書 第1章〜第8章</li>
-                    </ul>
-                    
-                    <p><strong>注意事項:</strong></p>
-                    <ul>
-                        <li>学生証を必ず持参してください</li>
-                        <li>遅刻は30分まで入室可能</li>
-                        <li>体調不良等で受験できない場合は事前に連絡すること</li>
-                    </ul>
-                    
-                    <p>詳細な試験要項は添付ファイルをご確認ください。</p>
-                `,
-                attachments: [
-                    {
-                        name: '期末試験要項.pdf',
-                        url: '#',
-                        size: '256KB'
-                    }
-                ]
-            }
-        };
-        
-        return mockData[announcementId] || {
-            title: 'お知らせ',
-            date: '未設定',
-            author: '不明',
-            content: '詳細情報を取得できませんでした。',
             attachments: []
         };
     }

@@ -7,7 +7,7 @@
  * -----------------------------------------------------------------
  */
 // filepath: /home/rozwer/sakai/comfortable-sakai/src/components/favoritesBar.ts
-import { DueCategory, getClosestTime, getDaysUntil } from "../utils";
+import { DueCategory, getDaysUntil } from "../utils";
 import { Settings } from "../features/setting/types";
 import { EntityProtocol, EntryProtocol } from "../features/entity/type";
 import { MaxTimestamp } from "../constant";

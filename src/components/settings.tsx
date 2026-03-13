@@ -352,7 +352,7 @@ function StringItem(props: {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function TranslatedStringItem(props: {
+export function TranslatedStringItem(props: {
     descriptionTag: string;
     display?: boolean;
     value: string;

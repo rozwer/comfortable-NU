@@ -12,9 +12,8 @@
  */
 import React, { useMemo, useState, useEffect } from "react";
 import { Course } from "../features/course/types";
-import { AssignmentEntry } from "../features/entity/assignment/types";
 import { EntryUnion, MemoAddInfo } from "./entryTab";
-import { CurrentTime, MaxTimestamp } from "../constant";
+import { MaxTimestamp } from "../constant";
 import SubmittedEntryView from "./submittedEntry";
 import { useTranslation } from "./helper";
 import { getSakaiCourses } from "../features/course/getCourse";
@@ -314,7 +313,6 @@ export function SubmittedEntryList(props: {
                     initialCourseId={(props.selectedCourse || selectedCourse)?.id}
                     initialDueTime={(() => {
                         const entry = props.selectedEntry || selectedEntry;
-                        const course = props.selectedCourse || selectedCourse;
                         return entry ? entry.dueTime : undefined;
                     })()}
                 />

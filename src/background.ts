@@ -1,14 +1,4 @@
-/**
- * -----------------------------------------------------------------
- * Modified by: roz
- * Date       : 2025-05-28
- * Changes    : カレンダー同期機能とGoogle OAuth認証システムの実装
- * Category   : バックグラウンド処理
- * -----------------------------------------------------------------
- */
-// For debugging
-
-// カレンダー同期用のアラーム名 
+// カレンダー同期用のアラーム名
 const CALENDAR_SYNC_ALARM_NAME = 'calendarSyncAlarm';
 
 // 通知を表示する関数
@@ -273,9 +263,10 @@ async function verifyTokenSecurity(token: string): Promise<void> {
       expires_in: tokenInfo.expires_in
     });
     
-    // Verify token audience (client_id)
-    const expectedClientId = '320934121909-3mo570972bcc19chatsu8pcp6bevj7fm.apps.googleusercontent.com';
-    if (tokenInfo.aud !== expectedClientId) {
+    // Verify token audience (client_id) - read from manifest to avoid duplication
+    const manifest = chrome.runtime.getManifest() as any;
+    const expectedClientId = manifest.oauth2?.client_id;
+    if (!expectedClientId || tokenInfo.aud !== expectedClientId) {
       console.error('🔧 [TOKEN DEBUG] Client ID mismatch:', tokenInfo.aud, 'vs expected:', expectedClientId);
       throw new Error('Token audience verification failed');
     }
@@ -838,166 +829,6 @@ async function performCalendarSync() {
     showNotification('カレンダー同期エラー', 'カレンダー同期処理中にエラーが発生しました。');
     return { error: 'SYNC_ERROR', details: String(error) };
   }
-}
-
-// Incremental authorization - request minimal scopes initially
-async function authenticateGoogleIncremental(requiredScopes: string[] = []): Promise<string> {
-  // Default minimal scopes for basic functionality
-  const basicScopes = ['https://www.googleapis.com/auth/userinfo.email'];
-  
-  // Additional scopes for calendar functionality
-  const calendarScopes = [
-    'https://www.googleapis.com/auth/calendar',
-    'https://www.googleapis.com/auth/userinfo.profile'
-  ];
-  
-  // Determine which scopes to request
-  const scopesToRequest = requiredScopes.length > 0 ? requiredScopes : basicScopes;
-  
-  // 既存トークンを削除してから新規認証を行う
-  await new Promise<void>((resolve) => {
-    chrome.identity.getAuthToken({ interactive: false }, (token) => {
-      if (token) {
-        chrome.identity.removeCachedAuthToken({ token }, () => resolve());
-      } else {
-        resolve();
-      }
-    });
-  });
-
-  return new Promise((resolve, reject) => {
-    // Generate secure state parameter
-    const state = generateSecureState();
-    
-    chrome.storage.local.set({ 'oauth_state': state }, () => {
-      chrome.identity.getAuthToken({ 
-        interactive: true,
-        scopes: scopesToRequest
-      }, async (token) => {
-        if (chrome.runtime.lastError || !token) {
-          chrome.storage.local.remove('oauth_state');
-          reject(new Error(chrome.runtime.lastError?.message || 'No token'));
-        } else {
-          try {
-            // Verify token and check which scopes were actually granted
-            await verifyTokenSecurity(token);
-            
-            // Check if we have all required scopes
-            const tokenInfo = await getTokenInfo(token);
-            const grantedScopes = tokenInfo.scope ? tokenInfo.scope.split(' ') : [];
-            
-            // If calendar access is needed but not granted, request additional permissions
-            if (requiredScopes.includes('https://www.googleapis.com/auth/calendar') && 
-                !grantedScopes.includes('https://www.googleapis.com/auth/calendar')) {
-              
-              // Request additional calendar permissions
-              chrome.identity.getAuthToken({ 
-                interactive: true,
-                scopes: calendarScopes
-              }, (calendarToken) => {
-                chrome.storage.local.remove('oauth_state');
-                if (chrome.runtime.lastError || !calendarToken) {
-                  reject(new Error('Calendar permissions not granted'));
-                } else {
-                  resolve(calendarToken);
-                }
-              });
-            } else {
-              chrome.storage.local.remove('oauth_state');
-              resolve(token);
-            }
-          } catch (error) {
-            chrome.storage.local.remove('oauth_state');
-            reject(error);
-          }
-        }
-      });
-    });
-  });
-}
-
-// Get token information from Google
-async function getTokenInfo(token: string): Promise<any> {
-  const response = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + token);
-  if (!response.ok) {
-    throw new Error('Failed to get token info');
-  }
-  return await response.json();
-}
-
-// Enhanced scope validation and management
-function validateRequiredScopes(grantedScopes: string[], requiredScopes: string[]): boolean {
-  return requiredScopes.every(scope => grantedScopes.includes(scope));
-}
-
-// Check if user has granted specific permissions
-async function hasPermission(scope: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    chrome.identity.getAuthToken({ interactive: false }, async (token) => {
-      if (!token) {
-        resolve(false);
-        return;
-      }
-      
-      try {
-        const tokenInfo = await getTokenInfo(token);
-        const grantedScopes = tokenInfo.scope ? tokenInfo.scope.split(' ') : [];
-        resolve(grantedScopes.includes(scope));
-      } catch (error) {
-        resolve(false);
-      }
-    });
-  });
-}
-
-// Request specific permission if not already granted
-async function requestPermissionIfNeeded(scope: string): Promise<string> {
-  const hasScope = await hasPermission(scope);
-  
-  if (!hasScope) {
-    // Request the specific scope incrementally
-    return authenticateGoogleIncremental([scope]);
-  } else {
-    // Return existing token
-    return new Promise((resolve, reject) => {
-      chrome.identity.getAuthToken({ interactive: false }, (token) => {
-        if (token) {
-          resolve(token);
-        } else {
-          reject(new Error('No existing token'));
-        }
-      });
-    });
-  }
-}
-
-// Modified authentication function with granular scope control
-async function authenticateGoogleWithScopes(scopes: string[]): Promise<string> {
-  // Validate that only necessary scopes are requested
-  const allowedScopes = [
-    'https://www.googleapis.com/auth/calendar',
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile'
-  ];
-  
-  const validScopes = scopes.filter(scope => allowedScopes.includes(scope));
-  
-  if (validScopes.length === 0) {
-    throw new Error('No valid scopes provided');
-  }
-  
-  // 既存トークンを削除してから認証を開始
-  await new Promise<void>((resolve) => {
-    chrome.identity.getAuthToken({ interactive: false }, (token) => {
-      if (token) {
-        chrome.identity.removeCachedAuthToken({ token }, () => resolve());
-      } else {
-        resolve();
-      }
-    });
-  });
-
-  return authenticateGoogleIncremental(validScopes);
 }
 
 // Clear existing authentication and force re-authentication

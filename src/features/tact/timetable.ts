@@ -7,7 +7,7 @@
  * このモジュールはTACTポータルに時間割表示機能を追加します
  */
 
-import { MaxTimestamp, TimetableYearStorage, TimetableTermStorage } from "../../constant";
+import { TimetableYearStorage, TimetableTermStorage } from "../../constant";
 import { courseColorInfo } from "../../components/favoritesBar";
 import { fromStorage, toStorage } from "../storage";
 import { getStoredSettings } from "../setting/getSetting";
@@ -822,10 +822,6 @@ function extractCourseCategories(): Map<string, string> {
 const CourseColorStorageKey = 'cs-timetable-course-colors';
 
 // 教科の色情報の保存・取得
-async function saveCourseColors(hostname: string, data: Record<string, string>) {
-    await toStorage(hostname, CourseColorStorageKey, data);
-}
-
 async function loadCourseColors(hostname: string): Promise<Record<string, string>> {
     const result = await fromStorage<Record<string, string> | undefined>(hostname, CourseColorStorageKey, d => d || {});
     return result || {};
@@ -1280,8 +1276,6 @@ async function updateTimetable() {
         const normalizedSelectedTerm = term;
         const courseTermBase = normalizedCourseTerm.split('-')[0];
         const selectedTermBase = normalizedSelectedTerm.split('-')[0];
-        const courseTermNumber = normalizedCourseTerm.includes('-') ? normalizedCourseTerm.split('-')[1] : '';
-        const selectedTermNumber = normalizedSelectedTerm.includes('-') ? normalizedSelectedTerm.split('-')[1] : '';
         let termMatch = false;
         if (normalizedCourseTerm === normalizedSelectedTerm) {
             termMatch = true;
@@ -1493,88 +1487,3 @@ async function updateTimetable() {
     });
 }
 
-/**
- * ダミーの時間割データを生成
- * @param term 学期
- * @returns ダミーの時間割データ
- */
-function generateDummyTimetable(term: string) {
-    const courses = [
-        { 
-            title: '基礎数学A', 
-            room: '工学部2号館241', 
-            instructor: '鈴木教授' 
-        },
-        { 
-            title: 'プログラミング演習', 
-            room: '情報学部実習室301', 
-            instructor: '佐藤教授' 
-        },
-        { 
-            title: '英語コミュニケーション', 
-            room: '全学教育棠301', 
-            instructor: 'Smith教授' 
-        },
-        { 
-            title: '物理学概論', 
-            room: '理学部講義室103', 
-            instructor: '田中教授' 
-        },
-        { 
-            title: 'データ構造とアルゴリズム', 
-            room: '情報学部講義室201', 
-            instructor: '伊藤教授' 
-        },
-        { 
-            title: '微分方程式', 
-            room: '工学部3号館301', 
-            instructor: '高橋教授' 
-        },
-        { 
-            title: '情報理論', 
-            room: '情報学部講義室301', 
-            instructor: '渡辺教授' 
-        },
-        { 
-            title: '統計学', 
-            room: '経済学部201', 
-            instructor: '山田教授' 
-        },
-        { 
-            title: 'システム設計', 
-            room: '工学部1号館154', 
-            instructor: '中村教授' 
-        }
-    ];
-    
-    // 曜日と時限の配列
-    const days = ['月', '火', '水', '木', '金'];
-    const periods = 6;
-    
-    // 空の時間割を作成
-    const timetable: any = {};
-    days.forEach(day => {
-        timetable[day] = {};
-    });
-    
-    // 学期によって異なるダミーデータを生成
-    const seed = term === 'spring' ? 0 : 
-                term === 'spring-1' ? 1 : 
-                term === 'spring-2' ? 2 :
-                term === 'fall' ? 3 :
-                term === 'fall-1' ? 4 : 5;
-    
-    // 乱数を使ってランダムな時間割を生成（ただし学期ごとに固定）
-    for (let courseIndex = 0; courseIndex < courses.length; courseIndex++) {
-        const dayIndex = (courseIndex + seed) % days.length;
-        const period = ((courseIndex + seed) % periods) + 1;
-        const day = days[dayIndex];
-        
-        // その曜日・時限が空いていれば授業を配置
-        if (!timetable[day][period]) {
-            timetable[day][period] = courses[courseIndex];
-        }
-    }
-    
-    return timetable;
-}

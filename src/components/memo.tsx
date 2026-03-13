@@ -7,7 +7,7 @@
  * -----------------------------------------------------------------
  */
 // filepath: /home/rozwer/sakai/comfortable-sakai/src/components/memo.tsx
-import React, { useId } from "react";
+import React from "react";
 import { MemoEntry } from "../features/entity/memo/types";
 import { createDateString, getRemainTimeString } from "../utils";
 import { useTranslation } from "./helper";
@@ -30,8 +30,6 @@ export default function MemoEntryView(props: {
     const remainTimeString = getRemainTimeString(props.memo.dueTime);
 
     const memoBadge = useTranslation("memo");
-
-    const labelId = useId();
 
     return (
         <>

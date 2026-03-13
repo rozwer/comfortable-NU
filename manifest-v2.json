@@ -16,7 +16,12 @@
   "content_scripts": [
     {
       "js": ["content_script.js"],
-      "css": ["css/comfortable-sakai.css", "css/tact-extension.css"],
+      "css": [
+        "css/comfortable-sakai.css",
+        "css/tact-extension.css",
+        "css/date-picker.css",
+        "css/calendar-sync.css"
+      ],
       "matches": [
         "http://*/*",
         "https://*/*"
@@ -27,10 +32,27 @@
     "scripts": ["background.js"],
     "persistent": false
   },
-  "permissions": ["storage"],
+  "permissions": [
+    "storage",
+    "identity",
+    "alarms",
+    "notifications"
+  ],
+  "oauth2": {
+    "client_id": "320934121909-3mo570972bcc19chatsu8pcp6bevj7fm.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
+  },
   "web_accessible_resources": [
     "css/comfortable-sakai.css",
     "css/tact-extension.css",
+    "css/date-picker.css",
+    "css/calendar-sync.css",
+    "css/memo-styles.css",
+    "css/folder-styles.css",
     "img/logo.png",
     "img/noAssignment.png",
     "img/miniSakaiBtn.png",

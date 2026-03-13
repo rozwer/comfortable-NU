@@ -1,4 +1,4 @@
-import React, { useId } from "react";
+import React from "react";
 import { QuizEntry } from "../features/entity/quiz/types";
 import { createDateString, getRemainTimeString } from "../utils";
 import { useTranslation } from "./helper";
@@ -20,8 +20,6 @@ export default function QuizEntryView(props: {
     const remainTimeString = getRemainTimeString(props.quiz.dueTime);
 
     const quizBadge = useTranslation("quiz");
-
-    const labelId = useId();
 
     return (
         <>

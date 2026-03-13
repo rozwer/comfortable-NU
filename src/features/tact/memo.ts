@@ -73,7 +73,6 @@ export class MemoManager {
         // 2. ナビゲーションの現在のツールから講義名を取得
         const currentTool = document.querySelector('.Mrphs-toolTitleNav__link--current');
         if (currentTool && currentTool.textContent) {
-            const toolText = currentTool.textContent.trim();
             // ツール名ではなく、その親要素から講義名を探す
             const toolContainer = currentTool.closest('.Mrphs-toolTitleNav');
             if (toolContainer) {

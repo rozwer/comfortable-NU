@@ -12,7 +12,6 @@
  */
 import React, { useMemo, useState } from "react";
 import { Course } from "../features/course/types";
-import { AssignmentEntry } from "../features/entity/assignment/types";
 import { EntryUnion, MemoAddInfo, DueType } from "./entryTab";
 import { CurrentTime, MaxTimestamp } from "../constant";
 import DismissedEntryView from "./dismissedEntry";
@@ -217,8 +216,8 @@ export function DismissedEntryList(props: {
     const className = "cs-minisakai-list cs-minisakai-list-dismissed";
     
     // クリックされた課題情報を状態として管理
-    const [selectedEntry, setSelectedEntry] = useState<EntryUnion | null>(null);
-    const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+    const [selectedEntry] = useState<EntryUnion | null>(null);
+    const [selectedCourse] = useState<Course | null>(null);
 
     // DueTypeを計算する関数
     const calculateDueType = (entries: EntryUnion[]): DueType => {

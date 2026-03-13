@@ -8,7 +8,7 @@
  */
 // filepath: /home/rozwer/sakai/comfortable-sakai/src/components/assignment.tsx
 import { AssignmentEntry } from "../features/entity/assignment/types";
-import React, { useId } from "react";
+import React from "react";
 import { createDateString, getRemainTimeString } from "../utils";
 import { CurrentTime } from "../constant";
 import { useTranslation } from "./helper";
@@ -23,8 +23,6 @@ export default function AssignmentEntryView(props: {
     const remainTimeString = getRemainTimeString(dueTime);
 
     const lateBadge = useTranslation("late");
-
-    const labelId = useId();
 
     return (
         <>
