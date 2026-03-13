@@ -41,7 +41,7 @@
     <section class="demo-hero">
         <div class="container">
             <h1>miniSakai ライブデモ</h1>
-            <p>拡張機能のReactコンポーネントをローカルモックデータで動作させています。<br>タブの切替、課題の非表示/復元、メモの追加/削除、ダークテーマ、時間割表示、SubSakai、素材管理など実際の操作を体験できます。</p>
+            <p>拡張機能のReactコンポーネントをローカルモックデータで動作させています。<br>タブの切替、課題の非表示/復元、メモの追加/削除、ダークテーマ、時間割表示、SubSakai、素材管理、Googleカレンダー同期など実際の操作を体験できます。</p>
         </div>
     </section>
 
@@ -756,6 +756,187 @@
         );
     }
 
+    // --- カレンダー同期通知トースト ---
+    function SyncNotification({ notification, onDismiss }) {
+        const [leaving, setLeaving] = useState(false);
+
+        useEffect(() => {
+            if (!notification) return;
+            const timer = setTimeout(() => {
+                setLeaving(true);
+                setTimeout(() => onDismiss(), 300);
+            }, 8000);
+            return () => clearTimeout(timer);
+        }, [notification]);
+
+        if (!notification) return null;
+
+        const icons = { success: "\u2705", error: "\u26A0\uFE0F", info: "\u2139\uFE0F" };
+        const className = `ms-sync-notification ms-sync-notification-${notification.type}${leaving ? " ms-toast-leaving" : ""}`;
+
+        return (
+            <div className={className}>
+                <span className="ms-sync-notification-icon">{icons[notification.type]}</span>
+                <span>{notification.message}</span>
+                <button className="ms-sync-notification-dismiss" onClick={() => { setLeaving(true); setTimeout(onDismiss, 300); }}>&times;</button>
+            </div>
+        );
+    }
+
+    // --- カレンダー同期モーダル ---
+    function CalendarSyncModal({ isOpen, onClose, onNotify, allEntries }) {
+        const [syncAssignments, setSyncAssignments] = useState(true);
+        const [syncQuizzes, setSyncQuizzes] = useState(true);
+        const [autoSync, setAutoSync] = useState(true);
+        const [interval, setIntervalVal] = useState(240);
+        const [syncing, setSyncing] = useState(false);
+        const [progress, setProgress] = useState(0);
+        const [status, setStatus] = useState(null); // { type: "info"|"success"|"error", message }
+        const [lastSync, setLastSync] = useState(null);
+        const [syncHistory, setSyncHistory] = useState([
+            { time: NOW - hours(4), count: 8, status: "success" },
+            { time: NOW - days(1), count: 12, status: "success" },
+        ]);
+
+        if (!isOpen) return null;
+
+        const mockAccount = {
+            name: "名大 太郎",
+            email: "taro.meidai@gmail.com",
+            initial: "太",
+        };
+
+        const handleSync = () => {
+            if (syncing) return;
+            setSyncing(true);
+            setProgress(0);
+            setStatus({ type: "info", message: "同期を開始しています..." });
+
+            // シミュレーション: 段階的に進捗
+            const steps = [
+                { delay: 500, progress: 15, msg: "Googleアカウントを認証中..." },
+                { delay: 1000, progress: 30, msg: "課題データを取得中..." },
+                { delay: 800, progress: 50, msg: "クイズデータを取得中..." },
+                { delay: 700, progress: 70, msg: "カレンダーイベントを作成中..." },
+                { delay: 600, progress: 85, msg: "イベントを登録中..." },
+                { delay: 500, progress: 100, msg: null },
+            ];
+
+            let totalDelay = 0;
+            steps.forEach((step, i) => {
+                totalDelay += step.delay;
+                setTimeout(() => {
+                    setProgress(step.progress);
+                    if (step.msg) setStatus({ type: "info", message: step.msg });
+                    if (i === steps.length - 1) {
+                        // 完了
+                        const entryCount = allEntries.filter(e => !e.submitted && !e.checkTimestamp && e.dueTime > NOW).length;
+                        setSyncing(false);
+                        setLastSync(new Date());
+                        setStatus({ type: "success", message: `${entryCount}件のイベントをGoogleカレンダーに同期しました。` });
+                        setSyncHistory(prev => [{ time: NOW, count: entryCount, status: "success" }, ...prev]);
+                        onNotify({ type: "success", message: `カレンダー同期完了: ${entryCount}件のイベントを同期しました` });
+                    }
+                }, totalDelay);
+            });
+        };
+
+        const handleClearHistory = () => {
+            setSyncHistory([]);
+            setStatus({ type: "info", message: "送信済み履歴をクリアしました。" });
+        };
+
+        return (
+            <div className="ms-sync-modal" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+                <div className="ms-sync-modal-content">
+                    <div className="ms-sync-header">
+                        <h3>Google Calendar 同期</h3>
+                        <button className="ms-sync-close" onClick={onClose}>&times;</button>
+                    </div>
+                    <div className="ms-sync-body">
+                        {/* 接続済みアカウント */}
+                        <div className="ms-sync-account-section">
+                            <h4>接続済みアカウント</h4>
+                            <div className="ms-connected-account">
+                                <div className="ms-sync-account-picture">{mockAccount.initial}</div>
+                                <div className="ms-sync-account-info">
+                                    <div className="ms-sync-account-name">{mockAccount.name}</div>
+                                    <div className="ms-sync-account-email">{mockAccount.email}</div>
+                                </div>
+                                <span className="ms-connected-label">認証済み</span>
+                            </div>
+                        </div>
+
+                        {/* 同期オプション */}
+                        <div className="ms-sync-options">
+                            <h4>同期対象</h4>
+                            <label>
+                                <input type="checkbox" checked={syncAssignments} onChange={e => setSyncAssignments(e.target.checked)} />
+                                課題をカレンダーに同期
+                            </label>
+                            <label>
+                                <input type="checkbox" checked={syncQuizzes} onChange={e => setSyncQuizzes(e.target.checked)} />
+                                クイズをカレンダーに同期
+                            </label>
+                        </div>
+
+                        {/* 自動同期設定 */}
+                        <div className="ms-sync-auto-settings">
+                            <label className="ms-auto-sync-toggle">
+                                <label className="ms-toggle-btn" style={{ marginRight: "12px" }}>
+                                    <input type="checkbox" checked={autoSync} onChange={e => setAutoSync(e.target.checked)} />
+                                    <span className="ms-toggle-slider"></span>
+                                </label>
+                                自動同期を有効にする
+                            </label>
+                            {autoSync && (
+                                <div className="ms-sync-interval-settings">
+                                    <label>
+                                        同期間隔:
+                                        <input type="number" className="ms-sync-interval-input" min="240" max="1440" value={interval}
+                                            onChange={e => setIntervalVal(Math.max(240, Math.min(1440, +e.target.value)))} />
+                                        分 (240〜1440)
+                                    </label>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* アクションボタン */}
+                        <div className="ms-sync-actions">
+                            <button className="ms-sync-btn ms-sync-btn-primary" onClick={handleSync}
+                                disabled={syncing || (!syncAssignments && !syncQuizzes)}>
+                                {syncing ? "同期中..." : "同期開始"}
+                            </button>
+                            <button className="ms-sync-btn ms-sync-btn-secondary" onClick={handleClearHistory} disabled={syncing}>
+                                送信済み履歴クリア
+                            </button>
+                        </div>
+
+                        {/* プログレスバー */}
+                        {syncing && (
+                            <div className="ms-sync-progress">
+                                <div className="ms-sync-progress-bar" style={{ width: `${progress}%` }}></div>
+                            </div>
+                        )}
+
+                        {/* ステータスメッセージ */}
+                        {status && (
+                            <div className={`ms-sync-status ms-sync-status-${status.type}`}>
+                                {status.message}
+                            </div>
+                        )}
+
+                        {/* 最終同期情報 */}
+                        <div className="ms-sync-last-info">
+                            最終同期: {lastSync ? lastSync.toLocaleString("ja-JP") : syncHistory.length > 0 ? createDateString(syncHistory[0].time) : "未実行"}
+                            {syncHistory.length > 0 && ` (${syncHistory[0].count}件)`}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     // --- SubSakai (サブセット表示) ---
     function SubSakaiApp() {
         // SubSakaiは subset=true: タブ・閉じるボタン・メモ追加なし、課題一覧のみ表示
@@ -804,6 +985,8 @@
         const [currentEntry, setCurrentEntry] = useState(null);
         const [isOpen, setIsOpen] = useState(true);
         const [materialDialogOpen, setMaterialDialogOpen] = useState(false);
+        const [syncModalOpen, setSyncModalOpen] = useState(false);
+        const [syncNotification, setSyncNotification] = useState(null);
         const [materials, setMaterials] = useState([
             { id: "mat1", name: "第6回講義スライド", url: "https://example.com/slide6.pdf" },
             { id: "mat2", name: "参考書リスト", url: "https://example.com/books" },
@@ -918,7 +1101,12 @@
                         <span className="ms-version">Version 1.0.4</span>
                     </div>
 
-                    {/* 閉じるボタン + 時間割ボタン */}
+                    {/* カレンダー同期ボタン */}
+                    <button className="ms-sync-trigger-btn" onClick={() => setSyncModalOpen(true)} title="Google Calendar 同期">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M2 6h12" stroke="currentColor" strokeWidth="1.5"/><path d="M5 1v3M11 1v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    </button>
+
+                    {/* 閉じるボタン */}
                     <button className="ms-close-btn" onClick={() => setIsOpen(false)} title="閉じる">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
                     </button>
@@ -997,7 +1185,12 @@
                     <DatepickerModal isOpen={datepickerOpen} onClose={() => { setDatepickerOpen(false); setCurrentEntry(null); }} onSave={handleDatepickerSave} />
                     {/* 素材追加ダイアログ */}
                     <AddMaterialDialog isOpen={materialDialogOpen} onClose={() => setMaterialDialogOpen(false)} onSave={handleMaterialSave} />
+                    {/* カレンダー同期モーダル */}
+                    <CalendarSyncModal isOpen={syncModalOpen} onClose={() => setSyncModalOpen(false)}
+                        onNotify={(n) => setSyncNotification(n)} allEntries={allEntries} />
                 </div>
+                {/* カレンダー同期通知トースト */}
+                <SyncNotification notification={syncNotification} onDismiss={() => setSyncNotification(null)} />
             </>
         );
     }

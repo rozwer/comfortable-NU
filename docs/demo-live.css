@@ -1453,6 +1453,483 @@
 }
 
 /* ============================================================
+   カレンダー同期モーダル
+   ============================================================ */
+.ms-sync-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ms-sync-modal-content {
+    background: #fff;
+    border-radius: 8px;
+    min-width: 380px;
+    max-width: 460px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+[data-demo-theme="dark"] .ms-sync-modal-content {
+    background: #2c3038;
+    color: #e0e0e0;
+}
+
+.ms-sync-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e1e5e9;
+    background: #f8f9fa;
+}
+
+[data-demo-theme="dark"] .ms-sync-header {
+    background: #3a3f47;
+    border-bottom-color: #555;
+}
+
+.ms-sync-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+[data-demo-theme="dark"] .ms-sync-header h3 {
+    color: #e0e0e0;
+}
+
+.ms-sync-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #6b7280;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.ms-sync-close:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+[data-demo-theme="dark"] .ms-sync-close:hover {
+    background: #555;
+    color: #ddd;
+}
+
+.ms-sync-body {
+    padding: 20px;
+    overflow-y: auto;
+    max-height: calc(80vh - 70px);
+}
+
+/* 接続済みアカウント */
+.ms-sync-account-section {
+    margin-bottom: 20px;
+}
+
+.ms-sync-account-section h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+[data-demo-theme="dark"] .ms-sync-account-section h4 {
+    color: #d4d4d4;
+}
+
+.ms-connected-account {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f0f9ff;
+    border: 2px solid #bfdbfe;
+    border-radius: 8px;
+}
+
+[data-demo-theme="dark"] .ms-connected-account {
+    background: rgba(37, 99, 235, 0.1);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.ms-sync-account-picture {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4285f4, #34a853);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.ms-sync-account-info {
+    flex: 1;
+}
+
+.ms-sync-account-name {
+    font-weight: 500;
+    color: #1f2937;
+    font-size: 14px;
+}
+
+[data-demo-theme="dark"] .ms-sync-account-name {
+    color: #e0e0e0;
+}
+
+.ms-sync-account-email {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+[data-demo-theme="dark"] .ms-sync-account-email {
+    color: #999;
+}
+
+.ms-connected-label {
+    background: #10b981;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+/* 同期オプション */
+.ms-sync-options {
+    margin-bottom: 20px;
+}
+
+.ms-sync-options h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+[data-demo-theme="dark"] .ms-sync-options h4 {
+    color: #d4d4d4;
+}
+
+.ms-sync-options label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+}
+
+[data-demo-theme="dark"] .ms-sync-options label {
+    color: #d4d4d4;
+}
+
+.ms-sync-options input[type="checkbox"] {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+}
+
+/* 自動同期設定 */
+.ms-sync-auto-settings {
+    margin-bottom: 20px;
+    padding: 14px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+[data-demo-theme="dark"] .ms-sync-auto-settings {
+    background: #3a3f47;
+    border-color: #555;
+}
+
+.ms-auto-sync-toggle {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+[data-demo-theme="dark"] .ms-auto-sync-toggle {
+    color: #d4d4d4;
+}
+
+.ms-sync-interval-settings {
+    transition: opacity 0.3s;
+}
+
+.ms-sync-interval-settings label {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+[data-demo-theme="dark"] .ms-sync-interval-settings label {
+    color: #999;
+}
+
+.ms-sync-interval-input {
+    margin-left: 8px;
+    padding: 4px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 13px;
+    width: 70px;
+}
+
+[data-demo-theme="dark"] .ms-sync-interval-input {
+    background: #2c3038;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+/* 同期アクションボタン */
+.ms-sync-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.ms-sync-btn {
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+}
+
+.ms-sync-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ms-sync-btn-primary {
+    background: #2563eb;
+    color: #fff;
+}
+
+.ms-sync-btn-primary:hover:not(:disabled) {
+    background: #1d4ed8;
+}
+
+.ms-sync-btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+[data-demo-theme="dark"] .ms-sync-btn-secondary {
+    background: #3a3f47;
+    border-color: #555;
+    color: #d4d4d4;
+}
+
+.ms-sync-btn-secondary:hover:not(:disabled) {
+    background: #e5e7eb;
+}
+
+[data-demo-theme="dark"] .ms-sync-btn-secondary:hover:not(:disabled) {
+    background: #444;
+}
+
+/* ステータスメッセージ */
+.ms-sync-status {
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-top: 8px;
+    min-height: 20px;
+}
+
+.ms-sync-status-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+[data-demo-theme="dark"] .ms-sync-status-info {
+    background: rgba(37, 99, 235, 0.15);
+    color: #93bbfd;
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.ms-sync-status-success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+[data-demo-theme="dark"] .ms-sync-status-success {
+    background: rgba(22, 163, 74, 0.15);
+    color: #86efac;
+    border-color: rgba(22, 163, 74, 0.3);
+}
+
+.ms-sync-status-error {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+[data-demo-theme="dark"] .ms-sync-status-error {
+    background: rgba(220, 38, 38, 0.15);
+    color: #fca5a5;
+    border-color: rgba(220, 38, 38, 0.3);
+}
+
+/* プログレスバー */
+.ms-sync-progress {
+    width: 100%;
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.ms-sync-progress-bar {
+    height: 100%;
+    background: #2563eb;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* 最終同期情報 */
+.ms-sync-last-info {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+}
+
+[data-demo-theme="dark"] .ms-sync-last-info {
+    color: #999;
+    border-top-color: #555;
+}
+
+/* 同期通知トースト */
+.ms-sync-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    min-width: 280px;
+    max-width: 400px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 10001;
+    animation: ms-toast-in 0.3s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ms-sync-notification-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.ms-sync-notification-dismiss {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: inherit;
+    opacity: 0.6;
+}
+
+.ms-sync-notification-dismiss:hover {
+    opacity: 1;
+}
+
+.ms-sync-notification-success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.ms-sync-notification-error {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.ms-sync-notification-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+@keyframes ms-toast-in {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes ms-toast-out {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(40px); }
+}
+
+.ms-sync-notification.ms-toast-leaving {
+    animation: ms-toast-out 0.3s ease-in forwards;
+}
+
+/* カレンダー同期ボタン（ヘッダー内） */
+.ms-sync-trigger-btn {
+    position: absolute;
+    top: 10px;
+    right: 40px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ms-text);
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    z-index: 1;
+}
+
+.ms-sync-trigger-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================
    レスポンシブ対応
    ============================================================ */
 @media (max-width: 480px) {
@@ -1513,5 +1990,20 @@
 
     .ms-material-dialog-modal {
         width: 90vw;
+    }
+
+    .ms-sync-modal-content {
+        min-width: 320px;
+        margin: 20px;
+    }
+
+    .ms-sync-actions {
+        flex-direction: column;
+    }
+
+    .ms-sync-notification {
+        right: 10px;
+        left: 10px;
+        min-width: auto;
     }
 }
