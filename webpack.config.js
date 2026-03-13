@@ -29,6 +29,10 @@ module.exports = {
     resolve: {
         extensions: [".ts", ".js", ".tsx"]
     },
+    performance: {
+        // ブラウザ拡張機能ではコードスプリッティングが不要なためサイズ警告を無効化
+        hints: false
+    },
     plugins: [
         new CleanWebpackPlugin(),
         new CopyPlugin({
