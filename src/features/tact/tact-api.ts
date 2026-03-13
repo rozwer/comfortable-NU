@@ -5,7 +5,7 @@
 /**
  * TACT API integration for content structure analysis
  */
-import { FileStorage, FileSystemNode } from './file-storage';
+import { FileStorage } from './file-storage';
 
 export interface TactContentItem {
     title: string;

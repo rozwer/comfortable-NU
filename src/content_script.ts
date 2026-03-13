@@ -77,6 +77,7 @@ function setupAutoSyncCheck() {
             // 同期完了のUI通知を表示
             showSyncNotification(request.result);
         }
+        return false;
     });
     
     // 初期同期チェック

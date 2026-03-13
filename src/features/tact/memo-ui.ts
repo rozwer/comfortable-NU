@@ -7,7 +7,7 @@
  * TACTポータル用のメモ機能UIを提供します
  */
 
-import { MemoManager, LinkManager, LectureNote, LinkItem } from './memo';
+import { MemoManager, LectureNote, LinkItem } from './memo';
 import { i18nMessage } from '../chrome';
 
 /**
@@ -15,12 +15,9 @@ import { i18nMessage } from '../chrome';
  */
 export class MemoUI {
     private memoManager: MemoManager;
-    private linkManager: LinkManager;
-    private container: HTMLElement | null = null;
 
     constructor() {
         this.memoManager = new MemoManager();
-        this.linkManager = new LinkManager();
     }
 
     /**
@@ -47,7 +44,6 @@ export class MemoUI {
         // 初期状態で現在の講義メモを表示
         this.showCurrentLectureNotes(contentArea);
 
-        this.container = container;
         return container;
     }
 
@@ -231,47 +227,6 @@ export class MemoUI {
     }
 
     /**
-     * 保存したリンクを表示
-     */
-    private showSavedLinks(contentArea: HTMLElement): void {
-        const links = this.linkManager.getAllLinks();
-        
-        if (links.length === 0) {
-            contentArea.innerHTML = `
-                <div class="cs-memo-empty">
-                    <p>${i18nMessage('memo_ui_no_links')}</p>
-                    <button class="cs-btn cs-btn-primary" onclick="this.addNewLink()">
-                        ${i18nMessage('memo_ui_add_link')}
-                    </button>
-                </div>
-            `;
-            return;
-        }
-
-        const linksContainer = document.createElement('div');
-        linksContainer.className = 'cs-links-container';
-
-        // 新規リンク追加ボタン
-        const addLinkBtn = document.createElement('button');
-        addLinkBtn.textContent = i18nMessage('memo_ui_add_link_button');
-        addLinkBtn.className = 'cs-btn cs-btn-primary cs-add-link-btn';
-        addLinkBtn.addEventListener('click', () => this.showNewLinkDialog());
-        linksContainer.appendChild(addLinkBtn);
-
-        // リンクリスト
-        const linksList = document.createElement('div');
-        linksList.className = 'cs-links-list';
-
-        links.forEach(link => {
-            const linkItem = this.createLinkItem(link);
-            linksList.appendChild(linkItem);
-        });
-
-        linksContainer.appendChild(linksList);
-        contentArea.appendChild(linksContainer);
-    }
-
-    /**
      * 検索インターフェースを表示
      */
     private showSearchInterface(contentArea: HTMLElement): void {
@@ -434,52 +389,6 @@ export class MemoUI {
     }
 
     /**
-     * リンクアイテムを作成
-     */
-    private createLinkItem(link: LinkItem): HTMLElement {
-        const linkItem = document.createElement('div');
-        linkItem.className = 'cs-link-item';
-
-        const linkContent = document.createElement('div');
-        linkContent.className = 'cs-link-content';
-
-        const linkTitle = document.createElement('a');
-        linkTitle.href = link.url;
-        linkTitle.target = '_blank';
-        linkTitle.className = 'cs-link-title';
-        linkTitle.textContent = link.title;
-
-        const linkUrl = document.createElement('div');
-        linkUrl.className = 'cs-link-url';
-        linkUrl.textContent = link.url;
-
-        if (link.description) {
-            const linkDesc = document.createElement('div');
-            linkDesc.className = 'cs-link-description';
-            linkDesc.textContent = link.description;
-            linkContent.appendChild(linkDesc);
-        }
-
-        const linkActions = document.createElement('div');
-        linkActions.className = 'cs-link-actions';
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '🗑️';
-        deleteBtn.className = 'cs-link-action-btn cs-delete-btn';
-        deleteBtn.title = '削除';
-        deleteBtn.addEventListener('click', () => this.deleteLink(link.id));
-
-        linkActions.appendChild(deleteBtn);
-
-        linkContent.appendChild(linkTitle);
-        linkContent.appendChild(linkUrl);
-        linkItem.appendChild(linkContent);
-        linkItem.appendChild(linkActions);
-
-        return linkItem;
-    }
-
-    /**
      * 新規メモダイアログを表示
      */
     private showNewMemoDialog(): void {
@@ -602,79 +511,6 @@ export class MemoUI {
     }
 
     /**
-     * 新規リンクダイアログを表示
-     */
-    private showNewLinkDialog(): void {
-        const dialog = document.createElement('div');
-        dialog.className = 'cs-memo-dialog-overlay';
-
-        const dialogContent = document.createElement('div');
-        dialogContent.className = 'cs-memo-dialog';
-
-        const title = document.createElement('h3');
-        title.textContent = i18nMessage('memo_ui_link_dialog_title');
-
-        const urlInput = document.createElement('input');
-        urlInput.type = 'url';
-        urlInput.className = 'cs-memo-input';
-        urlInput.placeholder = i18nMessage('memo_ui_link_dialog_url_placeholder');
-
-        const titleInput = document.createElement('input');
-        titleInput.type = 'text';
-        titleInput.className = 'cs-memo-input';
-        titleInput.placeholder = i18nMessage('memo_ui_link_dialog_title_placeholder');
-
-        const descInput = document.createElement('textarea');
-        descInput.className = 'cs-memo-textarea';
-        descInput.placeholder = i18nMessage('memo_ui_link_dialog_desc_placeholder');
-        descInput.rows = 3;
-
-        const actions = document.createElement('div');
-        actions.className = 'cs-memo-dialog-actions';
-
-        const saveBtn = document.createElement('button');
-        saveBtn.textContent = i18nMessage('memo_ui_memo_dialog_save');
-        saveBtn.className = 'cs-btn cs-btn-primary';
-
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = i18nMessage('memo_ui_memo_dialog_cancel');
-        cancelBtn.className = 'cs-btn cs-btn-secondary';
-
-        saveBtn.addEventListener('click', () => {
-            const url = urlInput.value.trim();
-            const titleValue = titleInput.value.trim();
-            
-            if (!url) {
-                alert(i18nMessage('memo_ui_link_dialog_url_required'));
-                return;
-            }
-
-            const description = descInput.value.trim();
-            this.linkManager.saveLink(url, titleValue || url, description);
-            dialog.remove();
-            this.refreshCurrentView();
-        });
-
-        cancelBtn.addEventListener('click', () => {
-            dialog.remove();
-        });
-
-        actions.appendChild(saveBtn);
-        actions.appendChild(cancelBtn);
-
-        dialogContent.appendChild(title);
-        dialogContent.appendChild(urlInput);
-        dialogContent.appendChild(titleInput);
-        dialogContent.appendChild(descInput);
-        dialogContent.appendChild(actions);
-
-        dialog.appendChild(dialogContent);
-        document.body.appendChild(dialog);
-
-        urlInput.focus();
-    }
-
-    /**
      * メモを削除
      */
     private deleteNote(noteId: string): void {
@@ -682,99 +518,6 @@ export class MemoUI {
             this.memoManager.deleteNote(noteId);
             this.refreshCurrentView();
         }
-    }
-
-    /**
-     * リンクを削除
-     */
-    private deleteLink(linkId: string): void {
-        if (confirm(i18nMessage('memo_ui_delete_link_confirm'))) {
-            this.linkManager.deleteLink(linkId);
-            this.refreshCurrentView();
-        }
-    }
-
-    /**
-     * メモをエクスポート
-     */
-    private exportNotes(): void {
-        const notes = this.memoManager.getAllNotes();
-        const dataStr = JSON.stringify(notes, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = `tact-memos-${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-    }
-
-    /**
-     * インポートダイアログを表示
-     */
-    private showImportDialog(): void {
-        const dialog = document.createElement('div');
-        dialog.className = 'cs-memo-dialog-overlay';
-
-        const dialogContent = document.createElement('div');
-        dialogContent.className = 'cs-memo-dialog';
-
-        const title = document.createElement('h3');
-        title.textContent = i18nMessage('memo_ui_import_dialog_title');
-
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.json';
-        fileInput.className = 'cs-memo-input';
-
-        const actions = document.createElement('div');
-        actions.className = 'cs-memo-dialog-actions';
-
-        const importBtn = document.createElement('button');
-        importBtn.textContent = i18nMessage('memo_ui_import');
-        importBtn.className = 'cs-btn cs-btn-primary';
-
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = i18nMessage('memo_ui_memo_dialog_cancel');
-        cancelBtn.className = 'cs-btn cs-btn-secondary';
-
-        importBtn.addEventListener('click', () => {
-            const file = fileInput.files?.[0];
-            if (!file) {
-                alert(i18nMessage('memo_ui_import_dialog_file_required'));
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const content = e.target?.result as string;
-                    if (this.memoManager.importNotes(content)) {
-                        alert(i18nMessage('memo_ui_import_success'));
-                        dialog.remove();
-                        this.refreshCurrentView();
-                    } else {
-                        alert(i18nMessage('memo_ui_import_failed'));
-                    }
-                } catch (error) {
-                    alert(i18nMessage('memo_ui_file_read_failed'));
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        cancelBtn.addEventListener('click', () => {
-            dialog.remove();
-        });
-
-        actions.appendChild(importBtn);
-        actions.appendChild(cancelBtn);
-
-        dialogContent.appendChild(title);
-        dialogContent.appendChild(fileInput);
-        dialogContent.appendChild(actions);
-
-        dialog.appendChild(dialogContent);
-        document.body.appendChild(dialog);
     }
 
     /**

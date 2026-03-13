@@ -151,8 +151,8 @@ export const addFolderTab = (): void => {
             const folderContainer = document.createElement('div');
             folderContainer.className = 'folder-ui-container';
             
-            // FolderUIクラスのインスタンスを作成
-            const folderUI = new FolderUI(folderContainer);
+            // FolderUIクラスのインスタンスを作成（コンストラクタで初期化される）
+            new FolderUI(folderContainer);
             
             // モーダルに表示
             showTabContent('📁 フォルダ・ファイル管理', folderContainer);

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext } from "react";
 import { useTranslation } from "./helper";
 import { formatTimestamp, getEntities, updateIsReadFlag } from "../utils";
 import { EntityUnion, EntryTab, EntryUnion, MemoAddInfo } from "./entryTab";
