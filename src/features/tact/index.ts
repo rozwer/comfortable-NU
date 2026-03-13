@@ -1,10 +1,6 @@
 /**
- * TACT新機能統合モジュール
- * メモ機能とフォルダ機能をTACTポータルに統合
- */
-/**
  * TACT Portal extension features
- * このモジュールはTACTポータルに新しい機能を追加します
+ * メモ機能とフォルダ機能をTACTポータルに統合
  */
 
 import { MemoUI } from './memo-ui';

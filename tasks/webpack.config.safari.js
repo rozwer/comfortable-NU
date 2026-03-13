@@ -3,7 +3,9 @@ const CopyPlugin = require("copy-webpack-plugin");
 const MergeManifestPlugin = require("./manifest-webpack-plugin");
 const path = require("path");
 
-const specificConfig = Object.assign({}, commonConfig);
+const specificConfig = Object.assign({}, commonConfig, {
+    plugins: [...commonConfig.plugins]
+});
 
 specificConfig.output = {
     path: path.resolve(__dirname, "..") + "/dist/source/safari"
