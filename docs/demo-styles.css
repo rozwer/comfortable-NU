@@ -1,263 +1,606 @@
-/* MiniSakai デモ用スタイル */
+/* ==========================================================================
+   Comfortable NU - デモページ用スタイル
+   拡張機能の実際のCSSクラスを使用し、デモ表示向けにレイアウト調整
+   ========================================================================== */
+
+/* --- セクションレイアウト --- */
 .demo-section {
     padding: 80px 0;
     background: var(--bg-light);
 }
 
-.demo-container {
-    max-width: 1200px;
+.demo-description {
+    text-align: center;
+    color: var(--text-light);
+    margin-bottom: 40px;
+    font-size: 16px;
+}
+
+.demo-wrapper {
+    max-width: 420px;
     margin: 0 auto;
+    filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.12));
 }
 
-.demo-tabs {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 30px;
-}
+/* --- miniSakai パネル（デモ用オーバーライド） --- */
+.cs-demo-panel {
+    --topDanger: #f78989;
+    --topWarning: #fdd783;
+    --topSuccess: #8bd48d;
+    --topOther: #adadad;
+    --miniDanger: #e85555;
+    --miniWarning: #d7aa57;
+    --miniSuccess: #62b665;
+    --miniOther: #777777;
+    --miniLate: #212121;
+    --textColor: #464646;
+    --bgColor: #cacaca;
+    --dateColor: #b01011;
 
-.demo-tab {
-    padding: 12px 24px;
-    cursor: pointer;
-    background-color: #f8f9fa;
-    border: none;
-    border-radius: 8px 8px 0 0;
-    margin: 0 5px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.demo-tab.active {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.demo-content {
-    background: white;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    margin: 0 auto;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 16px 12px 12px !important;
+    background-color: var(--bgColor) !important;
+    border-radius: 12px;
     overflow: hidden;
-}
-
-/* MiniSakai の CSS */
-.cs-minisakai {
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    position: relative;
-    padding: 20px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-.cs-minisakai-logo {
-    height: 40px;
-    margin-right: 10px;
-    vertical-align: middle;
+.cs-demo-panel.dark-theme {
+    --textColor: #e0e0e0;
+    --bgColor: #2d2d2d;
+    --dateColor: #ff6b6b;
+    background-color: var(--bgColor) !important;
 }
 
-.cs-version {
-    display: inline-block;
+.cs-demo-panel.dark-theme .cs-assignment-title {
+    color: var(--textColor);
+}
+
+.cs-demo-panel.dark-theme .cs-assignment-time,
+.cs-demo-panel.dark-theme .cs-quiz-time {
+    color: var(--textColor);
+    border-color: #555;
+}
+
+.cs-demo-panel.dark-theme .cs-assignment-time-text {
+    color: var(--textColor);
+}
+
+.cs-demo-panel.dark-theme .cs-settings-tab {
+    color: var(--textColor);
+}
+
+.cs-demo-panel.dark-theme .cp-settings-text {
+    color: var(--textColor);
+}
+
+.cs-demo-panel.dark-theme .cs-version {
+    color: #aaa;
+}
+
+.cs-demo-panel.dark-theme .demo-tab-heading {
+    color: var(--textColor);
+}
+
+.cs-demo-panel.dark-theme .cs-empty-message {
+    background-color: #3a3a3a;
+    color: #aaa;
+}
+
+.cs-demo-panel.dark-theme .cp-settings {
+    background-color: var(--bgColor);
+}
+
+/* --- ロゴ --- */
+.cs-demo-panel .cs-minisakai-logo {
+    position: absolute;
+    top: 10px;
+    left: 8px;
+    height: 36px;
+    width: 36px;
+}
+
+/* --- バージョン --- */
+.cs-demo-panel .cs-version {
+    padding-left: 44px;
+    font-weight: bold;
     font-size: 12px;
     color: #888;
-    vertical-align: middle;
+    margin: 0;
 }
 
-.cs-minisakai .closebtn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
+/* --- 閉じるボタン --- */
+.cs-demo-panel .closebtn {
     background: none;
-    border: none;
+    border: 0;
+    position: absolute;
+    top: 8px;
+    right: 8px;
     cursor: pointer;
+    z-index: 10;
+    padding: 4px;
 }
 
-.cs-minisakai .closebtn img {
-    width: 20px;
-    height: 20px;
+.cs-demo-panel .closebtn img {
+    width: 24px;
+    height: 24px;
 }
 
-.cs-minisakai input[type="radio"] {
+/* --- タブ --- */
+.cs-demo-panel > input[type="radio"] {
     display: none;
 }
 
-.cs-minisakai label {
+.cs-demo-panel > label {
     display: inline-block;
-    padding: 10px 15px;
-    margin-right: 5px;
-    margin-top: 20px;
+    position: relative;
+    color: var(--textColor);
+    padding: 8px 10px;
     cursor: pointer;
-    border-radius: 4px;
+    border-bottom: 0;
+    border-radius: 6px 6px 0 0;
+    font-size: 13px;
     font-weight: 500;
-    transition: background 0.3s;
+    margin-top: 12px;
+    transition: background 0.2s;
 }
 
-.cs-minisakai input[type="radio"]:checked + label {
-    background-color: #4a90e2;
-    color: white;
+.cs-demo-panel > input[type="radio"]:checked + label {
+    background-color: #6483d3;
+    color: #fff;
+    border-bottom: 1px solid #b0b0b0;
+    border-radius: 6px 6px 0 0;
 }
 
-#cs-add-memo-btn {
+/* タブパネル表示制御 */
+.cs-demo-panel .cs-tab-panels {
+    margin-top: 0;
+}
+
+.cs-demo-panel .cs-tab-panel {
+    display: none;
+}
+
+.cs-demo-panel > input:first-of-type:checked ~ .cs-tab-panels > .cs-tab-panel:nth-child(1) {
+    display: block;
+}
+
+.cs-demo-panel > input:nth-of-type(2):checked ~ .cs-tab-panels > .cs-tab-panel:nth-child(2) {
+    display: block;
+}
+
+.cs-demo-panel > input:nth-of-type(3):checked ~ .cs-tab-panels > .cs-tab-panel:nth-child(3) {
+    display: block;
+}
+
+.cs-demo-panel > input:nth-of-type(4):checked ~ .cs-tab-panels > .cs-tab-panel:nth-child(4) {
+    display: block;
+}
+
+/* --- メモ追加ボタン --- */
+.cs-demo-panel #cs-add-memo-btn {
+    margin-left: 12px;
+    margin-bottom: 2px;
     display: inline-block;
-    padding: 5px 12px;
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    border-radius: 4px;
+    vertical-align: middle;
+    text-align: center;
     cursor: pointer;
+    color: #fff !important;
+    background-color: #009688 !important;
+    font-size: 20px !important;
+    border: none;
+    padding: 4px 7px;
+    border-radius: 50%;
+    line-height: 1;
+}
+
+/* --- 取得日時ボックス --- */
+.cs-demo-panel .cs-assignment-time,
+.cs-demo-panel .cs-quiz-time {
+    padding: 5px 10px;
+    margin: 8px 4px;
+    border: inset;
     font-weight: bold;
-    margin-left: 10px;
-}
-
-.cs-assignment-time, .cs-quiz-time {
+    color: #464646;
     font-size: 12px;
-    color: #666;
-    margin-top: 15px;
-    display: flex;
 }
 
-.cs-assignment-time-text {
-    margin-right: 5px;
+.cs-demo-panel .cs-assignment-time-text {
+    margin-bottom: 0;
+    color: var(--textColor);
+    font-size: 12px;
 }
 
-.cs-minisakai-list {
-    margin-top: 20px;
-    padding: 10px;
-    border-radius: 4px;
-    max-height: 500px;
-    overflow-y: auto;
+/* --- 課題リスト --- */
+.cs-demo-panel .cs-minisakai-list {
+    padding: 12px 6px 6px 6px;
+    text-decoration: none;
+    color: #818181;
+    display: block;
 }
 
-.cs-minisakai-list-success {
-    background-color: #f8f9fa;
+.cs-minisakai-list-danger {
+    /* danger にはハイライト背景 */
 }
 
-.cs-minisakai-list-other {
-    border-top: 1px solid #eee;
-    padding-top: 20px;
-}
-
-.cs-assignment-success,
-.cs-assignment-other {
-    margin-bottom: 15px;
-    padding: 10px;
-    border-radius: 4px;
-    background-color: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+/* --- 課題ブロック（各ステータス） --- */
+.cs-demo-panel .cs-assignment-danger {
+    border: solid 2px var(--miniDanger);
+    border-radius: 10px;
+    margin-bottom: 14px;
     position: relative;
 }
 
-.cs-course-name {
+.cs-demo-panel .cs-assignment-warning {
+    border: solid 2px var(--miniWarning);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    position: relative;
+}
+
+.cs-demo-panel .cs-assignment-success {
+    border: solid 2px var(--miniSuccess);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    position: relative;
+}
+
+.cs-demo-panel .cs-assignment-other {
+    border: solid 2px var(--miniOther);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    position: relative;
+}
+
+.cs-demo-panel .cs-assignment-submitted {
+    border: solid 2px #8bd48d;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    position: relative;
+}
+
+/* --- コース名ラベル --- */
+.cs-demo-panel .cs-course-name {
     display: block;
     text-decoration: none;
-    color: #333;
-    font-weight: bold;
-    margin-bottom: 5px;
-    font-size: 14px;
+    font-size: 12px;
+    font-weight: 400 !important;
+    color: #f7f7f7;
+    width: max-content;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 3px 10px;
+    margin: -1px 0 0 -1px;
+    border-radius: 10px 0 10px 0;
+    position: relative;
+    z-index: 0;
 }
 
-.cs-course-success {
-    color: #4a90e2;
+.cs-demo-panel .cs-course-danger {
+    background: var(--miniDanger);
 }
 
-.cs-course-other {
-    color: #666;
+.cs-demo-panel .cs-course-warning {
+    background: var(--miniWarning);
 }
 
-.cs-minus-button {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    background-color: #f44336;
+.cs-demo-panel .cs-course-success {
+    background: var(--miniSuccess);
+}
+
+.cs-demo-panel .cs-course-other {
+    background: var(--miniOther);
+}
+
+.cs-demo-panel .cs-course-submitted {
+    background: #62b665;
+}
+
+/* --- マイナスボタン --- */
+.cs-demo-panel .cs-minus-button {
+    display: inline-block;
+    vertical-align: middle;
+    width: 18px;
+    height: 18px;
+    background: #0064cd;
     border-radius: 50%;
+    margin: 3px 5px 0 5px;
+    cursor: pointer;
+    position: relative;
 }
 
-.cs-minus-button:before {
+.cs-demo-panel .cs-minus-button::after {
     content: '';
     position: absolute;
+    left: 4px;
+    top: 8px;
     width: 10px;
     height: 2px;
     background-color: white;
-    top: 9px;
-    left: 5px;
 }
 
-.cs-assignment-date {
-    font-size: 13px;
-    color: #666;
-    margin: 5px 0;
+.cs-demo-panel .cs-minus-button:hover {
+    background: #004e9e;
 }
 
-.cs-assignment-time-remain {
+/* --- ダミープラスボタン（提出済みタブ） --- */
+.cs-demo-panel .cs-dummy-btn {
     display: inline-block;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background-color: #6483d3;
+    color: white;
+    text-align: center;
+    line-height: 15px;
     font-size: 12px;
-    color: white;
-    background-color: #ff6b6b;
-    padding: 2px 5px;
-    border-radius: 3px;
-    margin-bottom: 5px;
+    margin: 3px 2px 0 5px;
+    cursor: default;
 }
 
-.cs-assignment-title {
-    font-size: 15px;
-    margin: 5px 0;
-}
-
-.cs-badge {
+/* --- 日付 --- */
+.cs-demo-panel .cs-assignment-date {
     display: inline-block;
+    font-size: 12px !important;
+    font-weight: bold;
+    color: var(--dateColor);
+    margin: 5px 0 0 0;
+}
+
+/* --- 残り時間 --- */
+.cs-demo-panel .cs-assignment-time-remain {
+    font-weight: bold;
     font-size: 11px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    margin-right: 5px;
-    color: white;
+    margin-left: 4px;
 }
 
-.cs-badge-quiz {
-    background-color: #9c27b0;
+/* --- 課題タイトル --- */
+.cs-demo-panel .cs-assignment-title {
+    font-size: 12px !important;
+    color: var(--textColor);
+    padding-left: 20px;
+    word-break: break-word;
+    margin: 4px 0;
 }
 
-.cs-badge-resubmit {
-    background-color: #2196f3;
+/* --- バッジ共通 --- */
+.cs-demo-panel .cs-badge {
+    display: inline-block;
+    padding: 0.25em 0.4em;
+    margin-right: 0.4em;
+    font-size: 75%;
+    font-weight: 300;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+    position: relative;
+    z-index: 1;
 }
 
-.cs-badge-resubmit-disabled {
-    background-color: #7f8c8d;
+.cs-demo-panel .cs-badge-quiz {
+    color: #fff !important;
+    background-color: #ef2410 !important;
+    font-weight: bold;
+    border: 1px solid #dc1f00;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.cs-assignment-badges {
-    margin-top: 5px;
+.cs-demo-panel .cs-badge-memo {
+    color: #fff !important;
+    background-color: #28a745 !important;
+    font-weight: bold;
+    border: 1px solid #20c997;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* タブ切り替え用 */
-#minisakai-demo:target, 
-#schedule-demo:target, 
-#calendar-sync-demo:target {
-    display: block;
+.cs-demo-panel .cs-badge-late {
+    color: #666 !important;
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    font-weight: normal;
+    opacity: 0.8;
 }
 
-#minisakai-demo, 
-#schedule-demo, 
-#calendar-sync-demo {
-    display: none;
+.cs-demo-panel .cs-badge-resubmit {
+    color: #000 !important;
+    background-color: #20c997 !important;
+    display: inline-block;
+    margin-top: 3px;
+    margin-left: 5px;
+    font-size: 70%;
+    font-weight: bold;
+    border: 2px solid #17a2b8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-#minisakai-demo {
-    display: block;
+.cs-demo-panel .cs-badge-resubmit-disabled {
+    color: #fff !important;
+    background-color: #dc3545 !important;
+    display: inline-block;
+    margin-top: 3px;
+    margin-left: 5px;
+    font-size: 70%;
+    font-weight: bold;
+    border: 2px solid #c82333;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* レスポンシブ対応 */
+.cs-demo-panel .cs-badge-timestamp {
+    color: #fff !important;
+    background-color: #17a2b8 !important;
+    margin-left: 5px;
+    font-size: 0.75em;
+    font-weight: bold;
+    border: 1px solid #138496;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cs-demo-panel .cs-badge-dismissed {
+    color: #fff !important;
+    background-color: #6c757d !important;
+    font-weight: bold;
+    border: 1px solid #5a6268;
+}
+
+.cs-demo-panel .cs-assignment-badges {
+    margin-top: 3px;
+    margin-bottom: 3px;
+    padding-left: 20px;
+    line-height: 1.4;
+}
+
+/* --- 空メッセージ --- */
+.cs-demo-panel .cs-empty-message {
+    text-align: center;
+    color: #777;
+    padding: 20px;
+    margin-top: 10px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+/* --- 設定タブ --- */
+.cs-demo-panel .cs-settings-tab {
+    padding: 5px;
+    font-weight: bold;
+    color: #464646;
+}
+
+.cs-demo-panel .cp-settings {
+    padding-left: 16px;
+    padding-top: 8px;
+    color: var(--textColor);
+    background-color: var(--bgColor);
+}
+
+.cs-demo-panel .cp-settings-text {
+    display: list-item;
+    font-size: 13px;
+    margin: 4px 0;
+}
+
+.cs-demo-panel .cp-settings-inputbox {
+    width: 65px;
+}
+
+.cs-demo-panel .cs-toggle-btn {
+    position: relative;
+    display: inline-flex;
+    width: 44px;
+    height: 24px;
+    align-items: center;
+}
+
+.cs-demo-panel .cs-toggle-btn input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.cs-demo-panel .cs-settings-toggle-slider {
+    cursor: pointer;
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #ccc;
+    border-radius: 24px;
+    transition: background-color 0.3s ease;
+}
+
+.cs-demo-panel .cs-settings-toggle-slider::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.cs-demo-panel input:checked + .cs-settings-toggle-slider {
+    background-color: #2196F3;
+}
+
+.cs-demo-panel input:checked + .cs-settings-toggle-slider::after {
+    transform: translateX(20px);
+}
+
+/* --- 設定カラーセクション --- */
+.demo-settings-colors {
+    margin-top: 8px;
+}
+
+.demo-settings-color-heading {
+    font-size: 13px;
+    color: var(--textColor);
+    margin: 12px 0 4px 16px;
+    font-weight: bold;
+}
+
+.demo-color-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+}
+
+.demo-color-row .cp-settings {
+    padding: 4px 16px;
+}
+
+.demo-color-row .cp-settings-text {
+    font-size: 11px;
+    margin: 2px 0;
+}
+
+/* --- タブ見出し --- */
+.demo-tab-heading {
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--textColor);
+    padding: 12px 8px 4px;
+    margin: 0;
+}
+
+/* --- レスポンシブ --- */
 @media (max-width: 768px) {
-    .cs-minisakai {
-        width: 100%;
+    .demo-wrapper {
+        max-width: 100%;
+        margin: 0 4px;
     }
-    
-    .demo-tab {
-        padding: 8px 16px;
-        font-size: 14px;
+
+    .cs-demo-panel > label {
+        padding: 6px 7px;
+        font-size: 12px;
+    }
+
+    .cs-demo-panel .cs-badge {
+        font-size: 65% !important;
+        padding: 0.2em 0.3em !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .demo-wrapper {
+        margin: 0;
+    }
+
+    .cs-demo-panel > label {
+        padding: 5px 6px;
+        font-size: 11px;
+    }
+
+    .demo-color-row {
+        grid-template-columns: 1fr;
     }
 }

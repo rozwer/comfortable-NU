@@ -1,18 +1,8 @@
-.demo-section .cs-minisakai-logo,
-.demo-section .closebtn img {
+/* デモ用画像パス修正 */
+.cs-demo-panel .cs-minisakai-logo {
     content: url('../Image/128.png');
-    width: 40px;
-    height: 40px;
 }
 
-.demo-section .closebtn img {
-    width: 20px;
-    height: 20px;
+.cs-demo-panel .closebtn img {
     content: url('../demofiles/closeBtn.svg');
-}
-
-/* demo-content の高さを制限 */
-.demo-content {
-    max-height: 600px;
-    overflow: auto;
 }
