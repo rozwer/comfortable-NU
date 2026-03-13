@@ -426,17 +426,20 @@ export class DashboardUI {
                     <button class="btn btn-secondary" id="select-all-attachments">全選択</button>
                 </div>
                 <div class="attachments-list">
-                    ${allAttachments.map((att, i) => `
+                    ${allAttachments.map((att, i) => {
+                        const isNuss = att.url.includes('nuss.nagoy') || att.url.includes('https%3A__nuss.nagoy');
+                        return `
                         <div class="attachment-row">
-                            <input type="checkbox" class="bulk-attachment-cb" data-url="${att.url}" data-filename="${att.name}" id="bulk-att-${i}">
+                            <input type="checkbox" class="bulk-attachment-cb" data-url="${att.url}" data-filename="${att.name}" data-nuss="${isNuss}" id="bulk-att-${i}">
                             <label for="bulk-att-${i}">
                                 <span class="att-course">${att.courseName}</span>
                                 <span class="att-assignment">${att.assignmentTitle}</span>
                                 <span class="att-filename">${att.name}</span>
+                                ${isNuss ? '<span class="nuss-label" style="color: #28a745; font-weight: bold; margin-left: 4px;">nuss</span>' : ''}
                                 ${att.size ? `<span class="att-size">(${att.size})</span>` : ''}
                             </label>
-                        </div>
-                    `).join('')}
+                        </div>`;
+                    }).join('')}
                 </div>
             </div>
         `;
@@ -464,24 +467,38 @@ export class DashboardUI {
             const selected = Array.from(cbs).filter(c => c.checked);
             dlBtn.disabled = true;
             dlBtn.textContent = 'ダウンロード中...';
+
+            const nussFiles: string[] = [];
             for (const cb of selected) {
                 const url = cb.getAttribute('data-url');
                 const filename = cb.getAttribute('data-filename');
+                const isNuss = cb.getAttribute('data-nuss') === 'true';
                 if (url && filename) {
-                    try {
-                        const res = await fetch(url, { credentials: 'include' });
-                        const blob = await res.blob();
-                        const a = document.createElement('a');
-                        a.href = URL.createObjectURL(blob);
-                        a.download = filename;
-                        a.click();
-                        URL.revokeObjectURL(a.href);
-                        await new Promise(r => setTimeout(r, 500));
-                    } catch (e) {
-                        console.error(`ダウンロード失敗: ${filename}`, e);
+                    if (isNuss) {
+                        // NUSSファイルは直接ダウンロードできないため別タブで開く
+                        nussFiles.push(filename);
+                        window.open(url, '_blank');
+                    } else {
+                        try {
+                            const res = await fetch(url, { credentials: 'include' });
+                            const blob = await res.blob();
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(blob);
+                            a.download = filename;
+                            a.click();
+                            URL.revokeObjectURL(a.href);
+                            await new Promise(r => setTimeout(r, 500));
+                        } catch (e) {
+                            console.error(`ダウンロード失敗: ${filename}`, e);
+                        }
                     }
                 }
             }
+
+            if (nussFiles.length > 0) {
+                alert(`以下のNUSSファイルは自動ダウンロードできないため、ブラウザの別タブで開きました。手動でダウンロードしてください。\n\n${nussFiles.join('\n')}`);
+            }
+
             dlBtn.textContent = '選択したファイルをダウンロード';
             dlBtn.disabled = false;
             selected.forEach(c => c.checked = false);

@@ -1,7 +1,5 @@
 // カレンダー同期用のアラーム名
 const CALENDAR_SYNC_ALARM_NAME = 'calendarSyncAlarm';
-// 提出忘れアラート用のアラーム名
-const DEADLINE_ALERT_ALARM_NAME = 'deadlineAlertAlarm';
 // 新着ファイル検知用のアラーム名
 const NEW_FILE_CHECK_ALARM_NAME = 'newFileCheckAlarm';
 
@@ -21,7 +19,6 @@ function init() {
   console.log('Service Worker初期化');
   // アラームの設定
   setupCalendarSyncAlarm();
-  setupDeadlineAlertAlarm();
   setupNewFileCheckAlarm();
 }
 
@@ -126,12 +123,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true });
           break;
         }
-        case 'setDeadlineAlertEnabled': {
-          chrome.storage.local.set({ deadlineAlertEnabled: request.enabled });
-          await setupDeadlineAlertAlarm();
-          sendResponse({ success: true });
-          break;
-        }
         case 'setNewFileCheckEnabled': {
           chrome.storage.local.set({ newFileCheckEnabled: request.enabled });
           await setupNewFileCheckAlarm();
@@ -154,9 +145,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === CALENDAR_SYNC_ALARM_NAME) {
     console.log('カレンダー同期アラームが発火しました');
     await performCalendarSync();
-  } else if (alarm.name === DEADLINE_ALERT_ALARM_NAME) {
-    console.log('提出忘れアラートアラームが発火しました');
-    await checkDeadlineAlerts();
   } else if (alarm.name === NEW_FILE_CHECK_ALARM_NAME) {
     console.log('新着ファイル検知アラームが発火しました');
     await checkNewFiles();
@@ -887,115 +875,6 @@ async function clearAuthenticationAndReauth(): Promise<string> {
       });
     });
   });
-}
-
-// ========== 機能2: 提出忘れアラート ==========
-
-// 提出忘れアラートアラームをセットアップ
-async function setupDeadlineAlertAlarm() {
-  return new Promise<void>((resolve) => {
-    chrome.storage.local.get(['deadlineAlertEnabled'], (result) => {
-      const enabled = result.deadlineAlertEnabled !== false; // デフォルトtrue
-      chrome.alarms.clear(DEADLINE_ALERT_ALARM_NAME, () => {
-        if (enabled) {
-          chrome.alarms.create(DEADLINE_ALERT_ALARM_NAME, {
-            periodInMinutes: 30 // 30分ごとにチェック
-          });
-          console.log('提出忘れアラートアラームをセット: 30分間隔');
-        }
-        resolve();
-      });
-    });
-  });
-}
-
-// 提出忘れをチェックして通知
-async function checkDeadlineAlerts() {
-  try {
-    const tactTabs = await new Promise<chrome.tabs.Tab[]>((resolve) => {
-      chrome.tabs.query({ url: 'https://tact.ac.thers.ac.jp/*' }, (tabs) => resolve(tabs));
-    });
-
-    if (tactTabs.length === 0) return;
-
-    const tab = tactTabs[0];
-    const data = await new Promise<any>((resolve, reject) => {
-      chrome.tabs.sendMessage(tab.id!, { action: 'getSakaiDataForSync' }, (response) => {
-        if (chrome.runtime.lastError || !response || !response.success) {
-          reject(chrome.runtime.lastError || 'データ取得失敗');
-          return;
-        }
-        resolve(response.data);
-      });
-    });
-
-    if (!data) return;
-
-    const now = Math.floor(Date.now() / 1000);
-    const hoursThreshold24 = 24 * 60 * 60; // 24時間
-    const hoursThreshold3 = 3 * 60 * 60;   // 3時間
-
-    // 未提出かつ期限が近い課題を検出
-    const urgentItems: string[] = [];
-    const upcomingItems: string[] = [];
-
-    if (data.assignments) {
-      for (const a of data.assignments) {
-        const timeLeft = a.dueTime - now;
-        if (timeLeft <= 0) continue; // 期限切れはスキップ
-
-        // 既に通知済みかチェック
-        const alertKey = `deadline-alert-${a.id || a.title}`;
-        const alerted = await new Promise<boolean>((resolve) => {
-          chrome.storage.local.get([alertKey], (result) => resolve(!!result[alertKey]));
-        });
-
-        if (timeLeft <= hoursThreshold3 && !alerted) {
-          urgentItems.push(`[緊急] ${a.title} - 残り${Math.ceil(timeLeft / 3600)}時間`);
-          chrome.storage.local.set({ [alertKey]: Date.now() });
-        } else if (timeLeft <= hoursThreshold24 && timeLeft > hoursThreshold3 && !alerted) {
-          upcomingItems.push(`${a.title} - 残り${Math.ceil(timeLeft / 3600)}時間`);
-          chrome.storage.local.set({ [alertKey]: Date.now() });
-        }
-      }
-    }
-
-    if (data.quizzes) {
-      for (const q of data.quizzes) {
-        const timeLeft = q.dueTime - now;
-        if (timeLeft <= 0) continue;
-
-        const alertKey = `deadline-alert-quiz-${q.id || q.title}`;
-        const alerted = await new Promise<boolean>((resolve) => {
-          chrome.storage.local.get([alertKey], (result) => resolve(!!result[alertKey]));
-        });
-
-        if (timeLeft <= hoursThreshold3 && !alerted) {
-          urgentItems.push(`[緊急] 小テスト: ${q.title} - 残り${Math.ceil(timeLeft / 3600)}時間`);
-          chrome.storage.local.set({ [alertKey]: Date.now() });
-        } else if (timeLeft <= hoursThreshold24 && timeLeft > hoursThreshold3 && !alerted) {
-          upcomingItems.push(`小テスト: ${q.title} - 残り${Math.ceil(timeLeft / 3600)}時間`);
-          chrome.storage.local.set({ [alertKey]: Date.now() });
-        }
-      }
-    }
-
-    // 通知を送信
-    if (urgentItems.length > 0) {
-      showNotification(
-        '提出期限が迫っています!',
-        urgentItems.join('\n')
-      );
-    }
-    if (upcomingItems.length > 0) {
-      showNotification(
-        '24時間以内に提出期限の課題があります',
-        upcomingItems.join('\n')
-      );
-    }
-  } catch (error) {
-    console.error('提出忘れアラートチェックエラー:', error);
-  }
 }
 
 // ========== 機能3: 新着ファイル検知 ==========
