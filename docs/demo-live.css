@@ -47,6 +47,29 @@
 }
 
 /* ============================================================
+   ダークテーマ (デモページ全体)
+   ============================================================ */
+[data-demo-theme="dark"] .demo-hero {
+    background: #1e2128;
+}
+
+[data-demo-theme="dark"] .demo-hero h1 {
+    color: #e0e0e0;
+}
+
+[data-demo-theme="dark"] .demo-hero p {
+    color: #aaa;
+}
+
+[data-demo-theme="dark"] .demo-live-section {
+    background: #1e2128;
+}
+
+[data-demo-theme="dark"] .demo-note {
+    color: #999;
+}
+
+/* ============================================================
    miniSakai コンテナ
    ============================================================ */
 .ms-minisakai {
@@ -80,6 +103,21 @@
     border-radius: 2px;
 }
 
+/* 開閉アニメーション */
+.ms-minisakai.ms-show {
+    display: block;
+    animation: ms-slide-in 0.25s ease-out;
+}
+
+.ms-minisakai.ms-hide {
+    display: none;
+}
+
+@keyframes ms-slide-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* ヘッダー行 */
 .ms-header-row {
     position: absolute;
@@ -98,6 +136,57 @@
     font-size: 11px;
     font-weight: bold;
     color: var(--ms-text);
+}
+
+/* 閉じるボタン */
+.ms-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ms-text);
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    z-index: 1;
+}
+
+.ms-close-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* 開くボタン */
+.ms-open-btn-wrapper {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.ms-open-btn {
+    background: #cacaca;
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.ms-open-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+[data-demo-theme="dark"] .ms-open-btn {
+    background: #555;
 }
 
 /* ============================================================
@@ -142,6 +231,10 @@
 
 #demo-dismissedTab:checked + label {
     background-color: #888;
+}
+
+#demo-timetableTab:checked + label {
+    background-color: #5a8fc0;
 }
 
 .ms-add-memo-btn {
@@ -276,6 +369,13 @@
     margin-bottom: 16px;
 }
 
+/* 期限切れ（passed）のスタイル */
+.ms-assignment-passed {
+    border: solid 2px #212121;
+    border-radius: 10px;
+    margin-bottom: 16px;
+}
+
 /* 最後の要素のマージン調整 */
 .ms-assignment-danger:last-child,
 .ms-assignment-warning:last-child,
@@ -344,6 +444,25 @@
     background-color: white;
 }
 
+/* ダミーボタン（提出済みタブの+ボタン） */
+.ms-dummy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    width: 20px;
+    height: 20px;
+    background: #aaa;
+    color: #fff;
+    border-radius: 10px;
+    margin: 3px 5px 0 5px;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: default;
+    opacity: 0.6;
+}
+
 /* 非表示クリアボタン */
 .ms-dismissed-clear-btn {
     display: inline-flex;
@@ -407,6 +526,18 @@
     border: 1px solid #20c997;
 }
 
+.ms-badge-late {
+    background: #212121;
+    color: #fff;
+    border: 1px solid #000;
+}
+
+.ms-badge-dismissed-tag {
+    background: #888;
+    color: #fff;
+    border: 1px solid #777;
+}
+
 .ms-badge-resubmit {
     background: #20c997;
     color: #000;
@@ -446,6 +577,11 @@
     border-radius: 5px;
 }
 
+[data-demo-theme="dark"] .ms-empty-message {
+    background: #3a3f47;
+    color: #aaa;
+}
+
 /* ============================================================
    メモ追加ボックス
    ============================================================ */
@@ -462,6 +598,10 @@
     display: block;
     font-weight: bold;
     color: #464646;
+}
+
+[data-demo-theme="dark"] .ms-memo-item {
+    color: #d4d4d4;
 }
 
 .ms-memo-item p {
@@ -508,6 +648,19 @@
     background: #00796b;
 }
 
+/* 講義名検索入力 */
+.ms-course-search {
+    margin-bottom: 6px;
+}
+
+[data-demo-theme="dark"] .ms-memo-item select,
+[data-demo-theme="dark"] .ms-memo-item input[type="text"],
+[data-demo-theme="dark"] .ms-memo-item input[type="datetime-local"] {
+    background: #3a3f47;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
 /* ============================================================
    設定タブ
    ============================================================ */
@@ -538,6 +691,12 @@
     border-radius: 4px;
 }
 
+[data-demo-theme="dark"] .ms-settings-input {
+    background: #3a3f47;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
 .ms-settings-item input[type="color"] {
     width: 50px;
     height: 28px;
@@ -560,6 +719,30 @@
 
 .ms-settings-item button:hover {
     background: #4f6fc0;
+}
+
+/* 設定セクション区切り */
+.ms-settings-divider {
+    border-top: 1px solid rgba(0, 0, 0, 0.15);
+    margin: 12px 0 8px;
+}
+
+[data-demo-theme="dark"] .ms-settings-divider {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* 設定セクションタイトル */
+.ms-settings-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ms-text);
+    margin: 14px 0 4px 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-demo-theme="dark"] .ms-settings-section-title {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 /* トグルスイッチ */
@@ -610,6 +793,160 @@
 }
 
 /* ============================================================
+   お気に入りバー
+   ============================================================ */
+.ms-favorites-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 360px;
+    margin: 0 auto 12px;
+    padding: 0 4px;
+}
+
+.ms-fav-tab {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #333;
+    background: #e5e5e5;
+    border-radius: 4px;
+    text-decoration: none;
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+    transition: opacity 0.15s;
+}
+
+.ms-fav-tab:hover {
+    opacity: 0.85;
+    text-decoration: none;
+}
+
+.ms-fav-notification {
+    position: absolute;
+    top: 2px;
+    right: 3px;
+    width: 8px;
+    height: 8px;
+    background: #f81000;
+    border-radius: 50%;
+    border: 1px solid #fff;
+}
+
+[data-demo-theme="dark"] .ms-fav-tab {
+    background: #444;
+    color: #ddd;
+}
+
+/* ============================================================
+   時間割グリッド
+   ============================================================ */
+.ms-timetable {
+    padding: 8px 10px 12px;
+}
+
+.ms-timetable-header-row {
+    display: grid;
+    grid-template-columns: 32px repeat(5, 1fr);
+    gap: 2px;
+    margin-bottom: 2px;
+}
+
+.ms-timetable-corner {
+    /* 左上の空セル */
+}
+
+.ms-timetable-day-header {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ms-text);
+    padding: 4px 0;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 4px;
+}
+
+[data-demo-theme="dark"] .ms-timetable-day-header {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.ms-timetable-row {
+    display: grid;
+    grid-template-columns: 32px repeat(5, 1fr);
+    gap: 2px;
+    margin-bottom: 2px;
+}
+
+.ms-timetable-period {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ms-text);
+}
+
+.ms-timetable-cell {
+    min-height: 52px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    transition: background-color 0.2s;
+}
+
+[data-demo-theme="dark"] .ms-timetable-cell {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.ms-timetable-cell-filled {
+    padding: 4px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.ms-timetable-cell-filled:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.ms-timetable-course-name {
+    font-size: 10px;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+    word-break: break-all;
+    line-height: 1.2;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+.ms-timetable-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    background: #f81000;
+    border-radius: 8px;
+    padding: 0 4px;
+    margin-top: 2px;
+}
+
+/* ============================================================
    日付ピッカーモーダル
    ============================================================ */
 .ms-datepicker-overlay {
@@ -634,6 +971,11 @@
     overflow: hidden;
 }
 
+[data-demo-theme="dark"] .ms-datepicker-modal {
+    background: #2c3038;
+    color: #e0e0e0;
+}
+
 .ms-datepicker-header {
     display: flex;
     justify-content: space-between;
@@ -642,10 +984,18 @@
     border-bottom: 1px solid #eee;
 }
 
+[data-demo-theme="dark"] .ms-datepicker-header {
+    border-bottom-color: #444;
+}
+
 .ms-datepicker-header h3 {
     margin: 0;
     font-size: 16px;
     color: #333;
+}
+
+[data-demo-theme="dark"] .ms-datepicker-header h3 {
+    color: #e0e0e0;
 }
 
 .ms-datepicker-close {
@@ -661,6 +1011,10 @@
     color: #333;
 }
 
+[data-demo-theme="dark"] .ms-datepicker-close:hover {
+    color: #ddd;
+}
+
 .ms-datepicker-content {
     padding: 16px;
 }
@@ -673,6 +1027,10 @@
     color: #333;
     cursor: pointer;
     margin-bottom: 12px;
+}
+
+[data-demo-theme="dark"] .ms-datepicker-permanent {
+    color: #e0e0e0;
 }
 
 .ms-datepicker-permanent input[type="checkbox"] {
@@ -704,10 +1062,20 @@
     font-size: 13px;
 }
 
+[data-demo-theme="dark"] .ms-datepicker-field select {
+    background: #3a3f47;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
 .ms-datepicker-info {
     font-size: 13px;
     color: #666;
     margin: 8px 0 0;
+}
+
+[data-demo-theme="dark"] .ms-datepicker-info {
+    color: #aaa;
 }
 
 .ms-datepicker-footer {
@@ -716,6 +1084,10 @@
     gap: 8px;
     padding: 12px 16px;
     border-top: 1px solid #eee;
+}
+
+[data-demo-theme="dark"] .ms-datepicker-footer {
+    border-top-color: #444;
 }
 
 .ms-datepicker-cancel {
@@ -730,6 +1102,16 @@
 
 .ms-datepicker-cancel:hover {
     background: #f5f5f5;
+}
+
+[data-demo-theme="dark"] .ms-datepicker-cancel {
+    background: #3a3f47;
+    border-color: #555;
+    color: #ccc;
+}
+
+[data-demo-theme="dark"] .ms-datepicker-cancel:hover {
+    background: #444;
 }
 
 .ms-datepicker-save {
@@ -752,6 +1134,11 @@
    ============================================================ */
 @media (max-width: 480px) {
     .demo-live-wrapper {
+        max-width: 100%;
+        padding: 0 8px;
+    }
+
+    .ms-favorites-bar {
         max-width: 100%;
         padding: 0 8px;
     }
@@ -780,5 +1167,19 @@
 
     .ms-assignment-title {
         font-size: 11px;
+    }
+
+    .ms-timetable-course-name {
+        font-size: 8px;
+    }
+
+    .ms-timetable-cell {
+        min-height: 40px;
+    }
+
+    .ms-fav-tab {
+        max-width: 80px;
+        font-size: 10px;
+        padding: 3px 6px;
     }
 }
