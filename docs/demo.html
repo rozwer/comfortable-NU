@@ -41,7 +41,7 @@
     <section class="demo-hero">
         <div class="container">
             <h1>miniSakai ライブデモ</h1>
-            <p>拡張機能のReactコンポーネントをローカルモックデータで動作させています。<br>タブの切替、課題の非表示/復元、メモの追加/削除、ダークテーマ、時間割表示など実際の操作を体験できます。</p>
+            <p>拡張機能のReactコンポーネントをローカルモックデータで動作させています。<br>タブの切替、課題の非表示/復元、メモの追加/削除、ダークテーマ、時間割表示、SubSakai、素材管理など実際の操作を体験できます。</p>
         </div>
     </section>
 
@@ -54,6 +54,16 @@
             <div class="demo-live-wrapper">
                 <div id="minisakai-live-root"></div>
             </div>
+
+            <!-- SubSakai (subset表示) -->
+            <div class="demo-subsakai-section">
+                <h3 class="demo-subsakai-title">SubSakai（サブセット表示）</h3>
+                <p class="demo-subsakai-desc">Sakaiポータルページ内に埋め込まれるコンパクト版。タブ・閉じるボタン・メモ追加は非表示になり、課題一覧のみを表示します。</p>
+                <div class="demo-subsakai-wrapper">
+                    <div id="subsakai-live-root"></div>
+                </div>
+            </div>
+
             <div class="demo-note">
                 <p>※ これは拡張機能のコンポーネントをローカルモックで動かしたデモです。データはすべてサンプルです。</p>
                 <a href="index.html" class="btn btn-secondary" style="color: var(--text-color); border-color: var(--border-color);">ホームに戻る</a>
@@ -219,6 +229,7 @@
     function MemoBadge() { return <span className="ms-badge ms-badge-memo">メモ</span>; }
     function LateBadge() { return <span className="ms-badge ms-badge-late">遅延提出</span>; }
     function DismissedBadge() { return <span className="ms-badge ms-badge-dismissed-tag">非表示</span>; }
+    function TimestampBadge({ timestamp }) { return <span className="ms-badge ms-badge-timestamp">完了: {timestamp}</span>; }
 
     function ResubmitBadge({ allowResubmitNumber }) {
         if (!allowResubmitNumber) return null;
@@ -230,15 +241,21 @@
     }
 
     // --- エントリー表示 ---
-    function AssignmentEntryView({ entry, onMinusClick }) {
+    function AssignmentEntryView({ entry, onMinusClick, isSubset }) {
         const isLate = entry.isLate || (entry.dueTime < NOW && entry.closeTime > NOW);
         const displayTime = isLate ? entry.closeTime : entry.dueTime;
         const dueDateString = createDateString(displayTime);
         const remainTimeString = getRemainTimeString(displayTime);
         return (
             <>
-                <div className="ms-minus-button" onClick={() => onMinusClick(entry)} title="非表示にする"></div>
-                <p className="ms-assignment-date">{dueDateString}</p>
+                {!isSubset ? (
+                    <>
+                        <div className="ms-minus-button" onClick={() => onMinusClick(entry)} title="非表示にする"></div>
+                        <p className="ms-assignment-date">{dueDateString}</p>
+                    </>
+                ) : (
+                    <span className="ms-assignment-date ms-assignment-date-padding">{dueDateString}</span>
+                )}
                 <span className="ms-assignment-time-remain">{remainTimeString}</span>
                 <p className="ms-assignment-title">
                     {isLate && <LateBadge />}
@@ -246,35 +263,51 @@
                 </p>
                 <div className="ms-assignment-badges">
                     <ResubmitBadge allowResubmitNumber={entry.allowResubmitNumber} />
+                    {entry.checkTimestamp && <TimestampBadge timestamp={entry.checkTimestamp} />}
                 </div>
             </>
         );
     }
 
-    function QuizEntryView({ entry, onMinusClick }) {
+    function QuizEntryView({ entry, onMinusClick, isSubset }) {
         const dueDateString = createDateString(entry.dueTime);
         const remainTimeString = getRemainTimeString(entry.dueTime);
         return (
             <>
-                <div className="ms-minus-button" onClick={() => onMinusClick(entry)} title="非表示にする"></div>
-                <p className="ms-assignment-date">{dueDateString}</p>
+                {!isSubset ? (
+                    <>
+                        <div className="ms-minus-button" onClick={() => onMinusClick(entry)} title="非表示にする"></div>
+                        <p className="ms-assignment-date">{dueDateString}</p>
+                    </>
+                ) : (
+                    <span className="ms-assignment-date ms-assignment-date-padding">{dueDateString}</span>
+                )}
                 <span className="ms-assignment-time-remain">{remainTimeString}</span>
                 <p className="ms-assignment-title"><QuizBadge />{entry.title}</p>
+                <div className="ms-assignment-badges">
+                    {entry.checkTimestamp && <TimestampBadge timestamp={entry.checkTimestamp} />}
+                </div>
             </>
         );
     }
 
-    function MemoEntryView({ entry, onDelete, onMinusClick }) {
+    function MemoEntryView({ entry, onDelete, onMinusClick, isSubset }) {
         const dueDateString = createDateString(entry.dueTime);
         const remainTimeString = getRemainTimeString(entry.dueTime);
         return (
             <>
-                <div className="ms-minus-button" onClick={() => onMinusClick(entry)} title="非表示にする"></div>
-                <p className="ms-assignment-date">{dueDateString}</p>
+                {!isSubset ? (
+                    <>
+                        <div className="ms-minus-button" onClick={() => onMinusClick(entry)} title="非表示にする"></div>
+                        <p className="ms-assignment-date">{dueDateString}</p>
+                    </>
+                ) : (
+                    <span className="ms-assignment-date ms-assignment-date-padding">{dueDateString}</span>
+                )}
                 <span className="ms-assignment-time-remain">{remainTimeString}</span>
                 <p className="ms-assignment-title">
                     <MemoBadge />
-                    <span className="ms-del-memo-btn" onClick={() => onDelete(entry)} title="メモを削除">&times;</span>
+                    {!isSubset && <span className="ms-del-memo-btn" onClick={() => onDelete(entry)} title="メモを削除">&times;</span>}
                     {entry.title}
                 </p>
             </>
@@ -282,22 +315,26 @@
     }
 
     // --- コース別グループ ---
-    function CourseGroup({ courseId, courseName, entries, dueType, onMinusClick, onMemoDelete }) {
+    function CourseGroup({ courseId, courseName, entries, dueType, onMinusClick, onMemoDelete, isSubset }) {
         const divClass = `ms-assignment-${dueType}`;
         const aClass = `ms-course-${dueType} ms-course-name`;
         return (
             <div className={divClass}>
-                <a className={aClass} href="#">{courseName}</a>
+                {isSubset ? (
+                    <div className={aClass}>{courseName}</div>
+                ) : (
+                    <a className={aClass} href="#">{courseName}</a>
+                )}
                 {entries.map(entry => {
-                    if (entry.type === "quiz") return <QuizEntryView key={entry.id} entry={entry} onMinusClick={onMinusClick} />;
-                    if (entry.type === "memo") return <MemoEntryView key={entry.id} entry={entry} onDelete={onMemoDelete} onMinusClick={onMinusClick} />;
-                    return <AssignmentEntryView key={entry.id} entry={entry} onMinusClick={onMinusClick} />;
+                    if (entry.type === "quiz") return <QuizEntryView key={entry.id} entry={entry} onMinusClick={onMinusClick} isSubset={isSubset} />;
+                    if (entry.type === "memo") return <MemoEntryView key={entry.id} entry={entry} onDelete={onMemoDelete} onMinusClick={onMinusClick} isSubset={isSubset} />;
+                    return <AssignmentEntryView key={entry.id} entry={entry} onMinusClick={onMinusClick} isSubset={isSubset} />;
                 })}
             </div>
         );
     }
 
-    function EntryList({ dueType, entriesWithCourse, onMinusClick, onMemoDelete }) {
+    function EntryList({ dueType, entriesWithCourse, onMinusClick, onMemoDelete, isSubset }) {
         const className = `ms-minisakai-list ms-minisakai-list-${dueType}`;
         const courseMap = new Map();
         const courseNameMap = new Map();
@@ -316,7 +353,7 @@
                 {sorted.map(([courseId, entries]) => (
                     <CourseGroup key={courseId} courseId={courseId} courseName={courseNameMap.get(courseId)}
                         entries={entries.sort((a, b) => a.dueTime - b.dueTime)} dueType={dueType}
-                        onMinusClick={onMinusClick} onMemoDelete={onMemoDelete} />
+                        onMinusClick={onMinusClick} onMemoDelete={onMemoDelete} isSubset={isSubset} />
                 ))}
             </div>
         );
@@ -484,7 +521,9 @@
                 <div className="ms-datepicker-modal">
                     <div className="ms-datepicker-header"><h3>非表示期間を設定</h3><button className="ms-datepicker-close" onClick={onClose}>&times;</button></div>
                     <div className="ms-datepicker-content">
-                        <label className="ms-datepicker-permanent"><input type="checkbox" checked={isPermanent} onChange={e => setIsPermanent(e.target.checked)} />永久に非表示</label>
+                        <div className="ms-datepicker-permanent-option">
+                            <label className="ms-datepicker-permanent-label"><input type="checkbox" className="ms-datepicker-permanent-checkbox" checked={isPermanent} onChange={e => setIsPermanent(e.target.checked)} />永久に非表示</label>
+                        </div>
                         {!isPermanent && (
                             <div className="ms-datepicker-row">
                                 {[["年", year, setYear, Array.from({length:5},(_,i)=>now.getFullYear()+i)],
@@ -501,7 +540,7 @@
                                 ))}
                             </div>
                         )}
-                        {isPermanent && <p className="ms-datepicker-info">この課題は1年間非表示になります。</p>}
+                        {isPermanent && <div className="ms-datepicker-permanent-info">この課題は1年間非表示になります。非表示タブから復元できます。</div>}
                     </div>
                     <div className="ms-datepicker-footer">
                         <button className="ms-datepicker-cancel" onClick={onClose}>キャンセル</button>
@@ -664,6 +703,96 @@
         );
     }
 
+    // --- 素材追加ダイアログ ---
+    function AddMaterialDialog({ isOpen, onClose, onSave, material }) {
+        const [name, setName] = useState(material ? material.name : "");
+        const [url, setUrl] = useState(material ? material.url : "");
+        const [errors, setErrors] = useState({});
+
+        useEffect(() => {
+            if (material) { setName(material.name); setUrl(material.url); }
+            else { setName(""); setUrl(""); }
+            setErrors({});
+        }, [material, isOpen]);
+
+        if (!isOpen) return null;
+
+        const validate = () => {
+            const errs = {};
+            if (!name.trim()) errs.name = "資料名を入力してください";
+            if (!url.trim()) errs.url = "URLを入力してください";
+            else { try { new URL(url); } catch(e) { errs.url = "有効なURLを入力してください"; } }
+            setErrors(errs);
+            return Object.keys(errs).length === 0;
+        };
+
+        const handleSave = () => { if (validate()) { onSave({ name: name.trim(), url: url.trim() }); } };
+
+        return (
+            <div className="ms-material-dialog-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+                <div className="ms-material-dialog-modal">
+                    <div className="ms-material-dialog-header">
+                        <h3>{material ? "授業資料を編集" : "授業資料を追加"}</h3>
+                        <button className="ms-material-dialog-close" onClick={onClose}>&times;</button>
+                    </div>
+                    <div className="ms-material-dialog-content">
+                        <div className="ms-material-dialog-form-group">
+                            <label>資料名</label>
+                            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="例: 第7回講義スライド" />
+                            {errors.name && <div className="ms-material-dialog-error">{errors.name}</div>}
+                        </div>
+                        <div className="ms-material-dialog-form-group">
+                            <label>URL</label>
+                            <input type="text" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." />
+                            {errors.url && <div className="ms-material-dialog-error">{errors.url}</div>}
+                        </div>
+                    </div>
+                    <div className="ms-material-dialog-footer">
+                        <button className="ms-material-dialog-cancel" onClick={onClose}>キャンセル</button>
+                        <button className="ms-material-dialog-save" onClick={handleSave}>保存</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- SubSakai (サブセット表示) ---
+    function SubSakaiApp() {
+        // SubSakaiは subset=true: タブ・閉じるボタン・メモ追加なし、課題一覧のみ表示
+        const allEntries = [...MOCK_ASSIGNMENTS, ...MOCK_MEMOS];
+        const classified = useMemo(() => {
+            const danger = [], warning = [], success = [], other = [];
+            allEntries.forEach(entry => {
+                const course = MOCK_COURSES.find(c => c.id === entry.courseId);
+                if (!course) return;
+                const dt = getDueType(NOW, entry.dueTime, entry);
+                const item = { entry, course };
+                if (dt === "danger") danger.push(item);
+                else if (dt === "warning") warning.push(item);
+                else if (dt === "success") success.push(item);
+                else if (dt === "other") other.push(item);
+                else if (dt === "passed" && entry.closeTime > NOW) warning.push(item);
+            });
+            return { danger, warning, success, other };
+        }, []);
+
+        const noop = () => {};
+
+        return (
+            <div className="ms-minisakai ms-subsakai">
+                <div className="ms-header-row">
+                    <img className="ms-minisakai-logo" alt="logo" src="Image/128.png" />
+                    <span className="ms-version">Version 1.0.4</span>
+                </div>
+                {/* SubSakai: タブ・閉じるボタン・時間ボックスなし */}
+                {classified.danger.length > 0 && <EntryList dueType="danger" entriesWithCourse={classified.danger} onMinusClick={noop} onMemoDelete={noop} isSubset={true} />}
+                {classified.warning.length > 0 && <EntryList dueType="warning" entriesWithCourse={classified.warning} onMinusClick={noop} onMemoDelete={noop} isSubset={true} />}
+                {classified.success.length > 0 && <EntryList dueType="success" entriesWithCourse={classified.success} onMinusClick={noop} onMemoDelete={noop} isSubset={true} />}
+                {classified.other.length > 0 && <EntryList dueType="other" entriesWithCourse={classified.other} onMinusClick={noop} onMemoDelete={noop} isSubset={true} />}
+            </div>
+        );
+    }
+
     // ============================================================
     // メインアプリケーション
     // ============================================================
@@ -674,6 +803,11 @@
         const [datepickerOpen, setDatepickerOpen] = useState(false);
         const [currentEntry, setCurrentEntry] = useState(null);
         const [isOpen, setIsOpen] = useState(true);
+        const [materialDialogOpen, setMaterialDialogOpen] = useState(false);
+        const [materials, setMaterials] = useState([
+            { id: "mat1", name: "第6回講義スライド", url: "https://example.com/slide6.pdf" },
+            { id: "mat2", name: "参考書リスト", url: "https://example.com/books" },
+        ]);
 
         const [assignments, setAssignments] = useState(MOCK_ASSIGNMENTS);
         const [memos, setMemos] = useState(MOCK_MEMOS);
@@ -737,6 +871,11 @@
             if (entry.type === "memo") setMemos(prev => [...prev, restored]);
             else setAssignments(prev => [...prev, restored]);
         }, []);
+        const handleMaterialSave = useCallback((data) => {
+            setMaterials(prev => [...prev, { id: "mat_" + Date.now(), ...data }]);
+            setMaterialDialogOpen(false);
+        }, []);
+        const handleMaterialDelete = useCallback((id) => { setMaterials(prev => prev.filter(m => m.id !== id)); }, []);
         const handleMemoAdd = useCallback((memo) => { setMemos(prev => [...prev, memo]); }, []);
         const handleMemoDelete = useCallback((entry) => { setMemos(prev => prev.filter(m => m.id !== entry.id)); }, []);
         const handleSettingsChange = useCallback((key, value) => {
@@ -786,7 +925,7 @@
 
                     {/* タブ */}
                     <div className="ms-tabs">
-                        {[["assignment","課題一覧"],["submitted","提出済み"],["dismissed","非表示"],["timetable","時間割"],["settings","詳細設定"]].map(([key, label]) => (
+                        {[["assignment","課題一覧"],["submitted","提出済み"],["dismissed","非表示"],["timetable","時間割"],["materials","素材"],["settings","詳細設定"]].map(([key, label]) => (
                             <React.Fragment key={key}>
                                 <input id={`demo-${key}Tab`} type="radio" name="ms-tab" checked={tab === key} onChange={() => { setTab(key); setMemoBoxShown(false); }} />
                                 <label htmlFor={`demo-${key}Tab`}>{label}</label>
@@ -834,11 +973,30 @@
                         </>
                     )}
 
+                    {/* 素材タブ */}
+                    {tab === "materials" && (
+                        <>
+                            <h3 className="ms-tab-heading">授業資料</h3>
+                            <div className="ms-materials-list">
+                                {materials.map(m => (
+                                    <div className="ms-material-item" key={m.id}>
+                                        <a className="ms-material-link" href={m.url} target="_blank" rel="noopener">{m.name}</a>
+                                        <span className="ms-material-delete" onClick={() => handleMaterialDelete(m.id)} title="削除">&times;</span>
+                                    </div>
+                                ))}
+                                {materials.length === 0 && <div className="ms-empty-message">授業資料はありません</div>}
+                                <button className="ms-material-add-btn" onClick={() => setMaterialDialogOpen(true)}>+ 資料を追加</button>
+                            </div>
+                        </>
+                    )}
+
                     {/* 設定タブ */}
                     {tab === "settings" && <SettingsTab settings={settings} onSettingsChange={handleSettingsChange} />}
 
                     {/* 日付ピッカーモーダル */}
                     <DatepickerModal isOpen={datepickerOpen} onClose={() => { setDatepickerOpen(false); setCurrentEntry(null); }} onSave={handleDatepickerSave} />
+                    {/* 素材追加ダイアログ */}
+                    <AddMaterialDialog isOpen={materialDialogOpen} onClose={() => setMaterialDialogOpen(false)} onSave={handleMaterialSave} />
                 </div>
             </>
         );
@@ -849,6 +1007,10 @@
     // ============================================================
     const root = ReactDOM.createRoot(document.getElementById("minisakai-live-root"));
     root.render(<MiniSakaiApp />);
+
+    // SubSakaiマウント
+    const subRoot = ReactDOM.createRoot(document.getElementById("subsakai-live-root"));
+    subRoot.render(<SubSakaiApp />);
     </script>
 
     <script>

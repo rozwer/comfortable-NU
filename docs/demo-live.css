@@ -1130,6 +1130,329 @@
 }
 
 /* ============================================================
+   タイムスタンプバッジ
+   ============================================================ */
+.ms-badge-timestamp {
+    background: #17a2b8;
+    color: #fff;
+    border: 1px solid #138496;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================
+   SubSakai (サブセット表示)
+   ============================================================ */
+.ms-assignment-date-padding {
+    padding-left: 10px;
+}
+
+.ms-subsakai {
+    padding-top: 50px;
+    max-height: 50vh;
+}
+
+.ms-subsakai .ms-course-name {
+    cursor: default;
+}
+
+.demo-subsakai-section {
+    max-width: 360px;
+    margin: 40px auto 0;
+}
+
+.demo-subsakai-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.demo-subsakai-desc {
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+[data-demo-theme="dark"] .demo-subsakai-title {
+    color: #e0e0e0;
+}
+
+[data-demo-theme="dark"] .demo-subsakai-desc {
+    color: #aaa;
+}
+
+.demo-subsakai-wrapper {
+    /* SubSakai独自のスタイル不要（ms-minisakai ms-subsakaiで対応） */
+}
+
+/* ============================================================
+   日付ピッカー 永久非表示スタイル改善
+   ============================================================ */
+.ms-datepicker-permanent-option {
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    border-left: 3px solid #17a2b8;
+    background: rgba(23, 162, 184, 0.05);
+    border-radius: 0 4px 4px 0;
+}
+
+.ms-datepicker-permanent-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+[data-demo-theme="dark"] .ms-datepicker-permanent-label {
+    color: #e0e0e0;
+}
+
+.ms-datepicker-permanent-checkbox {
+    width: 18px;
+    height: 18px;
+    transform: scale(1.2);
+}
+
+.ms-datepicker-permanent-info {
+    font-size: 13px;
+    color: #17a2b8;
+    margin: 8px 0 0;
+    padding: 8px 12px;
+    background: #e8f4f8;
+    border-left: 3px solid #17a2b8;
+    border-radius: 0 4px 4px 0;
+}
+
+[data-demo-theme="dark"] .ms-datepicker-permanent-info {
+    background: rgba(23, 162, 184, 0.15);
+    color: #6dcfe0;
+}
+
+/* ============================================================
+   素材管理
+   ============================================================ */
+.ms-materials-list {
+    padding: 8px 10px;
+}
+
+.ms-material-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.ms-material-item:hover {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+[data-demo-theme="dark"] .ms-material-item {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-demo-theme="dark"] .ms-material-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ms-material-link {
+    font-size: 13px;
+    color: #0064cd;
+    text-decoration: none;
+    word-break: break-word;
+    flex: 1;
+}
+
+.ms-material-link:hover {
+    text-decoration: underline;
+}
+
+[data-demo-theme="dark"] .ms-material-link {
+    color: #6daaed;
+}
+
+.ms-material-delete {
+    color: #d32f2f;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+.ms-material-delete:hover {
+    color: #b71c1c;
+}
+
+.ms-material-add-btn {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    margin-top: 8px;
+    background: #0064cd;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.ms-material-add-btn:hover {
+    background: #004e9e;
+}
+
+/* ============================================================
+   素材追加ダイアログ
+   ============================================================ */
+.ms-material-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.ms-material-dialog-modal {
+    background: #fff;
+    border-radius: 8px;
+    width: 380px;
+    max-width: 90vw;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+[data-demo-theme="dark"] .ms-material-dialog-modal {
+    background: #2c3038;
+}
+
+.ms-material-dialog-header {
+    background: #0064cd;
+    color: #fff;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ms-material-dialog-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.ms-material-dialog-close {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0 4px;
+}
+
+.ms-material-dialog-content {
+    padding: 16px;
+}
+
+.ms-material-dialog-form-group {
+    margin-bottom: 16px;
+}
+
+.ms-material-dialog-form-group label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: #333;
+}
+
+[data-demo-theme="dark"] .ms-material-dialog-form-group label {
+    color: #ddd;
+}
+
+.ms-material-dialog-form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.ms-material-dialog-form-group input:focus {
+    border-color: #0064cd;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 100, 205, 0.2);
+}
+
+[data-demo-theme="dark"] .ms-material-dialog-form-group input {
+    background: #3a3f47;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+.ms-material-dialog-error {
+    color: #d32f2f;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.ms-material-dialog-footer {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px solid #eee;
+}
+
+[data-demo-theme="dark"] .ms-material-dialog-footer {
+    border-top-color: #444;
+}
+
+.ms-material-dialog-cancel {
+    padding: 8px 16px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #333;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+[data-demo-theme="dark"] .ms-material-dialog-cancel {
+    background: #3a3f47;
+    border-color: #555;
+    color: #ccc;
+}
+
+.ms-material-dialog-save {
+    padding: 8px 16px;
+    background: #0064cd;
+    border: 1px solid #0064cd;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.ms-material-dialog-save:hover {
+    background: #004e9e;
+}
+
+/* ============================================================
    レスポンシブ対応
    ============================================================ */
 @media (max-width: 480px) {
@@ -1181,5 +1504,14 @@
         max-width: 80px;
         font-size: 10px;
         padding: 3px 6px;
+    }
+
+    .demo-subsakai-section {
+        max-width: 100%;
+        padding: 0 8px;
+    }
+
+    .ms-material-dialog-modal {
+        width: 90vw;
     }
 }
