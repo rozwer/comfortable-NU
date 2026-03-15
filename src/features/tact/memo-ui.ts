@@ -54,10 +54,6 @@ export class MemoUI {
         const header = document.createElement('div');
         header.className = 'cs-memo-header';
 
-        const title = document.createElement('h3');
-        title.textContent = i18nMessage('memo_ui_title');
-        title.className = 'cs-memo-title';
-
         const actions = document.createElement('div');
         actions.className = 'cs-memo-actions';
 
@@ -83,7 +79,6 @@ export class MemoUI {
         // actions.appendChild(exportBtn);
         // actions.appendChild(importBtn);
 
-        header.appendChild(title);
         header.appendChild(actions);
 
         return header;
