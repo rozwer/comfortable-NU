@@ -44,6 +44,19 @@ type CalendarSyncOption = {
     autoSyncEnabled: boolean;
 };
 
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2026-03-15
+ * Changes    : 新着ファイル検知の設定オプションを追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
+type NewFileDetectionOption = {
+    /** 新着ファイルチェックの間隔（分）。デフォルト 30 分 */
+    checkIntervalMinutes: number;
+};
+
 type CSColor = {
     topDanger: string;
     topWarning: string;
@@ -61,7 +74,7 @@ type CSColor = {
 
 const CSTheme = {
     light: { textColor: "#464646", bgColor: "#cacaca", dateColor: "#b01011" },
-    dark: { textColor: "#d4d4d4", bgColor: "#555555", dateColor: "#ff7475" }
+    dark: { textColor: "#d4d4d4", bgColor: "#555555", dateColor: "#ff7475" },
 };
 
 export class Settings {
@@ -69,24 +82,27 @@ export class Settings {
         version: VERSION,
         hostname: window.location.hostname,
         currentTime: CurrentTime,
-        useDarkTheme: false
+        useDarkTheme: false,
     };
     fetchTime: FetchTime = {
         assignment: undefined,
-        quiz: undefined
+        quiz: undefined,
     };
     cacheInterval: CacheInterval = {
         assignment: 120,
-        quiz: 600
+        quiz: 600,
     };
     miniSakaiOption: DisplayOption = {
         showCompletedEntry: true,
         showLateAcceptedEntry: false,
         hideUnpublishedAssignments: true,
-        overlayFullScreen: false
+        overlayFullScreen: false,
     };
     calendarSyncOption: CalendarSyncOption = {
-        autoSyncEnabled: true
+        autoSyncEnabled: true,
+    };
+    newFileDetectionOption: NewFileDetectionOption = {
+        checkIntervalMinutes: 30,
     };
     color: CSColor = {
         topDanger: "#f78989",
@@ -100,7 +116,7 @@ export class Settings {
         timetableDanger: "#e85555",
         timetableWarning: "#d7aa57",
         timetableSuccess: "#62b665",
-        timetableOther: "#777777"
+        timetableOther: "#777777",
     };
 
     setFetchtime(fetchTime: FetchTime) {

@@ -9,8 +9,9 @@ import { getQuizzes } from "./features/entity/quiz/getQuiz";
 import { getFetchTime, shouldUseCache } from "./utils";
 import { Settings } from "./features/setting/types";
 import { EntryProtocol, EntityProtocol } from "./features/entity/type";
+import { checkNewFiles } from "./features/newFileDetection";
 
-const logger = createLogger('content_script');
+const logger = createLogger("content_script");
 
 /**
  * Creates miniSakai.
@@ -23,16 +24,16 @@ async function main() {
 
         miniSakaiReady();
         await saveHostName(hostname);
-        
-                // 自動同期チェックを設定
+
+        // 自動同期チェックを設定
         setupAutoSyncCheck();
     }
-    
+
     // TACTポータル用の機能を追加
     if (isTactPortal()) {
         // DOMが完全にロードされてから実行
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initTactFeatures);
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initTactFeatures);
         } else {
             initTactFeatures();
         }
@@ -43,19 +44,19 @@ async function main() {
  * TACTポータル用の機能を初期化
  */
 function initTactFeatures() {
-    logger.debug('TACT Portal detected - initializing custom tabs');
+    logger.debug("TACT Portal detected - initializing custom tabs");
     // ツールナビゲーションが読み込まれるまで待つ（最大30秒）
     let attempts = 0;
     const maxAttempts = 60;
     const checkToolMenu = setInterval(() => {
         attempts++;
-        const toolMenu = document.querySelector('#toolMenu ul');
+        const toolMenu = document.querySelector("#toolMenu ul");
         if (toolMenu) {
             clearInterval(checkToolMenu);
             initializeTactFeatures();
         } else if (attempts >= maxAttempts) {
             clearInterval(checkToolMenu);
-            logger.error('TACT tool menu not found after maximum attempts');
+            logger.error("TACT tool menu not found after maximum attempts");
         }
     }, 500);
 }
@@ -64,27 +65,44 @@ function initTactFeatures() {
 function setupAutoSyncCheck() {
     // バックグラウンドからの同期リクエストのリスナーを追加
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.action === 'getSakaiDataForSync') {
-            logger.debug('バックグラウンドからデータ取得リクエストを受信しました');
+        if (request.action === "getSakaiDataForSync") {
+            logger.debug("バックグラウンドからデータ取得リクエストを受信しました");
             // データを取得して返す
-            getSakaiDataForSync().then(data => {
-                sendResponse({ success: true, data });
-            }).catch(error => {
-                sendResponse({ success: false, error: String(error) });
-            });
+            getSakaiDataForSync()
+                .then((data) => {
+                    sendResponse({ success: true, data });
+                })
+                .catch((error) => {
+                    sendResponse({ success: false, error: String(error) });
+                });
             return true; // 非同期レスポンスを示す
-        } else if (request.action === 'syncCompleted') {
+        } else if (request.action === "checkNewFiles") {
+            // バックグラウンドからの新着ファイルチェック要求
+            logger.debug("バックグラウンドから新着ファイルチェックリクエストを受信しました");
+            const hostname = window.location.hostname;
+            const courses = fetchCourse();
+            const courseIds = courses.map((c: any) => c.id as string).filter(Boolean);
+            checkNewFiles(hostname, courseIds)
+                .then(() => {
+                    sendResponse({ success: true });
+                })
+                .catch((error) => {
+                    logger.error("新着ファイルチェックエラー:", error);
+                    sendResponse({ success: false, error: String(error) });
+                });
+            return true; // 非同期レスポンスを示す
+        } else if (request.action === "syncCompleted") {
             logger.debug(`同期完了通知: 課題${request.result.assignments}件、クイズ${request.result.quizzes}件`);
             // 最終同期時刻を更新
             setStorageDirect({ lastSyncTime: Date.now() }).catch((err) => {
-                logger.error('Failed to update lastSyncTime:', err);
+                logger.error("Failed to update lastSyncTime:", err);
             });
             // 同期完了のUI通知を表示
             showSyncNotification(request.result);
         }
         return false;
     });
-    
+
     // 初期同期チェック
     setTimeout(checkAndSyncIfNeeded, 5000);
 }
@@ -92,15 +110,15 @@ function setupAutoSyncCheck() {
 // 自動同期の条件をチェックし、必要なら同期を実行
 async function checkAndSyncIfNeeded() {
     // Backgroundに自動同期の条件を確認
-    chrome.runtime.sendMessage({ action: 'checkAutoSync' }, async (response) => {
+    chrome.runtime.sendMessage({ action: "checkAutoSync" }, async (response) => {
         if (chrome.runtime.lastError) {
-            logger.error('自動同期チェックエラー:', chrome.runtime.lastError);
+            logger.error("自動同期チェックエラー:", chrome.runtime.lastError);
             return;
         }
-        
+
         // 同期条件を満たしていれば実行
         if (response && response.success && response.shouldSync) {
-            logger.debug('自動同期条件を満たしました - 同期を開始します');
+            logger.debug("自動同期条件を満たしました - 同期を開始します");
             await performAutoSync();
         }
     });
@@ -112,7 +130,7 @@ async function performAutoSync() {
         const data = await getSakaiDataForSync();
 
         if (data.assignments.length === 0 && data.quizzes.length === 0) {
-            logger.debug('同期するデータが見つかりませんでした');
+            logger.debug("同期するデータが見つかりませんでした");
             return;
         }
 
@@ -121,7 +139,7 @@ async function performAutoSync() {
 
         logger.debug(`自動同期完了: ${result.assignments.length + result.quizzes.length}件作成`);
     } catch (error) {
-        logger.error('自動同期に失敗:', error);
+        logger.error("自動同期に失敗:", error);
     }
 }
 
@@ -137,18 +155,21 @@ interface SyncResult {
 }
 async function syncToCalendar(data: SyncData): Promise<SyncResult> {
     return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({
-            action: 'syncToCalendar',
-            data: data
-        }, response => {
-            if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError);
-            } else if (!response || !response.success) {
-                reject(new Error(response?.error || 'Unknown error'));
-            } else {
-                resolve(response.result);
+        chrome.runtime.sendMessage(
+            {
+                action: "syncToCalendar",
+                data: data,
+            },
+            (response) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else if (!response || !response.success) {
+                    reject(new Error(response?.error || "Unknown error"));
+                } else {
+                    resolve(response.result);
+                }
             }
-        });
+        );
     });
 }
 
@@ -167,90 +188,93 @@ async function getSakaiDataForSync(): Promise<SyncData> {
     // 締切が今より前のものは除外
     // エントリにコース情報を付与してフラット化
     const totalAssignmentEntries = assignments.flatMap((assignment: EntityProtocol) =>
-        assignment.entries.filter((e: EntryProtocol) => e.dueTime > now)
+        assignment.entries
+            .filter((e: EntryProtocol) => e.dueTime > now)
             .map((e: any) => ({ ...e, courseName: assignment.course.name, context: assignment.course.id }))
     );
     const totalQuizEntries = quizzes.flatMap((quiz: EntityProtocol) =>
-        quiz.entries.filter((e: EntryProtocol) => e.dueTime > now)
+        quiz.entries
+            .filter((e: EntryProtocol) => e.dueTime > now)
             .map((e: any) => ({ ...e, courseName: quiz.course.name, context: quiz.course.id }))
     );
     return {
         assignments: totalAssignmentEntries,
-        quizzes: totalQuizEntries
+        quizzes: totalQuizEntries,
     };
 }
 
 // UI通知を表示する関数
-function showSyncNotification(result: { assignments: number, quizzes: number, errors?: number }) {
+function showSyncNotification(result: { assignments: number; quizzes: number; errors?: number }) {
     // 通知要素が既に存在する場合は削除
-    const existingNotification = document.getElementById('cs-sync-notification');
+    const existingNotification = document.getElementById("cs-sync-notification");
     if (existingNotification) {
         existingNotification.remove();
     }
 
     // 通知エレメントを作成
-    const notification = document.createElement('div');
-    notification.id = 'cs-sync-notification';
-    notification.className = 'cs-sync-notification';
-    
+    const notification = document.createElement("div");
+    notification.id = "cs-sync-notification";
+    notification.className = "cs-sync-notification";
+
     // 結果に応じたスタイルとメッセージを設定
     const hasErrors = result.errors && result.errors > 0;
     const totalEvents = result.assignments + result.quizzes;
-    
+
     let icon: string;
     let title: string;
     let body: string;
 
     if (hasErrors) {
-        notification.classList.add('cs-sync-error');
-        icon = '\u26A0\uFE0F';
-        title = '\u30AB\u30EC\u30F3\u30C0\u30FC\u540C\u671F\u306E\u8B66\u544A';
+        notification.classList.add("cs-sync-error");
+        icon = "\u26A0\uFE0F";
+        title = "\u30AB\u30EC\u30F3\u30C0\u30FC\u540C\u671F\u306E\u8B66\u544A";
         body = `${totalEvents}\u4EF6\u306E\u30A4\u30D9\u30F3\u30C8\u3092\u540C\u671F\u3057\u307E\u3057\u305F\u3002${result.errors}\u4EF6\u306E\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F\u3002`;
     } else if (totalEvents > 0) {
-        notification.classList.add('cs-sync-success');
-        icon = '\u2705';
-        title = '\u30AB\u30EC\u30F3\u30C0\u30FC\u540C\u671F\u5B8C\u4E86';
+        notification.classList.add("cs-sync-success");
+        icon = "\u2705";
+        title = "\u30AB\u30EC\u30F3\u30C0\u30FC\u540C\u671F\u5B8C\u4E86";
         body = `${result.assignments}\u4EF6\u306E\u8AB2\u984C\u3068${result.quizzes}\u4EF6\u306E\u30AF\u30A4\u30BA\u3092\u30AB\u30EC\u30F3\u30C0\u30FC\u306B\u8FFD\u52A0\u3057\u307E\u3057\u305F`;
     } else {
-        notification.classList.add('cs-sync-info');
-        icon = '\u2139\uFE0F';
-        title = '\u30AB\u30EC\u30F3\u30C0\u30FC\u540C\u671F\u60C5\u5831';
-        body = '\u540C\u671F\u3059\u3079\u304D\u65B0\u3057\u3044\u30A4\u30D9\u30F3\u30C8\u306F\u3042\u308A\u307E\u305B\u3093\u3067\u3057\u305F';
+        notification.classList.add("cs-sync-info");
+        icon = "\u2139\uFE0F";
+        title = "\u30AB\u30EC\u30F3\u30C0\u30FC\u540C\u671F\u60C5\u5831";
+        body =
+            "\u540C\u671F\u3059\u3079\u304D\u65B0\u3057\u3044\u30A4\u30D9\u30F3\u30C8\u306F\u3042\u308A\u307E\u305B\u3093\u3067\u3057\u305F";
     }
 
-    const header = document.createElement('div');
-    header.className = 'cs-sync-notification-header';
-    const iconSpan = document.createElement('span');
-    iconSpan.className = 'cs-sync-icon';
+    const header = document.createElement("div");
+    header.className = "cs-sync-notification-header";
+    const iconSpan = document.createElement("span");
+    iconSpan.className = "cs-sync-icon";
     iconSpan.textContent = icon;
-    const titleSpan = document.createElement('span');
+    const titleSpan = document.createElement("span");
     titleSpan.textContent = title;
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'cs-sync-close-btn';
-    closeBtn.textContent = '\u00D7';
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "cs-sync-close-btn";
+    closeBtn.textContent = "\u00D7";
     header.appendChild(iconSpan);
     header.appendChild(titleSpan);
     header.appendChild(closeBtn);
 
-    const bodyDiv = document.createElement('div');
-    bodyDiv.className = 'cs-sync-notification-body';
+    const bodyDiv = document.createElement("div");
+    bodyDiv.className = "cs-sync-notification-body";
     bodyDiv.textContent = body;
 
     notification.appendChild(header);
     notification.appendChild(bodyDiv);
-    
+
     // 通知を表示
     document.body.appendChild(notification);
-    
+
     // 閉じるボタンのイベントリスナー
-    closeBtn.addEventListener('click', () => {
+    closeBtn.addEventListener("click", () => {
         notification.remove();
     });
-    
+
     // 自動消滅タイマー（8秒後）
     setTimeout(() => {
         if (notification.parentNode) {
-            notification.classList.add('cs-sync-notification-fade');
+            notification.classList.add("cs-sync-notification-fade");
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.remove();
@@ -259,6 +283,5 @@ function showSyncNotification(result: { assignments: number, quizzes: number, er
         }
     }, 8000);
 }
-
 
 main();

@@ -11,6 +11,7 @@ import { DueCategory, getDaysUntil } from "../utils";
 import { Settings } from "../features/setting/types";
 import { EntityProtocol, EntryProtocol } from "../features/entity/type";
 import { MaxTimestamp } from "../constant";
+import { getNewFileFlags, NewFileFlags } from "../features/newFileDetection";
 
 /**
  * -----------------------------------------------------------------
@@ -21,7 +22,7 @@ import { MaxTimestamp } from "../constant";
  * -----------------------------------------------------------------
  */
 // コース色情報を共有するためのグローバル変数
-export let courseColorInfo: string = "";
+export let courseColorInfo = "";
 
 /**
  * -----------------------------------------------------------------
@@ -39,7 +40,7 @@ const dueCategoryClassMap: { [key in DueCategory]: string } = {
     duePassed: "cs-tab-default",
     notPublished: "cs-tab-default",
     submitted: "cs-tab-default",
-    dismissed: "cs-tab-default"
+    dismissed: "cs-tab-default",
 };
 
 /**
@@ -99,28 +100,28 @@ const createDueMap = (settings: Settings, courseMap: CourseMap): DueMap => {
     const dueMap = new Map<string, { due: DueCategory; isRead: boolean }>();
     for (const [courseID, entries] of courseMap.entries()) {
         if (entries.entries.length === 0) continue;
-        
+
         // すべてのエントリーに対してカテゴリを計算して優先度の高いものを選択する
         let highestPriorityCategory: DueCategory = "duePassed"; // デフォルト値（優先度最低）
         const categoryPriority: { [key in DueCategory]: number } = {
-            "due24h": 5,      // 最高優先度
-            "due5d": 4,
-            "due14d": 3,
-            "dueOver14d": 2,
-            "duePassed": 1,
-            "notPublished": 0,
-            "submitted": 0,
-            "dismissed": 0
+            due24h: 5, // 最高優先度
+            due5d: 4,
+            due14d: 3,
+            dueOver14d: 2,
+            duePassed: 1,
+            notPublished: 0,
+            submitted: 0,
+            dismissed: 0,
         };
-        
+
         let isRead = true;
-        
+
         for (const entry of entries.entries) {
             // 完了済みかどうかはcheckTimestampで判断
             const checkTimestamp = (entry as any).checkTimestamp;
             if (checkTimestamp) {
                 // yyyy/mm/dd/hh形式のタイムスタンプをパースして現在時刻と比較
-                const parts = checkTimestamp.split('/');
+                const parts = checkTimestamp.split("/");
                 if (parts.length === 4) {
                     const checkDate = new Date(
                         parseInt(parts[0]), // 年
@@ -136,28 +137,31 @@ const createDueMap = (settings: Settings, courseMap: CourseMap): DueMap => {
             if ((entry as any).submitted === true) continue;
 
             // エントリの締め切り時間を取得
-            const entryDueTime = entry.getTimestamp(settings.appInfo.currentTime, settings.miniSakaiOption.showLateAcceptedEntry);
+            const entryDueTime = entry.getTimestamp(
+                settings.appInfo.currentTime,
+                settings.miniSakaiOption.showLateAcceptedEntry
+            );
             if (entryDueTime === MaxTimestamp) continue;
-            
+
             // 追加情報を取得
             const entryInfo = {
                 openTimeString: (entry as any).openTimeString,
                 submitted: (entry as any).submitted,
-                hasFinished: entry.hasFinished
+                hasFinished: entry.hasFinished,
             };
-            
+
             // このエントリのカテゴリを計算
             const entryCategory = getDaysUntil(settings.appInfo.currentTime, entryDueTime, entryInfo);
-            
+
             // 既存のカテゴリより優先度が高ければ更新
             if (categoryPriority[entryCategory] > categoryPriority[highestPriorityCategory]) {
                 highestPriorityCategory = entryCategory;
             }
-            
+
             // 既読状態を確認
             isRead = isRead && (entries.isRead || entries.entries.length === 0);
         }
-        
+
         // 何かしらのエントリが見つかった場合のみ追加
         if (highestPriorityCategory !== "duePassed" || entries.entries.length > 0) {
             dueMap.set(courseID, { due: highestPriorityCategory, isRead: isRead });
@@ -167,7 +171,7 @@ const createDueMap = (settings: Settings, courseMap: CourseMap): DueMap => {
 };
 
 /**
- * Add notification badge for new Assignment/Quiz
+ * Add notification badge for new Assignment/Quiz and new File
  */
 export async function createFavoritesBar(settings: Settings, entities: EntityProtocol[]): Promise<void> {
     const defaultTab = document.querySelectorAll(".Mrphs-sitesNav__menuitem");
@@ -175,7 +179,16 @@ export async function createFavoritesBar(settings: Settings, entities: EntityPro
 
     const courseMap = createCourseMap(entities);
     const dueMap = createDueMap(settings, courseMap);
-    
+
+    // 新着ファイルフラグを取得
+    const hostname = settings.appInfo.hostname;
+    let newFileFlags: NewFileFlags = {};
+    try {
+        newFileFlags = await getNewFileFlags(hostname);
+    } catch (e) {
+        // ストレージ読み込み失敗時はフラグなし扱いにして続行
+    }
+
     /**
      * -----------------------------------------------------------------
      * Modified by: roz
@@ -203,25 +216,26 @@ export async function createFavoritesBar(settings: Settings, entities: EntityPro
         const courseName = aTag?.textContent?.trim() || "不明なコース";
         const tabClass = dueCategoryClassMap[courseInfo.due];
         const aTagCount = defaultTab[j].getElementsByTagName("a").length;
-        
+
         // コース名と色の対応を記録
         courseColorMapping.push({
             courseName,
             courseId: courseID,
             color: tabClass,
-            category: courseInfo.due
+            category: courseInfo.due,
         });
         // Apply color to course button
         for (let i = 0; i < aTagCount; i++) {
             defaultTab[j].getElementsByTagName("a")[i].classList.add(tabClass);
         }
         defaultTab[j].classList.add(tabClass);
-        // Put notification badge
-        if (!courseInfo.isRead) {
+        // Put notification badge (未読課題/クイズ、または新着ファイルがあれば表示)
+        const hasNewFile = newFileFlags[courseID] === true;
+        if (!courseInfo.isRead || hasNewFile) {
             defaultTab[j].classList.add("cs-notification-badge");
         }
     }
-    
+
     /**
      * -----------------------------------------------------------------
      * Modified by: roz
@@ -232,13 +246,13 @@ export async function createFavoritesBar(settings: Settings, entities: EntityPro
      */
     // コース色情報を文字列として保存
     let colorInfoText = "";
-    
-    courseColorMapping.forEach(item => {
+
+    courseColorMapping.forEach((item) => {
         const colorName = getColorName(item.color);
         const logText = `コース: ${item.courseName} (${item.courseId}) - 色: ${colorName} (カテゴリ: ${item.category})`;
         colorInfoText += logText + "\n";
     });
-    
+
     // グローバル変数に保存して他のモジュールからアクセス可能にする
     courseColorInfo = colorInfoText;
 }
@@ -252,7 +266,14 @@ export const resetFavoritesBar = (): void => {
      * Category   : バグ修正
      * -----------------------------------------------------------------
      */
-    const classList = ["cs-notification-badge", "cs-tab-danger", "cs-tab-warning", "cs-tab-success", "cs-tab-other", "cs-tab-default"];
+    const classList = [
+        "cs-notification-badge",
+        "cs-tab-danger",
+        "cs-tab-warning",
+        "cs-tab-success",
+        "cs-tab-other",
+        "cs-tab-default",
+    ];
     for (const c of classList) {
         const q = document.querySelectorAll(`.${c}`);
         // @ts-ignore
@@ -261,4 +282,4 @@ export const resetFavoritesBar = (): void => {
             _.style = "";
         }
     }
-}
+};

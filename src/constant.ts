@@ -35,3 +35,19 @@ export const TimetableTermStorage = "TimetableTerm";
 export const TimetableShowAllCoursesStorage = "TimetableShowAllCourses";
 export const MaxTimestamp = 99999999999999;
 export const TACT_HOSTNAME = "tact.ac.thers.ac.jp";
+/**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2026-03-15
+ * Changes    : 新着ファイル検知機能のストレージキーを追加
+ * Category   : 機能拡張
+ * -----------------------------------------------------------------
+ */
+/** コース別ファイル最終チェック時刻: { [courseId]: number } */
+export const FileCheckedTimestampsStorage = "fileCheckedTimestamps";
+/** コース別新着ファイルフラグ: { [courseId]: boolean } */
+export const NewFileFlagsStorage = "newFileFlags";
+/** 新着ファイルチェックのアラーム名 */
+export const NEW_FILE_CHECK_ALARM_NAME = "newFileCheckAlarm";
+/** 新着ファイルチェックのデフォルト間隔（分） */
+export const DEFAULT_NEW_FILE_CHECK_INTERVAL = 30;
