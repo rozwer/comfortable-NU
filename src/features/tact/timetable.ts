@@ -1168,6 +1168,20 @@ async function savePeriodTimes(hostname: string, times: string[]): Promise<void>
     await toStorage(hostname, PeriodTimesStorageKey, times);
 }
 
+// 履修取り消し情報のストレージキー
+const DroppedCoursesStorageKey = 'cs-timetable-dropped-courses';
+
+async function loadDroppedCourses(hostname: string): Promise<Record<string, boolean>> {
+    const result = await fromStorage<Record<string, boolean> | undefined>(hostname, DroppedCoursesStorageKey, d => d || {});
+    return result || {};
+}
+
+async function saveDroppedCourses(hostname: string, droppedMap: Record<string, boolean>): Promise<void> {
+    const existing = await loadDroppedCourses(hostname);
+    const merged = { ...existing, ...droppedMap };
+    await toStorage(hostname, DroppedCoursesStorageKey, merged);
+}
+
 // 教科の色情報のストレージキー
 const CourseColorStorageKey = 'cs-timetable-course-colors';
 
@@ -1208,13 +1222,15 @@ function showCourseColorModal() {
     closeBtn.textContent = '×';
     closeBtn.className = 'cs-tact-modal-close';
     closeBtn.onclick = () => {
-        // 色設定と教室情報を保存してから閉じる
+        // 色設定・教室情報・履修取り消しを保存してから閉じる
         const currentColorMap: Record<string, string> = {};
         const newClassroomMap: Record<string, string> = {};
+        const newDroppedMap: Record<string, boolean> = {};
         content.querySelectorAll('div[data-title]').forEach(row => {
             const rowTitle = (row as HTMLElement).dataset.title;
             const colorInput = row.querySelector('input[type="color"]') as HTMLInputElement;
             const roomInput = row.querySelector('.cs-classroom-input') as HTMLInputElement;
+            const droppedCheck = row.querySelector('.cs-dropped-checkbox') as HTMLInputElement;
             if (rowTitle && colorInput) {
                 currentColorMap[rowTitle] = colorInput.value;
             }
@@ -1222,10 +1238,14 @@ function showCourseColorModal() {
                 const val = roomInput.value.trim();
                 if (val) newClassroomMap[rowTitle] = val;
             }
+            if (rowTitle && droppedCheck) {
+                newDroppedMap[rowTitle] = droppedCheck.checked;
+            }
         });
         Promise.all([
             saveCourseColors(hostname, currentColorMap),
             saveClassroomInfo(hostname, newClassroomMap),
+            saveDroppedCourses(hostname, newDroppedMap),
         ]).then(() => {
             updateTimetable();
         });
@@ -1253,20 +1273,7 @@ function showCourseColorModal() {
         index === self.findIndex(c => c.title === course.title)
     );
     
-    Promise.all([loadCourseColors(hostname), loadClassroomInfo(hostname)]).then(([colorMap, classroomMap]) => {
-        // ヘッダー説明
-        const description = document.createElement('div');
-        description.style.marginBottom = '16px';
-        description.style.padding = '12px';
-        description.style.backgroundColor = '#f8f9fa';
-        description.style.borderRadius = '4px';
-        description.style.fontSize = '14px';
-        description.style.color = '#666';
-        description.innerHTML = `
-            <p><strong>教科の色設定</strong></p>
-            <p>各教科の色を選択してください。デフォルトは白です。</p>
-        `;
-        content.appendChild(description);
+    Promise.all([loadCourseColors(hostname), loadClassroomInfo(hostname), loadDroppedCourses(hostname)]).then(([colorMap, classroomMap, droppedMap]) => {
         
         uniqueCourses.forEach(course => {
             const card = document.createElement('div');
@@ -1396,6 +1403,32 @@ function showCourseColorModal() {
             roomRow.appendChild(roomInput);
             card.appendChild(roomRow);
 
+            // 履修取り消しチェックボックス
+            const dropRow = document.createElement('div');
+            dropRow.style.display = 'flex';
+            dropRow.style.alignItems = 'center';
+            dropRow.style.gap = '6px';
+            dropRow.style.marginTop = '6px';
+            const dropCheck = document.createElement('input');
+            dropCheck.type = 'checkbox';
+            dropCheck.className = 'cs-dropped-checkbox';
+            dropCheck.checked = !!droppedMap[course.title];
+            dropCheck.style.cursor = 'pointer';
+            const dropLabel = document.createElement('span');
+            dropLabel.textContent = '履修取り消し';
+            dropLabel.style.fontSize = '12px';
+            dropLabel.style.color = '#999';
+            dropLabel.style.cursor = 'pointer';
+            dropLabel.onclick = () => { dropCheck.checked = !dropCheck.checked; updateCardStyle(); };
+            const updateCardStyle = () => {
+                card.style.opacity = dropCheck.checked ? '0.4' : '1';
+            };
+            dropCheck.addEventListener('change', updateCardStyle);
+            updateCardStyle();
+            dropRow.appendChild(dropCheck);
+            dropRow.appendChild(dropLabel);
+            card.appendChild(dropRow);
+
             card.dataset.title = course.title;
             content.appendChild(card);
         });
@@ -1522,10 +1555,12 @@ function showCourseColorModal() {
         async function buildExportCanvas(): Promise<{ canvas: HTMLCanvasElement; filename: string } | null> {
             const currentColorMap: Record<string, string> = {};
             const currentClassroomMap: Record<string, string> = {};
+            const currentDroppedMap: Record<string, boolean> = {};
             content.querySelectorAll('div[data-title]').forEach(row => {
                 const rowTitle = (row as HTMLElement).dataset.title;
                 const colorInput = row.querySelector('input[type="color"]') as HTMLInputElement;
                 const roomInput = row.querySelector('.cs-classroom-input') as HTMLInputElement;
+                const droppedCheck = row.querySelector('.cs-dropped-checkbox') as HTMLInputElement;
                 if (rowTitle && colorInput) {
                     currentColorMap[rowTitle] = colorInput.value;
                 }
@@ -1533,10 +1568,14 @@ function showCourseColorModal() {
                     const val = roomInput.value.trim();
                     if (val) currentClassroomMap[rowTitle] = val;
                 }
+                if (rowTitle && droppedCheck) {
+                    currentDroppedMap[rowTitle] = droppedCheck.checked;
+                }
             });
             await Promise.all([
                 saveCourseColors(hostname, currentColorMap),
                 saveClassroomInfo(hostname, currentClassroomMap),
+                saveDroppedCourses(hostname, currentDroppedMap),
             ]);
 
             const yearSelect = document.getElementById('cs-timetable-year') as HTMLSelectElement;
@@ -1545,7 +1584,8 @@ function showCourseColorModal() {
             const selectedTerm = termSelect.value;
             const selectedTermLabel = termSelect.options[termSelect.selectedIndex].textContent || selectedTerm;
             const allCourses = (showAllCourses ? cachedAllCourses : cachedCourses) || [];
-            const filteredCourses = filterCoursesByYearAndTerm(allCourses, selectedYear, selectedTerm);
+            const filteredCourses = filterCoursesByYearAndTerm(allCourses, selectedYear, selectedTerm)
+                .filter(c => !currentDroppedMap[c.title]);
             const classroomData = currentClassroomMap;
 
             const exportDays = ['月', '火', '水', '木', '金'];
@@ -1751,9 +1791,10 @@ async function updateTimetable() {
         }
     }
 
-    const filteredCourses = filterCoursesByYearAndTerm(courses, year, term);
-    // 教室情報を一度だけ取得
-    loadClassroomInfo(currentSiteHostname).then(classroomMap => {
+    const yearTermFiltered = filterCoursesByYearAndTerm(courses, year, term);
+    // 教室情報と履修取り消し情報を取得
+    Promise.all([loadClassroomInfo(currentSiteHostname), loadDroppedCourses(currentSiteHostname)]).then(([classroomMap, droppedMap]) => {
+    const filteredCourses = yearTermFiltered.filter(c => !droppedMap[c.title]);
         const table = document.createElement('table');
         table.className = 'cs-timetable-table';
         table.style.tableLayout = 'fixed';
