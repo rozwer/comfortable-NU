@@ -25,7 +25,8 @@
         "css/calendar-sync.css",
         "css/material-dialog.css",
         "css/submitted-styles.css",
-        "css/submission-tracker.css"
+        "css/submission-tracker.css",
+        "css/cross-folder-browser.css"
       ],
       "matches": [
         "http://*/*",
@@ -76,7 +77,9 @@
         "img/miniSakaiBtn.png",
         "img/closeBtn.svg",
         "img/scheduleBtn.svg",
-        "img/favoriteBtn.svg"
+        "img/favoriteBtn.svg",
+        "img/trackerBtn.svg",
+        "img/folderBtn.svg"
       ],
       "matches": [
         "http://*/*",

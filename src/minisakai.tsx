@@ -96,10 +96,21 @@ favoriteButton.addEventListener("click", () => {
 export const submissionTrackerButton = document.createElement("button");
 submissionTrackerButton.className = "cs-header-btn cs-submission-tracker-btn";
 submissionTrackerButton.title = "提出率";
-submissionTrackerButton.textContent = "\u{1F4CA}";
+submissionTrackerButton.innerHTML = `<img src="${chrome.runtime.getURL("img/trackerBtn.svg")}" alt="tracker">`;
 submissionTrackerButton.addEventListener("click", () => {
     import("./features/submissionTracker").then(({ showSubmissionTrackerModal }) => {
         showSubmissionTrackerModal();
+    });
+});
+
+// 横断フォルダブラウザボタンの作成
+export const folderBrowserButton = document.createElement("button");
+folderBrowserButton.className = "cs-header-btn cs-folder-browser-btn";
+folderBrowserButton.title = "フォルダ";
+folderBrowserButton.innerHTML = `<img src="${chrome.runtime.getURL("img/folderBtn.svg")}" alt="folder">`;
+folderBrowserButton.addEventListener("click", () => {
+    import("./features/crossFolderBrowser").then(({ showCrossFolderBrowser }) => {
+        showCrossFolderBrowser();
     });
 });
 
@@ -124,6 +135,7 @@ export function addMiniSakaiBtn(): void {
         if (!topbar.contains(favoriteButton)) topbar.appendChild(favoriteButton);
         if (!topbar.contains(scheduleButton)) topbar.appendChild(scheduleButton);
         if (!topbar.contains(submissionTrackerButton)) topbar.appendChild(submissionTrackerButton);
+        if (!topbar.contains(folderBrowserButton)) topbar.appendChild(folderBrowserButton);
         if (!topbar.contains(hamburger)) topbar.appendChild(hamburger);
     } catch (e) {
         console.log("could not launch miniSakai.");
