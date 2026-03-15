@@ -82,30 +82,37 @@ export const addCustomToolTab = (
  * @param content モーダルのコンテンツ（HTML文字列またはDOM要素）
  */
 export const showTabContent = (title: string, content: string | HTMLElement): void => {
-    // 既存のモーダルがあれば削除
-    const existingModal = document.querySelector('.cs-tact-modal');
-    if (existingModal) {
-        existingModal.remove();
+    // 既存のオーバーレイがあれば削除
+    const existingOverlay = document.querySelector('.cs-tact-overlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
     }
+
+    // オーバーレイを作成（ビューポート全体をカバーし、モーダルを中央配置）
+    const overlay = document.createElement('div');
+    overlay.className = 'cs-tact-overlay';
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
 
     // モーダルコンテナを作成
     const modalContainer = document.createElement('div');
     modalContainer.className = 'cs-tact-modal';
-    
+
     // モーダルのヘッダー
     const modalHeader = document.createElement('div');
     modalHeader.className = 'cs-tact-modal-header';
-    
+
     const modalTitle = document.createElement('h2');
     modalTitle.textContent = title;
     modalHeader.appendChild(modalTitle);
-    
+
     const closeButton = document.createElement('button');
     closeButton.textContent = '×';
     closeButton.className = 'cs-tact-modal-close';
-    closeButton.addEventListener('click', () => modalContainer.remove());
+    closeButton.addEventListener('click', () => overlay.remove());
     modalHeader.appendChild(closeButton);
-    
+
     // モーダルのコンテンツ
     const modalContent = document.createElement('div');
     modalContent.className = 'cs-tact-modal-content';
@@ -114,13 +121,14 @@ export const showTabContent = (title: string, content: string | HTMLElement): vo
     } else {
         modalContent.appendChild(content);
     }
-    
+
     // モーダルを組み立てる
     modalContainer.appendChild(modalHeader);
     modalContainer.appendChild(modalContent);
-    
-    // ページにモーダルを追加
-    document.body.appendChild(modalContainer);
+    overlay.appendChild(modalContainer);
+
+    // ページにオーバーレイを追加
+    document.body.appendChild(overlay);
 };
 
 /**

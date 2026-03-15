@@ -199,9 +199,14 @@ async function loadClassroomInfo(hostname: string): Promise<Record<string, strin
 // 教室編集モーダル
 function showClassroomEditModal() {
     const hostname = window.location.hostname;
+    const overlay = document.createElement('div');
+    overlay.className = 'cs-tact-overlay';
+    overlay.style.zIndex = '10001';
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
     const modal = document.createElement('div');
     modal.className = 'cs-tact-modal cs-timetable-modal';
-    modal.style.zIndex = '10001';
     const header = document.createElement('div');
     header.className = 'cs-tact-modal-header';
     const title = document.createElement('h2');
@@ -210,7 +215,7 @@ function showClassroomEditModal() {
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '×';
     closeBtn.className = 'cs-tact-modal-close';
-    closeBtn.onclick = () => modal.remove();
+    closeBtn.onclick = () => overlay.remove();
     header.appendChild(closeBtn);
     modal.appendChild(header);
     const content = document.createElement('div');
@@ -253,20 +258,21 @@ function showClassroomEditModal() {
                 if (val) newMap[t] = val;
             });
             await saveClassroomInfo(hostname, newMap);
-            modal.remove();
+            overlay.remove();
             updateTimetable();
         };
         content.appendChild(saveBtn);
     });
     modal.appendChild(content);
-    document.body.appendChild(modal);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
 }
 
 export const showTimetableModal = (): void => {
     // 既存のモーダルがあれば削除
-    const existingModal = document.querySelector('.cs-tact-modal');
-    if (existingModal) {
-        existingModal.remove();
+    const existingOverlay = document.querySelector('.cs-tact-overlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
     }
 
     // モーダル再表示時にキャッシュをクリアして最新のDOM状態を反映
@@ -275,6 +281,13 @@ export const showTimetableModal = (): void => {
     
     // 現在のホスト名を取得
     const currentHostname = window.location.hostname;
+
+    // オーバーレイを作成（ビューポート内に収める）
+    const overlay = document.createElement('div');
+    overlay.className = 'cs-tact-overlay';
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
 
     // モーダルコンテナを作成
     const modalContainer = document.createElement('div');
@@ -311,7 +324,7 @@ export const showTimetableModal = (): void => {
     const closeButton = document.createElement('button');
     closeButton.textContent = '×';
     closeButton.className = 'cs-tact-modal-close';
-    closeButton.addEventListener('click', () => modalContainer.remove());
+    closeButton.addEventListener('click', () => overlay.remove());
     modalHeader.appendChild(closeButton);
     
     // モーダルのコンテンツ
@@ -531,9 +544,10 @@ export const showTimetableModal = (): void => {
     // モーダルを組み立てる
     modalContainer.appendChild(modalHeader);
     modalContainer.appendChild(modalContent);
-    
-    // ページにモーダルを追加
-    document.body.appendChild(modalContainer);
+
+    // オーバーレイにモーダルを入れてページに追加
+    overlay.appendChild(modalContainer);
+    document.body.appendChild(overlay);
     
     // 年度・学期選択のデバッグ表示
     yearSelect.addEventListener('change', () => {
@@ -1253,10 +1267,15 @@ async function saveCourseColors(hostname: string, colorMap: Record<string, strin
 // 教科の色選択モーダル
 function showCourseColorModal() {
     const hostname = window.location.hostname;
+    const colorOverlay = document.createElement('div');
+    colorOverlay.className = 'cs-tact-overlay';
+    colorOverlay.style.zIndex = '10002';
+    colorOverlay.addEventListener('click', (e) => {
+        if (e.target === colorOverlay) colorOverlay.remove();
+    });
     const modal = document.createElement('div');
-    modal.className = 'cs-tact-modal cs-timetable-color-modal'; // クラス名を変更
-    modal.style.zIndex = '10002';
-    modal.style.maxHeight = '60vh'; // 高さを明示的に60vhに限定
+    modal.className = 'cs-tact-modal cs-timetable-color-modal';
+    modal.style.maxHeight = '60vh';
     modal.style.overflowY = 'auto';
     
     const header = document.createElement('div');
@@ -1282,7 +1301,7 @@ function showCourseColorModal() {
         saveCourseColors(hostname, currentColorMap).then(() => {
             updateTimetable();
         });
-        modal.remove();
+        colorOverlay.remove();
     };
     header.appendChild(closeBtn);
     modal.appendChild(header);
@@ -1656,7 +1675,8 @@ function showCourseColorModal() {
     });
     
     modal.appendChild(content);
-    document.body.appendChild(modal);
+    colorOverlay.appendChild(modal);
+    document.body.appendChild(colorOverlay);
 }
 
 /**
@@ -1872,7 +1892,7 @@ async function updateTimetable() {
                         courseTitleEl.style.textOverflow = 'ellipsis';
                         courseTitleEl.style.whiteSpace = 'nowrap';
                         courseTitleEl.style.fontSize = '12px';
-                        courseTitleEl.style.color = '#265b81';
+                        courseTitleEl.style.color = '#112B72';
                         courseTitleEl.style.fontWeight = 'bold';
                         courseTitleEl.style.textAlign = 'center';
                         courseTitleContainer.appendChild(courseTitleEl);
