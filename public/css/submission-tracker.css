@@ -1,0 +1,257 @@
+/**
+ * 提出率トラッカー モーダル用スタイル
+ */
+
+/* モーダル全体のサイズ調整 */
+.cs-st-modal {
+    max-width: 700px;
+    width: 92vw;
+}
+
+/* モーダルコンテンツ */
+.cs-st-modal-content {
+    padding: 16px 20px;
+}
+
+/* ローディング */
+.cs-st-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    font-size: 14px;
+}
+
+/* --- サマリーセクション --- */
+.cs-st-summary-section {
+    background: #f0f6fb;
+    border: 1px solid #c5dced;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* 全体提出率の大きな数字 */
+.cs-st-overall-rate {
+    font-size: 52px;
+    font-weight: 700;
+    color: #1d4561;
+    line-height: 1.1;
+    margin-bottom: 8px;
+}
+
+/* サマリー統計行 */
+.cs-st-summary-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 12px;
+}
+
+.cs-st-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.cs-st-stat-num {
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.cs-st-stat-label {
+    font-size: 11px;
+    color: #666;
+}
+
+.cs-st-stat-submitted .cs-st-stat-num {
+    color: #2a7d35;
+}
+
+.cs-st-stat-unsubmitted .cs-st-stat-num {
+    color: #c0392b;
+}
+
+.cs-st-stat-total .cs-st-stat-num {
+    color: #1d4561;
+}
+
+/* 全体グラフのマージン調整 */
+.cs-st-overall-bar {
+    margin-top: 4px;
+}
+
+/* --- 横棒グラフ --- */
+.cs-st-bar-wrapper {
+    width: 100%;
+    margin: 4px 0;
+}
+
+.cs-st-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: #e0e0e0;
+    width: 100%;
+}
+
+.cs-st-bar-submitted {
+    background: #2ecc71;
+    height: 100%;
+    transition: width 0.3s ease;
+    min-width: 2px;
+}
+
+.cs-st-bar-unsubmitted {
+    background: #e74c3c;
+    height: 100%;
+    transition: width 0.3s ease;
+    min-width: 2px;
+}
+
+.cs-st-bar-empty {
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+}
+
+/* --- コース別セクション --- */
+.cs-st-courses-section {
+    padding: 0;
+}
+
+.cs-st-courses-title {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    color: #1d4561;
+    border-bottom: 2px solid #1d4561;
+    padding-bottom: 6px;
+}
+
+/* コース行 */
+.cs-st-course-row {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+/* コースヘッダー */
+.cs-st-course-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f8f8f8;
+    cursor: pointer;
+    user-select: none;
+    gap: 8px;
+    transition: background-color 0.15s;
+}
+
+.cs-st-course-header:hover {
+    background: #eef4fa;
+}
+
+.cs-st-course-header--open {
+    background: #e4f0f8;
+}
+
+.cs-st-course-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cs-st-course-stats {
+    font-size: 12px;
+    color: #555;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cs-st-toggle-icon {
+    font-size: 10px;
+    color: #888;
+    flex-shrink: 0;
+    width: 12px;
+    text-align: center;
+}
+
+/* コース行のグラフ */
+.cs-st-course-row .cs-st-bar-wrapper {
+    padding: 0 12px 6px 12px;
+    background: #f8f8f8;
+}
+
+.cs-st-course-row .cs-st-bar {
+    height: 7px;
+}
+
+/* 詳細（未提出リスト） */
+.cs-st-course-detail {
+    background: #fff;
+    border-top: 1px solid #e0e0e0;
+    padding: 8px 16px;
+}
+
+.cs-st-hidden {
+    display: none;
+}
+
+/* 未提出課題リスト */
+.cs-st-unsubmitted-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.cs-st-unsubmitted-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px solid #f0f0f0;
+    gap: 12px;
+}
+
+.cs-st-unsubmitted-item:last-child {
+    border-bottom: none;
+}
+
+.cs-st-entry-title {
+    font-size: 13px;
+    color: #333;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cs-st-entry-due {
+    font-size: 11px;
+    color: #c0392b;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* 未提出なしメッセージ */
+.cs-st-all-done {
+    margin: 0;
+    font-size: 12px;
+    color: #2a7d35;
+    padding: 4px 0;
+}
+
+/* コースが見つからない場合 */
+.cs-st-empty {
+    text-align: center;
+    color: #888;
+    padding: 32px 0;
+    font-size: 14px;
+}

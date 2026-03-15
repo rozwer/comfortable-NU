@@ -85,6 +85,25 @@ favoriteButton.addEventListener("click", () => {
 });
 
 /**
+ * -----------------------------------------------------------------
+ * Modified by: roz
+ * Date       : 2026-03-15
+ * Changes    : 提出率トラッカーボタンを追加
+ * Category   : UI機能拡張
+ * -----------------------------------------------------------------
+ */
+// 提出率トラッカーボタンの作成
+export const submissionTrackerButton = document.createElement("button");
+submissionTrackerButton.className = "cs-header-btn cs-submission-tracker-btn";
+submissionTrackerButton.title = "提出率";
+submissionTrackerButton.textContent = "\u{1F4CA}";
+submissionTrackerButton.addEventListener("click", () => {
+    import("./features/submissionTracker").then(({ showSubmissionTrackerModal }) => {
+        showSubmissionTrackerModal();
+    });
+});
+
+/**
  * Add a button to open miniSakai.
  */
 export function addMiniSakaiBtn(): void {
@@ -104,6 +123,7 @@ export function addMiniSakaiBtn(): void {
         // 二重挿入防止: すでにDOMに存在する場合はスキップ
         if (!topbar.contains(favoriteButton)) topbar.appendChild(favoriteButton);
         if (!topbar.contains(scheduleButton)) topbar.appendChild(scheduleButton);
+        if (!topbar.contains(submissionTrackerButton)) topbar.appendChild(submissionTrackerButton);
         if (!topbar.contains(hamburger)) topbar.appendChild(hamburger);
     } catch (e) {
         console.log("could not launch miniSakai.");

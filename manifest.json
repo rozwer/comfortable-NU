@@ -24,7 +24,8 @@
         "css/date-picker.css",
         "css/calendar-sync.css",
         "css/material-dialog.css",
-        "css/submitted-styles.css"
+        "css/submitted-styles.css",
+        "css/submission-tracker.css"
       ],
       "matches": [
         "http://*/*",
@@ -69,6 +70,7 @@
         "css/folder-styles.css",
         "css/material-dialog.css",
         "css/submitted-styles.css",
+        "css/submission-tracker.css",
         "img/logo.png",
         "img/noAssignment.png",
         "img/miniSakaiBtn.png",
