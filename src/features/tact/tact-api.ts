@@ -412,6 +412,6 @@ export class TactApiClient {
      * NUSSのURLかどうか判定
      */
     private isNussUrl(url: string): boolean {
-        return url.includes('nuss.nagoy') || url.includes('https%3A__nuss.nagoy');
+        return url.includes('nuss.nagoya-u.ac.jp') || url.includes('https%3A__nuss.nagoya-u.ac.jp');
     }
 }

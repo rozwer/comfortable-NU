@@ -310,6 +310,9 @@ docs/.claude/
 Plans.md
 bun.lock
 
+# Build outputs in root (webpack generates to dist/)
+/background.js
+
 # Timetable preview images
 timetable-*.png
 actual-timetable.png

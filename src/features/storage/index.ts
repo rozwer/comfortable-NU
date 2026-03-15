@@ -87,6 +87,28 @@ function doWrite(hostname: string, key: string, value: any): Promise<string> {
 }
 
 /**
+ * トップレベルキーへの直接書き込み用キュー。
+ * hostname を使わない chrome.storage.local.set() をキュー経由で安全に行う。
+ */
+const directWriteQueue: { promise: Promise<void> } = { promise: Promise.resolve() };
+
+export const setStorageDirect = (data: Record<string, any>): Promise<void> => {
+    const next = directWriteQueue.promise.then(() => doDirectWrite(data), () => doDirectWrite(data));
+    directWriteQueue.promise = next;
+    return next;
+};
+
+function doDirectWrite(data: Record<string, any>): Promise<void> {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.set(data, () => {
+            const err = checkRuntimeError();
+            if (err) { reject(err); return; }
+            resolve();
+        });
+    });
+}
+
+/**
  * Saves hostname to Storage.
  * @param hostname - A PRIMARY key for storage. Usually a hostname of Sakai LMS.
  */

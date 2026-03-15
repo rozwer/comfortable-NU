@@ -52,14 +52,16 @@ export const addFavoritedCourseSites = (baseURL: string): Promise<void> => {
     const request = new XMLHttpRequest();
     request.open("GET", baseURL + "/portal/favorites/list");
     request.responseType = "json";
+    request.timeout = 15000; // 15秒タイムアウト
 
     document.querySelector(".organizeFavorites")?.addEventListener("click", editFavoritesMessage);
     return new Promise((resolve, reject) => {
-        request.addEventListener("load", (e) => {
+        request.addEventListener("load", () => {
             const res = request.response;
             if (res == null) {
                 console.log("failed to fetch favorites list");
                 reject();
+                return;
             }
             const favorites = res.favoriteSiteIds as [string];
             const sitesInfo = getSiteIdAndHrefSiteNameMap();
@@ -89,6 +91,14 @@ export const addFavoritedCourseSites = (baseURL: string): Promise<void> => {
                 topnav.appendChild(li);
             }
             resolve();
+        });
+        request.addEventListener("error", () => {
+            console.error("favorites list request failed (network error)");
+            reject(new Error("Network error fetching favorites"));
+        });
+        request.addEventListener("timeout", () => {
+            console.error("favorites list request timed out");
+            reject(new Error("Timeout fetching favorites"));
         });
         request.send();
     });

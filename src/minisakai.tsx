@@ -88,7 +88,10 @@ favoriteButton.addEventListener("click", () => {
  * Add a button to open miniSakai.
  */
 export function addMiniSakaiBtn(): void {
-    const topbar = document.getElementById("mastLogin");
+    const topbar = document.getElementById("mastLogin")
+        || document.querySelector(".Mrphs-headerLogo")
+        || document.querySelector("nav.Mrphs-topHeader");
+    if (!topbar) return;
     try {
         /**
          * -----------------------------------------------------------------
@@ -98,12 +101,10 @@ export function addMiniSakaiBtn(): void {
          * Category   : UI機能拡張
          * -----------------------------------------------------------------
          */
-        // お気に入りボタンを追加
-        topbar?.appendChild(favoriteButton);
-        // 時間割ボタンを追加
-        topbar?.appendChild(scheduleButton);
-        // 既存のハンバーガーボタンを追加
-        topbar?.appendChild(hamburger);
+        // 二重挿入防止: すでにDOMに存在する場合はスキップ
+        if (!topbar.contains(favoriteButton)) topbar.appendChild(favoriteButton);
+        if (!topbar.contains(scheduleButton)) topbar.appendChild(scheduleButton);
+        if (!topbar.contains(hamburger)) topbar.appendChild(hamburger);
     } catch (e) {
         console.log("could not launch miniSakai.");
     }

@@ -35,7 +35,8 @@ export const mergeEntries = <Entry extends EntryProtocol>(oldEntryMap: Map<strin
     newEntryMap.forEach((entry, id) => {
         const oldEntry = oldEntryMap.get(id);
         if (oldEntry !== undefined) {
-            entry.hasFinished = oldEntry.hasFinished;
+            // 提出済み状態は一度trueになったら戻さない（API値またはキャッシュ値のどちらかがtrue）
+            entry.hasFinished = entry.hasFinished || oldEntry.hasFinished;
             // checkTimestampフィールドも保持する（null/undefinedでない場合）
             if ((oldEntry as any).checkTimestamp !== null && (oldEntry as any).checkTimestamp !== undefined) {
                 (entry as any).checkTimestamp = (oldEntry as any).checkTimestamp;

@@ -29,6 +29,7 @@ type DisplayOption = {
     showCompletedEntry: boolean;
     showLateAcceptedEntry: boolean;
     hideUnpublishedAssignments: boolean;
+    overlayFullScreen: boolean;
 };
 
 /**
@@ -81,7 +82,8 @@ export class Settings {
     miniSakaiOption: DisplayOption = {
         showCompletedEntry: true,
         showLateAcceptedEntry: false,
-        hideUnpublishedAssignments: true
+        hideUnpublishedAssignments: true,
+        overlayFullScreen: false
     };
     calendarSyncOption: CalendarSyncOption = {
         autoSyncEnabled: true

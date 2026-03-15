@@ -5,6 +5,8 @@
 import JSZip from 'jszip';
 import { TactApiClient } from './tact-api';
 import { formatDateToString } from '../../utils';
+import { createLogger } from '../../utils/logger';
+const logger = createLogger('folder-ui');
 
 export class FolderUI {
     private container: HTMLElement;
@@ -142,7 +144,7 @@ export class FolderUI {
             this.addDownloadListeners(containerElement);
             this.addMoveButtonListeners(containerElement);
         } catch (error) {
-            console.error('フォルダ構造の読み込みに失敗:', error);
+            logger.error('フォルダ構造の読み込みに失敗:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             containerElement.innerHTML = `
                 <div class="error-message">
@@ -186,7 +188,7 @@ export class FolderUI {
                         await this.loadFolderStructure(false, true); // 再読み込みボタンからの呼び出し
                     }
                 } catch (error) {
-                    console.error('再読み込みエラー:', error);
+                    logger.error('再読み込みエラー:', error);
                 } finally {
                     refreshButton.disabled = false;
                     refreshButton.textContent = '🔄 再読み込み';
@@ -333,7 +335,7 @@ export class FolderUI {
                 }
             }
         } catch (error) {
-            console.error('ツリー表示の更新に失敗:', error);
+            logger.error('ツリー表示の更新に失敗:', error);
         }
     }
 
@@ -381,7 +383,7 @@ export class FolderUI {
                 updateSelectedCount();
 
             } catch (error) {
-                console.error('ダウンロードエラー:', error);
+                logger.error('ダウンロードエラー:', error);
                 alert('ダウンロード中にエラーが発生しました。');
             } finally {
                 downloadButton.disabled = false;
@@ -413,6 +415,12 @@ export class FolderUI {
 
         if (allFiles.length === 0) {
             throw new Error('ダウンロード可能なファイルが見つかりません。');
+        }
+
+        // 50件以上の場合は確認警告
+        if (allFiles.length > 50) {
+            const proceed = confirm(`${allFiles.length}件のファイルをダウンロードします。メモリ使用量が大きくなる可能性があります。続行しますか？`);
+            if (!proceed) return;
         }
 
         // NUSSファイルと通常ファイルを分離
@@ -450,7 +458,7 @@ export class FolderUI {
                     const blob = await response.blob();
                     zip.file(file.filename, blob);
                 } catch (error) {
-                    console.error(`ファイル ${file.filename} のZIP追加に失敗:`, error);
+                    logger.error(`ファイル ${file.filename} のZIP追加に失敗:`, error);
                     failedFiles.push(file.filename);
                 }
             }
@@ -494,9 +502,9 @@ export class FolderUI {
                         bytes[j] = binary.charCodeAt(j);
                     }
                     zip.file(nussFile.filename, bytes);
-                    console.log(`NUSSファイル取得成功: ${nussFile.filename}`);
+                    logger.debug(`NUSSファイル取得成功: ${nussFile.filename}`);
                 } catch (error) {
-                    console.error(`NUSSファイル ${nussFile.filename} の取得に失敗:`, error);
+                    logger.error(`NUSSファイル ${nussFile.filename} の取得に失敗:`, error);
                     nussFailedFiles.push(nussFile);
                 }
             }
@@ -552,7 +560,7 @@ export class FolderUI {
                 failedFiles.map(n => `・${n}`).join('\n')
             );
         } else if (zipFiles.length > 0 || nussFiles.length > nussFailedFiles.length) {
-            console.log(`${successCount + (nussFiles.length - nussFailedFiles.length)}件のファイルをZIPでダウンロードしました`);
+            logger.debug(`${successCount + (nussFiles.length - nussFailedFiles.length)}件のファイルをZIPでダウンロードしました`);
         }
     }
 
@@ -599,7 +607,7 @@ export class FolderUI {
                             return;
                         }
                     } catch (nussError) {
-                        console.error(`NUSSファイル ${filename} のbackground fetch失敗:`, nussError);
+                        logger.error(`NUSSファイル ${filename} のbackground fetch失敗:`, nussError);
                     }
                 }
                 // フォールバック: 手動ダウンロード案内
@@ -629,7 +637,7 @@ export class FolderUI {
             
             window.URL.revokeObjectURL(downloadUrl);
         } catch (error) {
-            console.error(`ファイル ${filename} のダウンロードに失敗:`, error);
+            logger.error(`ファイル ${filename} のダウンロードに失敗:`, error);
             throw error;
         }
     }
@@ -638,23 +646,23 @@ export class FolderUI {
      * NUSSリンクかどうか判定
      */
     private isNussLink(url: string): boolean {
-        return url.includes('nuss.nagoy') || url.includes('https%3A__nuss.nagoy');
+        return url.includes('nuss.nagoya-u.ac.jp') || url.includes('https%3A__nuss.nagoya-u.ac.jp');
     }
 
     /**
      * NUSSファイルの警告表示とリンク開き
      */
     private async handleNussFile(url: string, filename: string): Promise<void> {
-        console.log(`⚠️ NUSSファイル検出: ${filename}`);
+        logger.debug(`⚠️ NUSSファイル検出: ${filename}`);
         
         // 警告メッセージを表示
         const message = `NUSSファイル「${filename}」は現在ダウンロードできません。\n\nブラウザの別タブでNUSSサイトを開きます。\n手動でダウンロードしてください。`;
         
         if (confirm(message)) {
-            console.log(`🌐 NUSSリンクを新しいタブで開きます: ${url}`);
+            logger.debug(`🌐 NUSSリンクを新しいタブで開きます: ${url}`);
             window.open(url, '_blank');
         } else {
-            console.log('👤 ユーザーがNUSSリンクを開くのをキャンセルしました');
+            logger.debug('👤 ユーザーがNUSSリンクを開くのをキャンセルしました');
         }
     }
 
@@ -665,15 +673,15 @@ export class FolderUI {
         if (!this.isEditMode) return;
 
         const moveButtons = container.querySelectorAll('.move-btn');
-        console.log(`移動ボタンリスナーを追加中... (編集モード: ${this.isEditMode})`);
-        console.log(`移動ボタン数: ${moveButtons.length}`);
+        logger.debug(`移動ボタンリスナーを追加中... (編集モード: ${this.isEditMode})`);
+        logger.debug(`移動ボタン数: ${moveButtons.length}`);
         
         moveButtons.forEach(button => {
             const btnElement = button as HTMLButtonElement;
             const itemId = btnElement.getAttribute('data-item-id');
             
             if (itemId) {
-                console.log(`移動ボタンを設定: ${itemId}`);
+                logger.debug(`移動ボタンを設定: ${itemId}`);
                 btnElement.addEventListener('click', (e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -735,7 +743,7 @@ export class FolderUI {
                 
                 selectedFolderId = option.getAttribute('data-folder-id');
                 confirmButton.disabled = false;
-                console.log(`移動先選択: ${selectedFolderId}`);
+                logger.debug(`移動先選択: ${selectedFolderId}`);
             });
         });
 
@@ -827,21 +835,21 @@ export class FolderUI {
      * アイテムをフォルダに移動
      */
     private moveItemToFolder(itemId: string, folderId: string): void {
-        console.log(`=== UI: フォルダへの移動開始 ===`);
-        console.log(`アイテムID: ${itemId}, フォルダID: ${folderId}`);
+        logger.debug(`=== UI: フォルダへの移動開始 ===`);
+        logger.debug(`アイテムID: ${itemId}, フォルダID: ${folderId}`);
         
         try {
             const success = this.tactApiClient.changeItemParent(itemId, folderId);
-            console.log(`移動結果: ${success}`);
+            logger.debug(`移動結果: ${success}`);
             
             if (success) {
-                console.log(`アイテム ${itemId} をフォルダ ${folderId} に移動しました`);
+                logger.debug(`アイテム ${itemId} をフォルダ ${folderId} に移動しました`);
                 this.refreshTreeDisplay();
             } else {
                 alert('ファイルの移動に失敗しました');
             }
         } catch (error) {
-            console.error('ファイル移動エラー:', error);
+            logger.error('ファイル移動エラー:', error);
             alert('ファイル移動中にエラーが発生しました');
         }
     }
@@ -850,21 +858,21 @@ export class FolderUI {
      * アイテムをルートレベルに移動
      */
     private moveItemToRoot(itemId: string): void {
-        console.log(`=== UI: ルートへの移動開始 ===`);
-        console.log(`アイテムID: ${itemId}`);
+        logger.debug(`=== UI: ルートへの移動開始 ===`);
+        logger.debug(`アイテムID: ${itemId}`);
         
         try {
             const success = this.tactApiClient.changeItemParent(itemId);
-            console.log(`移動結果: ${success}`);
+            logger.debug(`移動結果: ${success}`);
             
             if (success) {
-                console.log(`アイテム ${itemId} をルートレベルに移動しました`);
+                logger.debug(`アイテム ${itemId} をルートレベルに移動しました`);
                 this.refreshTreeDisplay();
             } else {
                 alert('ファイルの移動に失敗しました');
             }
         } catch (error) {
-            console.error('ファイル移動エラー:', error);
+            logger.error('ファイル移動エラー:', error);
             alert('ファイル移動中にエラーが発生しました');
         }
     }
@@ -946,18 +954,19 @@ export class FolderUI {
     }
 
     /**
-     * タブ切り替えのイベントリスナーを追加
+     * タブ切り替えのイベントリスナーを追加（イベント委任で重複防止）
      */
+    private tabDelegationAttached = false;
     private addTabSwitchListeners(): void {
-        const tabButtons = this.container.querySelectorAll('.tab-button');
-        tabButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const target = e.target as HTMLElement;
-                const tabType = target.getAttribute('data-tab') as 'class-materials' | 'assignments' | 'announcements';
-                if (tabType && tabType !== this.activeTab) {
-                    this.switchTab(tabType);
-                }
-            });
+        if (this.tabDelegationAttached) return;
+        this.tabDelegationAttached = true;
+        this.container.addEventListener('click', (e) => {
+            const target = (e.target as HTMLElement).closest('.tab-button') as HTMLElement | null;
+            if (!target) return;
+            const tabType = target.getAttribute('data-tab') as 'class-materials' | 'assignments' | 'announcements';
+            if (tabType && tabType !== this.activeTab) {
+                this.switchTab(tabType);
+            }
         });
     }
 
@@ -965,7 +974,7 @@ export class FolderUI {
      * タブを切り替える
      */
     private switchTab(tabType: 'class-materials' | 'assignments' | 'announcements'): void {
-        console.log(`タブ切り替え: ${this.activeTab} → ${tabType}`);
+        logger.debug(`タブ切り替え: ${this.activeTab} → ${tabType}`);
         this.activeTab = tabType;
         this.render();
         this.addRefreshButtonListener();
@@ -1030,7 +1039,7 @@ export class FolderUI {
             // ソート・フィルタを適用して表示
             this.renderSortedAssignments(assignments, containerElement);
         } catch (error) {
-            console.error('課題の読み込みに失敗:', error);
+            logger.error('課題の読み込みに失敗:', error);
             containerElement.innerHTML = `
                 <div class="error-message">
                     <p>❌ 課題の読み込みに失敗しました</p>
@@ -1237,7 +1246,7 @@ export class FolderUI {
             `;
             this.addAnnouncementCardListeners(containerElement);
         } catch (error) {
-            console.error('お知らせの読み込みに失敗:', error);
+            logger.error('お知らせの読み込みに失敗:', error);
             containerElement.innerHTML = `
                 <div class="error-message">
                     <p>❌ お知らせの読み込みに失敗しました</p>
@@ -1521,7 +1530,7 @@ export class FolderUI {
                 selectedCheckboxes.forEach(cb => cb.checked = false);
                 updateDownloadButton();
             } catch (error) {
-                console.error('添付ファイルダウンロードエラー:', error);
+                logger.error('添付ファイルダウンロードエラー:', error);
                 alert('添付ファイルのダウンロードに失敗しました');
             } finally {
                 downloadButton.disabled = false;
@@ -1542,20 +1551,20 @@ export class FolderUI {
             filename: checkbox.getAttribute('data-filename') || 'unknown'
         }));
         
-        console.log(`📥 ${attachments.length}個の添付ファイルのダウンロードを開始`);
+        logger.debug(`📥 ${attachments.length}個の添付ファイルのダウンロードを開始`);
         
         for (const attachment of attachments) {
             if (attachment.url && attachment.filename) {
                 try {
                     await this.downloadSingleFile(attachment.url, attachment.filename);
-                    console.log(`✅ ダウンロード完了: ${attachment.filename}`);
+                    logger.debug(`✅ ダウンロード完了: ${attachment.filename}`);
                 } catch (error) {
-                    console.error(`❌ ダウンロード失敗: ${attachment.filename}`, error);
+                    logger.error(`❌ ダウンロード失敗: ${attachment.filename}`, error);
                 }
             }
         }
         
-        console.log(`🎉 添付ファイルのダウンロード処理完了`);
+        logger.debug(`🎉 添付ファイルのダウンロード処理完了`);
     }
 
     /**
@@ -1572,7 +1581,7 @@ export class FolderUI {
         if (cached && cachedTime) {
             const elapsed = (Date.now() - parseInt(cachedTime, 10)) / 1000;
             if (elapsed < this.CACHE_EXPIRE_SECONDS) {
-                console.log(`📋 課題詳細をキャッシュから取得: ${assignmentId}`);
+                logger.debug(`📋 課題詳細をキャッシュから取得: ${assignmentId}`);
                 return JSON.parse(cached);
             }
         }
@@ -1584,7 +1593,7 @@ export class FolderUI {
             
             if (baseURL) {
                 const url = `${baseURL}/direct/assignment/${assignmentId}.json`;
-                console.log(`🌐 課題詳細をAPIから取得: ${url}`);
+                logger.debug(`🌐 課題詳細をAPIから取得: ${url}`);
                 
                 const response = await fetch(url, { 
                     cache: "no-cache",
@@ -1598,105 +1607,23 @@ export class FolderUI {
                     localStorage.setItem(cacheKey, JSON.stringify(data));
                     localStorage.setItem(cacheTimeKey, Date.now().toString());
                     
-                    console.log(`✅ 課題詳細をAPIから取得完了: ${assignmentId}`);
+                    logger.debug(`✅ 課題詳細をAPIから取得完了: ${assignmentId}`);
                     return data;
                 }
             }
         } catch (error) {
-            console.warn(`⚠️ 課題詳細APIエラー (${assignmentId}):`, error);
+            logger.warn(`⚠️ 課題詳細APIエラー (${assignmentId}):`, error);
         }
         
-        // フォールバック: モックデータを使用
-        console.log(`🔄 モックデータにフォールバック: ${assignmentId}`);
-        return this.getMockAssignmentData(assignmentId);
-    }
-
-    /**
-     * モック課題データを取得
-     */
-    private getMockAssignmentData(assignmentId: string): any {
-        const mockData: { [key: string]: any } = {
-            'assignment-1': {
-                title: 'レポート提出',
-                dueDate: '2025年6月15日 23:59',
-                status: '未提出',
-                lateSubmission: true,
-                resubmission: {
-                    allowed: true,
-                    maxCount: 3
-                },
-                description: `
-                    <p>この課題では、授業で学習した内容について2000字以内のレポートを作成してください。</p>
-                    <p><strong>提出要件:</strong></p>
-                    <ul>
-                        <li>文字数: 1500〜2000字</li>
-                        <li>形式: PDF形式</li>
-                        <li>参考文献を明記すること</li>
-                        <li>剽窃チェックを実施します</li>
-                    </ul>
-                    <p><strong>評価基準:</strong></p>
-                    <ul>
-                        <li>内容の理解度 (40%)</li>
-                        <li>論理的構成 (30%)</li>
-                        <li>文章表現 (20%)</li>
-                        <li>独創性 (10%)</li>
-                    </ul>
-                `,
-                attachments: [
-                    {
-                        type: 'file',
-                        name: '課題説明資料.pdf',
-                        url: '#',
-                        size: '1.2MB'
-                    },
-                    {
-                        type: 'link',
-                        name: '参考資料サイト',
-                        url: '#'
-                    }
-                ]
-            },
-            'assignment-2': {
-                title: '小テスト',
-                dueDate: '2025年6月20日 15:00',
-                status: '提出済み',
-                lateSubmission: false,
-                resubmission: {
-                    allowed: false,
-                    maxCount: 0
-                },
-                description: `
-                    <p>第1〜3回の授業内容に関する小テストです。</p>
-                    <p><strong>出題範囲:</strong></p>
-                    <ul>
-                        <li>第1回: 基礎概念</li>
-                        <li>第2回: 応用理論</li>
-                        <li>第3回: 実践演習</li>
-                    </ul>
-                    <p><strong>注意事項:</strong></p>
-                    <ul>
-                        <li>制限時間: 30分</li>
-                        <li>回答後の修正は不可</li>
-                        <li>一度開始したら中断できません</li>
-                    </ul>
-                `,
-                attachments: [
-                    {
-                        type: 'link',
-                        name: 'オンラインテスト（Webclass）',
-                        url: '#'
-                    }
-                ]
-            }
-        };
-        
-        return mockData[assignmentId] || {
+        // データ取得失敗時はエラー情報を返す
+        logger.warn(`⚠️ 課題詳細を取得できませんでした: ${assignmentId}`);
+        return {
             title: '課題情報',
             dueDate: '未設定',
             status: '不明',
             lateSubmission: false,
             resubmission: { allowed: false, maxCount: 0 },
-            description: '詳細情報を取得できませんでした。',
+            description: '課題の詳細情報を取得できませんでした。TACTポータルで直接ご確認ください。',
             attachments: []
         };
     }

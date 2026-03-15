@@ -23,7 +23,8 @@ describe("getFetchTime(showCompleted)", () => {
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: false,
-            hideUnpublishedAssignments: true
+            hideUnpublishedAssignments: true,
+            overlayFullScreen: false
         };
         settings.appInfo.currentTime = 100;
         const input: Array<EntryProtocol> = [
@@ -40,7 +41,8 @@ describe("getFetchTime(showCompleted)", () => {
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: true,
-            hideUnpublishedAssignments: true
+            hideUnpublishedAssignments: true,
+            overlayFullScreen: false
         };
         settings.appInfo.currentTime = 100;
         const input: Array<EntryProtocol> = [
@@ -57,7 +59,8 @@ describe("getFetchTime(showCompleted)", () => {
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: false,
-            hideUnpublishedAssignments: true
+            hideUnpublishedAssignments: true,
+            overlayFullScreen: false
         };
         settings.appInfo.currentTime = 100;
         const input: Array<EntryProtocol> = [
@@ -74,7 +77,8 @@ describe("getFetchTime(showCompleted)", () => {
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: true,
-            hideUnpublishedAssignments: true
+            hideUnpublishedAssignments: true,
+            overlayFullScreen: false
         };
         settings.appInfo.currentTime = 100;
         const input: Array<EntryProtocol> = [
@@ -91,7 +95,8 @@ describe("getFetchTime(showCompleted)", () => {
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: false,
-            hideUnpublishedAssignments: true
+            hideUnpublishedAssignments: true,
+            overlayFullScreen: false
         };
         settings.appInfo.currentTime = 500;
         const input: Array<EntryProtocol> = [
@@ -108,7 +113,8 @@ describe("getFetchTime(showCompleted)", () => {
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: true,
-            hideUnpublishedAssignments: true
+            hideUnpublishedAssignments: true,
+            overlayFullScreen: false
         };
         settings.appInfo.currentTime = 500;
         const input: Array<EntryProtocol> = [
@@ -125,7 +131,8 @@ describe("getFetchTime(showCompleted)", () => {
         settings.miniSakaiOption = {
             showCompletedEntry: true,
             showLateAcceptedEntry: true,
-            hideUnpublishedAssignments: true
+            hideUnpublishedAssignments: true,
+            overlayFullScreen: false
         };
         settings.appInfo.currentTime = 500;
         const input: Array<EntryProtocol> = [

@@ -20,11 +20,14 @@ export const decodeQuizFromAPI = (data: Record<string, any>): Array<QuizEntry> =
     return data.sam_pub_collection
         .filter((json: any) => json.startDate < CurrentTime * 1000 && (json.dueDate >= CurrentTime * 1000 || json.dueDate == null))
         .map((json: any) => {
+            // Sakai sam_pub APIは現状 提出状態フィールドを返さない（テスト確認済み）
+            // 将来のSakaiバージョンで対応される可能性に備えて防御的にチェック
+            const hasFinished = !!(json.hasSubmission || json.submissionSize > 0 || json.lastSubmittedDate);
             const entry = new QuizEntry(
                 json.publishedAssessmentId,
                 json.title,
                 json.dueDate ? json.dueDate / 1000 : MaxTimestamp,
-                false
+                hasFinished
             );
             return entry;
         });

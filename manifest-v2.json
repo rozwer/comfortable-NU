@@ -1,7 +1,7 @@
 {
   "name": "Comfortable NU",
   "description": "__MSG_EXTENSION_DESCRIPTION__",
-  "version": "1.0.4",
+  "version": "3.0.0",
   "manifest_version": 2,
   "default_locale": "en",
   "icons": {
@@ -20,7 +20,9 @@
         "css/comfortable-sakai.css",
         "css/tact-extension.css",
         "css/date-picker.css",
-        "css/calendar-sync.css"
+        "css/calendar-sync.css",
+        "css/material-dialog.css",
+        "css/submitted-styles.css"
       ],
       "matches": [
         "http://*/*",
@@ -56,6 +58,8 @@
     "css/calendar-sync.css",
     "css/memo-styles.css",
     "css/folder-styles.css",
+    "css/material-dialog.css",
+    "css/submitted-styles.css",
     "img/logo.png",
     "img/noAssignment.png",
     "img/miniSakaiBtn.png",

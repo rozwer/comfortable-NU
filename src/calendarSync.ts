@@ -7,7 +7,11 @@ import { getAssignments } from './features/entity/assignment/getAssignment';
 import { getQuizzes } from './features/entity/quiz/getQuiz';
 import { fetchCourse } from './features/api/fetch';
 import { formatDateToString } from './utils';
+import { setStorageDirect } from './features/storage';
+import { createLogger } from './utils/logger';
 import type { GoogleAccount, SyncResult, ChromeMessage, ChromeResponse } from '../types/calendar-sync';
+
+const logger = createLogger('calendarSync');
 
 // Send message to background script
 function sendMessage(action: string, data?: any): Promise<ChromeResponse> {
@@ -28,18 +32,18 @@ function sendMessage(action: string, data?: any): Promise<ChromeResponse> {
 export async function getGoogleAccounts(): Promise<GoogleAccount[]> {
   try {
     const response = await sendMessage('getGoogleAccounts');
-    return response.accounts || [];
+    const accounts = response?.accounts;
+    return Array.isArray(accounts) ? accounts : [];
   } catch (error) {
-    console.error('Failed to get Google accounts:', error);
+    logger.error('Failed to get Google accounts:', error);
     return [];
   }
 }
 
 // Authenticate with Google
 export async function authenticateGoogle(): Promise<string> {
-  console.log('[DEBUG] authenticateGoogle called from UI');
+  logger.debug('authenticateGoogle called from UI');
   const response = await sendMessage('authenticateGoogle');
-  console.log('[DEBUG] authenticateGoogle response:', response);
   if (!response.token) {
     throw new Error('No authentication token received');
   }
@@ -81,13 +85,7 @@ function clearSentEventKeys() {
   });
 }
 function setSyncInterval(minutes: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.set({ calendarSyncInterval: minutes }, () => {
-      const err = checkRuntimeError();
-      if (err) { reject(err); return; }
-      resolve();
-    });
-  });
+  return setStorageDirect({ calendarSyncInterval: minutes });
 }
 function getSyncInterval(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -99,13 +97,7 @@ function getSyncInterval(): Promise<number> {
   });
 }
 function setAutoSyncEnabled(enabled: boolean): Promise<void> {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.set({ autoSyncEnabled: enabled }, () => {
-      const err = checkRuntimeError();
-      if (err) { reject(err); return; }
-      resolve();
-    });
-  });
+  return setStorageDirect({ autoSyncEnabled: enabled });
 }
 function getAutoSyncEnabled(): Promise<boolean> {
   return new Promise((resolve, reject) => {
@@ -117,13 +109,7 @@ function getAutoSyncEnabled(): Promise<boolean> {
   });
 }
 function setLastSyncTime(time: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.set({ lastSyncTime: time }, () => {
-      const err = checkRuntimeError();
-      if (err) { reject(err); return; }
-      resolve();
-    });
-  });
+  return setStorageDirect({ lastSyncTime: time });
 }
 function getLastSyncTime(): Promise<number | null> {
   return new Promise((resolve, reject) => {
@@ -151,55 +137,46 @@ function escapeHtml(str: string): string {
 export function createSyncModal(): HTMLElement {
   const modal = document.createElement('div');
   modal.className = 'cs-sync-modal';
-  modal.innerHTML = `
-    <div class="cs-sync-modal-content">
-      <div class="cs-sync-header">
-        <h3>Googleカレンダー同期</h3>
-        <button class="cs-sync-close">&times;</button>
-      </div>
-      <div class="cs-sync-body">
-        <div class="cs-sync-account-section">
-          <h4>アカウント選択</h4>
-          <div class="cs-sync-accounts" id="syncAccounts">
-            <div class="cs-sync-loading">アカウント情報を取得中...</div>
-          </div>
-        </div>
-        <div class="cs-sync-options">
-          <label>
-            <input type="checkbox" id="syncAssignments" checked>
-            課題を同期
-          </label>
-          <label>
-            <input type="checkbox" id="syncQuizzes" checked>
-            クイズを同期
-          </label>
-        </div>
-        <div class="cs-sync-auto-settings">
-          <label class="cs-auto-sync-toggle">
-            <input type="checkbox" id="autoSyncEnabled" checked>
-            <span class="cs-toggle-slider"></span>
-            自動同期を有効にする
-          </label>
-          <div class="cs-sync-interval-settings" id="syncIntervalSettings">
-            <label>同期間隔(分): <input type="number" id="syncIntervalInput" min="240" max="1440" value="240" style="width:60px;"> </label>
-          </div>
-        </div>
-        <div class="cs-sync-settings">
-          <span id="lastSyncTimeLabel">最終同期: ---</span>
-          <button id="refreshLastSyncBtn" class="cs-sync-btn cs-sync-btn-secondary" style="margin-left:8px;">再取得</button>
-        </div>
-        <div class="cs-sync-actions">
-          <button class="cs-sync-btn cs-sync-btn-primary" id="syncButton">
-            同期開始
-          </button>
-          <button class="cs-sync-btn cs-sync-btn-danger" id="clearSentBtn">
-            送信済み履歴クリア
-          </button>
-        </div>
-        <div class="cs-sync-status" id="syncStatus"></div>
-      </div>
-    </div>
-  `;
+  // Static template - dynamic user content is escaped via escapeHtml() in loadGoogleAccounts()
+  modal.innerHTML = [ // eslint-disable-line
+    '<div class="cs-sync-modal-content">',
+      '<div class="cs-sync-header">',
+        '<h3>Googleカレンダー同期</h3>',
+        '<button class="cs-sync-close">&times;</button>',
+      '</div>',
+      '<div class="cs-sync-body">',
+        '<div class="cs-sync-account-section">',
+          '<h4>アカウント選択</h4>',
+          '<div class="cs-sync-accounts" id="syncAccounts">',
+            '<div class="cs-sync-loading">アカウント情報を取得中...</div>',
+          '</div>',
+        '</div>',
+        '<div class="cs-sync-options">',
+          '<label><input type="checkbox" id="syncAssignments" checked> 課題を同期</label>',
+          '<label><input type="checkbox" id="syncQuizzes" checked> クイズを同期</label>',
+        '</div>',
+        '<div class="cs-sync-auto-settings">',
+          '<label class="cs-auto-sync-toggle">',
+            '<input type="checkbox" id="autoSyncEnabled" checked>',
+            '<span class="cs-toggle-slider"></span>',
+            '自動同期を有効にする',
+          '</label>',
+          '<div class="cs-sync-interval-settings" id="syncIntervalSettings">',
+            '<label>同期間隔(分): <input type="number" id="syncIntervalInput" min="240" max="1440" value="240"> </label>',
+          '</div>',
+        '</div>',
+        '<div class="cs-sync-settings">',
+          '<span id="lastSyncTimeLabel">最終同期: ---</span>',
+          '<button id="refreshLastSyncBtn" class="cs-sync-btn cs-sync-btn-secondary">再取得</button>',
+        '</div>',
+        '<div class="cs-sync-status" id="syncStatus"></div>',
+      '</div>',
+      '<div class="cs-sync-footer">',
+        '<button class="cs-sync-btn cs-sync-btn-danger" id="clearSentBtn">履歴クリア</button>',
+        '<button class="cs-sync-btn cs-sync-btn-primary" id="syncButton">同期開始</button>',
+      '</div>',
+    '</div>',
+  ].join('');
 
   // Close modal
   const closeBtn = modal.querySelector('.cs-sync-close');
@@ -238,11 +215,21 @@ async function loadGoogleAccounts(modal: HTMLElement) {
       accountsContainer.parentElement?.insertBefore(connectedContainer, accountsContainer);
     }
 
+    // 自動同期トグルを認証状態に連動させる
+    const autoSyncCheckbox = modal.querySelector('#autoSyncEnabled') as HTMLInputElement | null;
+    const syncIntervalSettings = modal.querySelector('#syncIntervalSettings') as HTMLElement | null;
+    const syncIntervalInput = modal.querySelector('#syncIntervalInput') as HTMLInputElement | null;
+
     if (accounts && accounts.length > 0) {
+      // 認証済み: トグル操作を許可
+      if (autoSyncCheckbox) {
+        autoSyncCheckbox.disabled = false;
+      }
       // User is authenticated - show account info
       const account = accounts[0];
       // account フィールドをエスケープして XSS を防ぐ (M1)
-      const safePicture = escapeHtml(account.picture);
+      const rawPicture = escapeHtml(account.picture);
+      const safePicture = rawPicture.startsWith('https://') ? rawPicture : '';
       const safeName = escapeHtml(account.name);
       const safeEmail = escapeHtml(account.email);
       connectedContainer.innerHTML = `
@@ -275,23 +262,34 @@ async function loadGoogleAccounts(modal: HTMLElement) {
         logoutBtn.disabled = true;
         try {
           showSyncStatus(modal, '🔐 完全ログアウト実行中...', 'info');
-          console.log('🔧 [UI DEBUG] Starting complete logout process...');
+          logger.debug('🔧 [UI DEBUG] Starting complete logout process...');
 
           await logoutGoogle();
 
-          console.log('🔧 [UI DEBUG] Logout completed, reloading accounts...');
+          logger.debug('🔧 [UI DEBUG] Logout completed, reloading accounts...');
           // ログアウト後にアカウント情報を再取得
           await loadGoogleAccounts(modal);
 
           showSyncStatus(modal, '✅ 完全ログアウトが完了しました。再認証が必要です。', 'success');
-          console.log('🔧 [UI DEBUG] Complete logout process finished');
+          logger.debug('🔧 [UI DEBUG] Complete logout process finished');
         } catch (error: any) {
-          console.error('🔧 [UI DEBUG] Logout failed:', error);
+          logger.error('🔧 [UI DEBUG] Logout failed:', error);
           showSyncStatus(modal, `❌ ログアウトに失敗しました: ${error.message}`, 'error');
           logoutBtn.disabled = false;
         }
       });
     } else {
+      // 未認証: 自動同期を強制OFFにしてトグルを無効化
+      if (autoSyncCheckbox) {
+        autoSyncCheckbox.checked = false;
+        autoSyncCheckbox.disabled = true;
+        setAutoSyncEnabled(false);
+      }
+      if (syncIntervalSettings) {
+        syncIntervalSettings.style.opacity = '0.5';
+        if (syncIntervalInput) syncIntervalInput.disabled = true;
+      }
+
       // User is not authenticated - show login interface
       connectedContainer.innerHTML = '';
       accountsContainer.innerHTML = `
@@ -381,7 +379,7 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
     let token: string | undefined;
     try {
       token = await authenticateGoogle();
-      console.log('[DEBUG] Token for syncToCalendar:', token);
+      logger.debug('Token acquired for syncToCalendar');
     } catch (e) {
       showSyncStatus(modal, 'Google認証トークンの取得に失敗しました', 'error');
       return;
@@ -401,7 +399,7 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
         const allEntries = assignments.flatMap(assignment => assignment.entries);
         showSyncStatus(modal, `課題データを取得しました (${allEntries.length}件)`, 'info');
       } catch (error) {
-        console.error('Failed to get assignments:', error);
+        logger.error('Failed to get assignments:', error);
       }
     }
 
@@ -412,7 +410,7 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
         const allEntries = quizzes.flatMap(quiz => quiz.entries);
         showSyncStatus(modal, `クイズデータを取得しました (${allEntries.length}件)`, 'info');
       } catch (error) {
-        console.error('Failed to get quizzes:', error);
+        logger.error('Failed to get quizzes:', error);
       }
     }
 
@@ -442,11 +440,11 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
       showSyncStatus(modal, `✅ 同期完了: ${totalSuccess}件のイベントが作成されました`, 'success');
     } else {
       showSyncStatus(modal, `⚠️ 同期完了: ${totalSuccess}件成功, ${totalErrors}件失敗`, 'error');
-      console.log('Sync errors:', result.errors);
+      logger.debug('Sync errors:', result.errors);
     }
 
   } catch (error) {
-    console.error('Sync error:', error);
+    logger.error('Sync error:', error);
     showSyncStatus(modal, `❌ 同期に失敗しました: ${error instanceof Error ? error.message : String(error)}`, 'error');
   } finally {
     // Re-enable buttons
@@ -500,10 +498,10 @@ export function showSyncModal() {
     // バックグラウンドスクリプトのアラームも更新
     try {
       await sendMessage('updateSyncInterval');
-      console.log(`自動同期を${enabled ? '有効' : '無効'}にしました`);
+      logger.debug(`自動同期を${enabled ? '有効' : '無効'}にしました`);
       showSyncStatus(modal, `自動同期を${enabled ? '有効' : '無効'}にしました`, 'success');
     } catch (error) {
-      console.error('自動同期設定の更新に失敗:', error);
+      logger.error('自動同期設定の更新に失敗:', error);
     }
   });
 
@@ -515,9 +513,9 @@ export function showSyncModal() {
     // バックグラウンドスクリプトのアラームも更新
     try {
       await sendMessage('updateSyncInterval');
-      console.log(`同期間隔を更新しました: ${v}分`);
+      logger.debug(`同期間隔を更新しました: ${v}分`);
     } catch (error) {
-      console.error('同期間隔の更新に失敗:', error);
+      logger.error('同期間隔の更新に失敗:', error);
     }
   });
   // 送信済み履歴クリアボタン

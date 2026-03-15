@@ -264,8 +264,10 @@ export function EntryTab(props: {
 function AddMemoBox(props: { shown: boolean; courses: Course[]; onMemoAdd: (memo: MemoAddInfo) => void }) {
     const defaultDueDate = (): string => {
         const d = new Date();
-        d.setDate(d.getDate() + 1);
-        return d.toISOString().substr(0, 16);
+        d.setDate(d.getDate() + 7);
+        // ローカルタイムで "YYYY-MM-DDTHH:mm" を生成（toISOString は UTC なので使わない）
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
     const courseName = useTranslation("todo_box_course_name");

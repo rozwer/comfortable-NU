@@ -92,6 +92,17 @@ export function SettingsTab(props: { onSettingsChange: (change: SettingsChange) 
                     })
                 }
             />
+            <TranslatedBooleanItem
+                descriptionTag="settings_overlay_fullscreen"
+                value={settings.miniSakaiOption.overlayFullScreen}
+                onChange={(v) =>
+                    props.onSettingsChange({
+                        type: "boolean",
+                        id: "miniSakaiOption.overlayFullScreen",
+                        newValue: v
+                    })
+                }
+            />
             <TranslatedNumberItem
                 descriptionTag="settings_assignment_cache"
                 value={settings.cacheInterval.assignment}

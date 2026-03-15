@@ -2,51 +2,86 @@
  * 日付選択機能用スタイルシート
  * 日付ピッカーモーダルとカレンダーUIのスタイル定義
  */
-/* 日付選択モーダル用スタイル */
+
+/* オーバーレイ共通 */
 .cs-datepicker-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+}
+
+/* 画面全体オーバーレイ（bodyにportalされる） */
+.cs-datepicker-overlay--fullscreen {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  height: 100dvh; /* iOS対応: 動的ビューポート高さ */
+  height: 100dvh;
   background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  /* iOS対応: 固定要素のちらつき防止 */
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  /* iOS対応: スムーズスクロール */
-  -webkit-overflow-scrolling: touch;
-  overflow-y: auto;
+  z-index: 10000;
 }
 
-/**
- * -----------------------------------------------------------------
- * Modified by: roz
- * Date       : 2025-08-04
- * Changes    : モバイル対応のためモーダルサイズと高さ制約を追加
- * Category   : UI改善
- * -----------------------------------------------------------------
- */
+/* miniSakai内オーバーレイ */
+.cs-datepicker-overlay--minisakai {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.35);
+  border-radius: inherit;
+}
+
 .cs-datepicker-modal {
-  background-color: white;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  width: 380px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
   margin: 16px;
   overflow: hidden;
+  border: 1px solid #b0b0b0;
+  background-color: var(--bgColor, #cacaca);
+}
+
+.cs-datepicker-overlay--minisakai .cs-datepicker-modal {
+  width: calc(100% - 32px);
+}
+
+.cs-datepicker-overlay--fullscreen .cs-datepicker-modal {
+  width: 480px;
+}
+
+.cs-datepicker-overlay--fullscreen .cs-datepicker-header {
+  padding: 14px 18px;
+}
+
+.cs-datepicker-overlay--fullscreen .cs-datepicker-header h3 {
+  font-size: 16px;
+}
+
+.cs-datepicker-overlay--fullscreen .cs-datepicker-content {
+  padding: 20px;
+}
+
+.cs-datepicker-overlay--fullscreen .cs-datepicker-field select {
+  padding: 8px;
+}
+
+.cs-datepicker-overlay--fullscreen .cs-datepicker-footer {
+  padding: 14px 18px;
 }
 
 .cs-datepicker-header {
-  background-color: #0064cd;
+  background-color: #1d4561;
   color: white;
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -54,7 +89,7 @@
 
 .cs-datepicker-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
 }
 
@@ -67,129 +102,134 @@
 }
 
 .cs-datepicker-content {
-  padding: 16px;
+  padding: 14px;
 }
 
 .cs-datepicker-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
 }
 
 .cs-datepicker-field {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .cs-datepicker-field label {
-  font-size: 12px;
-  margin-bottom: 4px;
-  color: #555;
+  font-size: 11px;
+  margin-bottom: 3px;
+  color: var(--textColor, #555);
 }
 
 .cs-datepicker-field select {
-  padding: 8px;
-  border: 1px solid #ccc;
+  padding: 6px;
+  border: 1px solid #b0b0b0;
   border-radius: 4px;
-  min-width: 60px;
+  min-width: 50px;
+  background: #fff;
+  color: #333;
 }
 
 .cs-datepicker-footer {
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #b0b0b0;
 }
 
 .cs-datepicker-cancel-button,
 .cs-datepicker-save-button {
-  padding: 8px 16px;
+  padding: 6px 14px;
   border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
+  font-size: 13px;
 }
 
 .cs-datepicker-cancel-button {
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
-  color: #333;
+  background: transparent;
+  border: 1px solid #b0b0b0;
+  color: var(--textColor, #333);
 }
 
 .cs-datepicker-save-button {
-  background-color: #0064cd;
-  border: 1px solid #0064cd;
+  background-color: #1d4561;
+  border: 1px solid #1d4561;
   color: white;
 }
 
 .cs-datepicker-save-button:hover {
-  background-color: #004e9e;
+  background-color: #5070b8;
 }
 
 /* 永久非表示オプション用のスタイル */
 .cs-datepicker-permanent-option {
-  margin-bottom: 16px;
-  padding: 12px;
-  background-color: #f8f9fa;
+  margin-bottom: 12px;
+  padding: 10px;
   border-radius: 6px;
-  border-left: 4px solid #0064cd;
+  border: 1px solid #b0b0b0;
+  border-left: 4px solid #1d4561;
+  background: #fff;
 }
 
 .cs-datepicker-permanent-label {
   display: flex;
   align-items: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: bold;
-  color: #333;
+  color: var(--textColor, #333);
   cursor: pointer;
   margin: 0;
+  padding-left: 4px;
+  gap: 8px;
 }
 
 .cs-datepicker-permanent-checkbox {
-  margin-right: 8px;
-  transform: scale(1.2);
+  -webkit-appearance: checkbox;
+  appearance: checkbox;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  flex-shrink: 0;
+  margin: 0 12px 0 0;
   cursor: pointer;
 }
 
 .cs-datepicker-permanent-info {
-  padding: 12px;
-  background-color: #e8f4f8;
+  padding: 10px;
   border-radius: 6px;
-  border-left: 4px solid #17a2b8;
+  border: 1px solid #b0b0b0;
+  border-left: 4px solid #1d4561;
   text-align: center;
+  background: #fff;
 }
 
 .cs-datepicker-permanent-info p {
   margin: 0;
-  font-size: 14px;
-  color: #17a2b8;
+  font-size: 13px;
+  color: #1d4561;
   font-weight: 500;
 }
 
-/**
- * -----------------------------------------------------------------
- * Modified by: roz
- * Date       : 2025-08-04
- * Changes    : モバイル対応のためレスポンシブレイアウトを追加
- * Category   : UI改善
- * -----------------------------------------------------------------
- */
 /* モバイル対応 */
 @media (max-width: 480px) {
   .cs-datepicker-modal {
-    width: calc(100vw - 32px);
+    width: calc(100vw - 32px) !important;
     margin: 16px;
   }
-  
+
   .cs-datepicker-row {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .cs-datepicker-field {
     width: 100%;
   }
-  
+
   .cs-datepicker-field select {
     width: 100%;
     min-width: auto;

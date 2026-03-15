@@ -297,6 +297,7 @@ export class MemoManager {
      * メモを検索
      */
     searchNotes(query: string, lectureId?: string): LectureNote[] {
+        if (!query || query.trim().length < 2) return [];
         const notes = lectureId ? this.getNotesByLectureId(lectureId) : this.getAllNotes();
         const lowercaseQuery = query.toLowerCase();
         

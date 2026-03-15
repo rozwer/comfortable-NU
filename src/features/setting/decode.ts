@@ -11,7 +11,7 @@ export const decodeSettings = (data: any): Settings => {
     settings.appInfo = data.appInfo;
     settings.fetchTime = data.fetchTime;
     settings.cacheInterval = data.cacheInterval;
-    settings.miniSakaiOption = data.miniSakaiOption;
+    settings.miniSakaiOption = { ...settings.miniSakaiOption, ...data.miniSakaiOption };
     settings.color = data.color;
     return settings;
 };

@@ -295,11 +295,21 @@ export const getScripts = (): Array<HTMLScriptElement> => {
  */
 function isLoggedIn(): boolean {
     const scripts = getScripts();
-    let loggedIn = false;
     for (const script of scripts) {
-        if (script.text.match("\"loggedIn\": true")) loggedIn = true;
+        try {
+            // JSON.parseベースで安全に判定
+            const match = script.text.match(/var\s+portal\s*=\s*(\{[\s\S]*?\});/);
+            if (match) {
+                const portalData = JSON.parse(match[1]);
+                if (portalData.loggedIn === true) return true;
+            }
+        } catch {
+            // JSON.parse失敗時はフォールバック
+        }
+        // フォールバック: より柔軟な正規表現
+        if (script.text.match(/"loggedIn"\s*:\s*true/)) return true;
     }
-    return loggedIn;
+    return false;
 }
 
 /**

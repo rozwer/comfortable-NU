@@ -1,6 +1,9 @@
 import React, { useContext } from "react";
 import { useTranslation } from "./helper";
+import { createLogger } from "../utils/logger";
 import { formatTimestamp, getEntities, updateIsReadFlag } from "../utils";
+
+const logger = createLogger('main');
 import { EntityUnion, EntryTab, EntryUnion, MemoAddInfo } from "./entryTab";
 import { SettingsChange, SettingsTab } from "./settings";
 import { SubmittedEntryList } from "./submittedEntryList";
@@ -92,6 +95,9 @@ type MiniSakaiRootState = {
 };
 
 export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakaiRootState> {
+    private handleSubmittedTabClick: () => void;
+    private handleDismissedTabClick: () => void;
+
     constructor(props: MiniSakaiRootProps) {
         super(props);
         this.state = {
@@ -114,6 +120,9 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
         this.onMemoAdd = this.onMemoAdd.bind(this);
         this.onMemoDelete = this.onMemoDelete.bind(this);
         this.onSettingsChange = this.onSettingsChange.bind(this);
+
+        this.handleSubmittedTabClick = () => { this.setState({ shownTab: "submitted" }); };
+        this.handleDismissedTabClick = () => { this.setState({ shownTab: "dismissed" }); };
     }
 
     componentDidMount() {
@@ -126,18 +135,10 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
          * -----------------------------------------------------------------
          */
         // 提出済みタブクリック時のイベントリスナーを登録
-        document.addEventListener('submittedTabClick', () => {
-            this.setState({
-                shownTab: "submitted"
-            });
-        });
-        
+        document.addEventListener('submittedTabClick', this.handleSubmittedTabClick);
+
         // 非表示タブクリック時のイベントリスナーを登録
-        document.addEventListener('dismissedTabClick', () => {
-            this.setState({
-                shownTab: "dismissed"
-            });
-        });
+        document.addEventListener('dismissedTabClick', this.handleDismissedTabClick);
         
         /**
          * -----------------------------------------------------------------
@@ -186,8 +187,8 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
          * -----------------------------------------------------------------
          */
         // イベントリスナーを削除
-        document.removeEventListener('submittedTabClick', () => {});
-        document.removeEventListener('dismissedTabClick', () => {});
+        document.removeEventListener('submittedTabClick', this.handleSubmittedTabClick);
+        document.removeEventListener('dismissedTabClick', this.handleDismissedTabClick);
     }
 
     /**
@@ -213,36 +214,41 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                 });
             });
             
-            // 提出済みの課題を抽出
+            // 提出済みの課題を抽出（Assignment: submitted, Quiz: hasFinished）
             const submittedEntries = allEntries
-                .filter(item => (item.entry as any).submitted === true)
+                .filter(item => (item.entry as any).submitted === true || (item.entry as any).hasFinished === true)
                 .map(item => item.entry);
             
             // 非表示の課題を抽出
             // checkTimestampが現時刻より後であれば非表示タブに振り分け
             const dismissedEntries = allEntries
                 .filter(item => {
-                    // checkTimestampを持っている場合はチェック
                     const checkTimestamp = (item.entry as any).checkTimestamp;
                     if (!checkTimestamp) return false;
-                    
-                    // フォーマット：yyyy/mm/dd/hh
+
                     try {
-                        const parts = checkTimestamp.split('/');
-                        if (parts.length !== 4) return false;
-                        
-                        // タイムスタンプを解析
-                        const checkDate = new Date(
-                            parseInt(parts[0]), // 年
-                            parseInt(parts[1]) - 1, // 月（JavaScriptでは0始まり）
-                            parseInt(parts[2]), // 日
-                            parseInt(parts[3]) // 時間
-                        );
-                        
-                        // 現在時刻よりも後ならtrue（非表示タブに表示）
-                        return checkDate.getTime() / 1000 > (Date.now() / 1000);
+                        let checkTimeMs: number;
+                        if (typeof checkTimestamp === 'number') {
+                            // Unix timestamp (ms)
+                            checkTimeMs = checkTimestamp;
+                        } else if (typeof checkTimestamp === 'string' && checkTimestamp.includes('/')) {
+                            // レガシーフォーマット: yyyy/mm/dd/hh
+                            const parts = checkTimestamp.split('/');
+                            if (parts.length !== 4) return false;
+                            checkTimeMs = new Date(
+                                parseInt(parts[0]),
+                                parseInt(parts[1]) - 1,
+                                parseInt(parts[2]),
+                                parseInt(parts[3])
+                            ).getTime();
+                        } else {
+                            // ISO文字列またはDatepickerModal出力
+                            checkTimeMs = new Date(checkTimestamp).getTime();
+                        }
+                        if (isNaN(checkTimeMs)) return false;
+                        return checkTimeMs > Date.now();
                     } catch (e) {
-                        console.error("Invalid timestamp format:", e);
+                        logger.error("Invalid timestamp format:", e);
                         return false;
                     }
                 })
@@ -256,6 +262,8 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                 }
             });
             updateIsReadFlag(window.location.href, entities.assignment, this.props.hostname);
+        }).catch((err) => {
+            logger.error("Failed to load entities:", err);
         });
     }
 
@@ -392,7 +400,7 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
             timetableModal.style.setProperty("--textColor", settings.getTextColor());
             timetableModal.style.setProperty("--bgColor", settings.getBgColor());
             timetableModal.style.setProperty("--dateColor", settings.getDateColor());
-            console.log(i18nMessage('color_settings_updated'));
+            logger.debug(i18nMessage('color_settings_updated'));
         }
     }
 
@@ -405,6 +413,8 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                 addFavoritedCourseSites(getBaseURL()).then(() => {
                     resetFavoritesBar();
                     createFavoritesBar(s, this.state.entities);
+                }).catch((err) => {
+                    logger.error("Failed to add favorited course sites:", err);
                 });
             });
         }
@@ -432,47 +442,45 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                         <MiniSakaiClose onClose={() => toggleMiniSakai()} />
                         <MiniSakaiTabs
                             onAssignment={() =>
-                                this.setState({
-                                    shownTab: "assignment"
-                                })
+                                this.setState({ shownTab: "assignment" })
+                            }
+                            onSubmitted={() =>
+                                this.setState({ shownTab: "submitted" })
+                            }
+                            onDismissed={() =>
+                                this.setState({ shownTab: "dismissed" })
                             }
                             onSettings={() =>
-                                this.setState({
-                                    shownTab: "settings"
-                                })
+                                this.setState({ shownTab: "settings" })
                             }
                             selection={this.state.shownTab}
                         />
-                        {this.state.shownTab === "assignment" ? (
+                        {this.state.shownTab === "assignment" && (
                             <>
-                                <button
-                                    id='cs-add-memo-btn'
-                                    onClick={() => {
-                                        this.setState((state) => {
-                                            return {
-                                                memoBoxShown: !state.memoBoxShown
-                                            };
-                                        });
-                                    }}
-                                >
-                                    +
-                                </button>
                                 <MiniSakaiAssignmentTime />
                                 <MiniSakaiQuizTime />
                             </>
-                        ) : null}
+                        )}
                     </>
                 )}
                 {entryTabShown ? (
-                    <EntryTab
-                        showMemoBox={this.state.memoBoxShown}
-                        isSubset={this.props.subset}
-                        entities={this.state.entities}
-                        settings={this.state.settings}
-                        onCheck={this.onCheck}
-                        onMemoAdd={this.onMemoAdd}
-                        onDelete={this.onMemoDelete}
-                    />
+                    <>
+                        <button
+                            id='cs-add-memo-btn'
+                            onClick={() => this.setState((state) => ({ memoBoxShown: !state.memoBoxShown }))}
+                        >
+                            +
+                        </button>
+                        <EntryTab
+                            showMemoBox={this.state.memoBoxShown}
+                            isSubset={this.props.subset}
+                            entities={this.state.entities}
+                            settings={this.state.settings}
+                            onCheck={this.onCheck}
+                            onMemoAdd={this.onMemoAdd}
+                            onDelete={this.onMemoDelete}
+                        />
+                    </>
                 ) : null}
                 {settingsTabShown ? (
                     <SettingsTab settings={this.state.settings} onSettingsChange={this.onSettingsChange} />
@@ -488,12 +496,16 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                  */}
                 {this.state.shownTab === "submitted" ? (
                     <>
-                        <h3>提出済みの課題</h3>
+                        <button
+                            id='cs-add-memo-btn'
+                            onClick={() => this.setState((state) => ({ submittedMemoBoxShown: !state.submittedMemoBoxShown }))}
+                        >
+                            +
+                        </button>
                         {this.state.filteredEntities.submitted.length > 0 ? (
                             <SubmittedEntryList
                                 entriesWithCourse={this.state.filteredEntities.submitted.map(entry => {
-                                    // 元々のエントリに対応するコースを見つける
-                                    const entityWithCourse = this.state.entities.find(entity => 
+                                    const entityWithCourse = this.state.entities.find(entity =>
                                         entity.entries.some(e => e.id === entry.id)
                                     );
                                     return {
@@ -510,18 +522,18 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                                 }}
                             />
                         ) : (
-                            <div className="cs-empty-message">提出済みの課題はありません</div>
+                            <div className="cs-tab-content-panel">
+                                <div className="cs-empty-message">提出済みの課題はありません</div>
+                            </div>
                         )}
                     </>
                 ) : null}
                 {this.state.shownTab === "dismissed" ? (
                     <>
-                        <h3>非表示の課題</h3>
                         {this.state.filteredEntities.dismissed.length > 0 ? (
                             <DismissedEntryList
                                 entriesWithCourse={this.state.filteredEntities.dismissed.map(entry => {
-                                    // 元々のエントリに対応するコースを見つける
-                                    const entityWithCourse = this.state.entities.find(entity => 
+                                    const entityWithCourse = this.state.entities.find(entity =>
                                         entity.entries.some(e => e.id === entry.id)
                                     );
                                     return {
@@ -534,9 +546,7 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                                 showMemoBox={this.state.dismissedMemoBoxShown}
                                 onMemoAdd={this.onMemoAdd}
                                 onEntryClick={(entry) => {
-                                    // 選択された非表示エントリを記憶
                                     this.setState({ selectedDismissedEntry: entry }, () => {
-                                        // checkTimestampをクリア
                                         this.onCheck(entry, false);
                                     });
                                 }}
@@ -545,7 +555,9 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                                 }}
                             />
                         ) : (
-                            <div className="cs-empty-message">非表示に設定した課題はありません</div>
+                            <div className="cs-tab-content-panel">
+                                <div className="cs-empty-message">非表示に設定した課題はありません</div>
+                            </div>
                         )}
                     </>
                 ) : null}
@@ -555,8 +567,9 @@ export class MiniSakaiRoot extends React.Component<MiniSakaiRootProps, MiniSakai
                     isOpen={this.state.datepickerModalOpen}
                     onClose={this.handleDatepickerClose}
                     onSave={this.handleDatepickerSave}
-                    initialDate={this.state.currentEntry ? 
+                    initialDate={this.state.currentEntry ?
                         (this.state.currentEntry as any).checkTimestamp : undefined}
+                    overlayFullScreen={this.state.settings.miniSakaiOption.overlayFullScreen}
                 />
             </MiniSakaiContext.Provider>
         );
@@ -583,6 +596,8 @@ function MiniSakaiClose(props: { onClose: () => void }) {
 
 function MiniSakaiTabs(props: {
     onAssignment: () => void;
+    onSubmitted: () => void;
+    onDismissed: () => void;
     onSettings: () => void;
     selection: "assignment" | "settings" | "submitted" | "dismissed";
 }) {
@@ -590,71 +605,26 @@ function MiniSakaiTabs(props: {
     const settingsTab = useTranslation("tab_settings");
     const submittedTab = useTranslation("tab_submitted");
     const dismissedTab = useTranslation("tab_dismissed");
-    const assignmentChecked = props.selection === "assignment";
-    const submittedChecked = props.selection === "submitted";
-    const dismissedChecked = props.selection === "dismissed";
-    const settingsChecked = props.selection === "settings";
-    
+
+    const tabs: { key: string; label: string; onClick: () => void }[] = [
+        { key: "assignment", label: assignmentTab, onClick: props.onAssignment },
+        { key: "submitted", label: submittedTab, onClick: props.onSubmitted },
+        { key: "dismissed", label: dismissedTab, onClick: props.onDismissed },
+        { key: "settings", label: settingsTab, onClick: props.onSettings },
+    ];
+
     return (
-        <>
-            <input
-                id='assignmentTab'
-                type='radio'
-                name='cs-tab'
-                onClick={props.onAssignment}
-                defaultChecked={assignmentChecked}
-            />
-            <label htmlFor='assignmentTab'> {assignmentTab} </label>
-            
-            {/**
-             * -----------------------------------------------------------------
-             * Modified by: roz
-             * Date       : 2025-05-19
-             * Changes    : 提出済みタブと非表示タブの機能を追加
-             * Category   : UI拡張
-             * -----------------------------------------------------------------
-             */}
-            {/* 提出済みタブ */}
-            <input
-                id='submittedTab'
-                type='radio'
-                name='cs-tab'
-                onClick={() => {
-                    // タブを切り替える際に呼び出される関数
-                    const event = new CustomEvent('submittedTabClick', {
-                        detail: { message: i18nMessage('custom_tab_click_message') }
-                    });
-                    document.dispatchEvent(event);
-                }}
-                defaultChecked={submittedChecked}
-            />
-            <label htmlFor='submittedTab'> {submittedTab} </label>
-            
-            {/* 非表示タブ */}
-            <input
-                id='dismissedTab'
-                type='radio'
-                name='cs-tab'
-                onClick={() => {
-                    // タブを切り替える際に呼び出される関数
-                    const event = new CustomEvent('dismissedTabClick', {
-                        detail: { message: i18nMessage('custom_tab_click_message') }
-                    });
-                    document.dispatchEvent(event);
-                }}
-                defaultChecked={dismissedChecked}
-            />
-            <label htmlFor='dismissedTab'> {dismissedTab} </label>
-            
-            <input
-                id='settingsTab'
-                type='radio'
-                name='cs-tab'
-                onClick={props.onSettings}
-                defaultChecked={settingsChecked}
-            />
-            <label htmlFor='settingsTab'> {settingsTab} </label>
-        </>
+        <div className="cs-tab-bar">
+            {tabs.map(tab => (
+                <label
+                    key={tab.key}
+                    className={props.selection === tab.key ? "cs-tab-active" : ""}
+                    onClick={tab.onClick}
+                >
+                    {tab.label}
+                </label>
+            ))}
+        </div>
     );
 }
 

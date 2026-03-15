@@ -1,4 +1,5 @@
-import { saveHostName } from "./features/storage";
+import { saveHostName, setStorageDirect } from "./features/storage";
+import { createLogger } from "./utils/logger";
 import { createMiniSakai, addMiniSakaiBtn } from "./minisakai";
 import { isLoggedIn, miniSakaiReady } from "./utils";
 import { isTactPortal, initializeTactFeatures } from "./features/tact/index";
@@ -8,6 +9,8 @@ import { getQuizzes } from "./features/entity/quiz/getQuiz";
 import { getFetchTime, shouldUseCache } from "./utils";
 import { Settings } from "./features/setting/types";
 import { EntryProtocol, EntityProtocol } from "./features/entity/type";
+
+const logger = createLogger('content_script');
 
 /**
  * Creates miniSakai.
@@ -40,7 +43,7 @@ async function main() {
  * TACTポータル用の機能を初期化
  */
 function initTactFeatures() {
-    console.log('TACT Portal detected - initializing custom tabs');
+    logger.debug('TACT Portal detected - initializing custom tabs');
     // ツールナビゲーションが読み込まれるまで待つ（最大30秒）
     let attempts = 0;
     const maxAttempts = 60;
@@ -52,7 +55,7 @@ function initTactFeatures() {
             initializeTactFeatures();
         } else if (attempts >= maxAttempts) {
             clearInterval(checkToolMenu);
-            console.error('TACT tool menu not found after maximum attempts');
+            logger.error('TACT tool menu not found after maximum attempts');
         }
     }, 500);
 }
@@ -62,7 +65,7 @@ function setupAutoSyncCheck() {
     // バックグラウンドからの同期リクエストのリスナーを追加
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === 'getSakaiDataForSync') {
-            console.log('バックグラウンドからデータ取得リクエストを受信しました');
+            logger.debug('バックグラウンドからデータ取得リクエストを受信しました');
             // データを取得して返す
             getSakaiDataForSync().then(data => {
                 sendResponse({ success: true, data });
@@ -71,12 +74,10 @@ function setupAutoSyncCheck() {
             });
             return true; // 非同期レスポンスを示す
         } else if (request.action === 'syncCompleted') {
-            console.log(`同期完了通知: 課題${request.result.assignments}件、クイズ${request.result.quizzes}件`);
+            logger.debug(`同期完了通知: 課題${request.result.assignments}件、クイズ${request.result.quizzes}件`);
             // 最終同期時刻を更新
-            chrome.storage.local.set({ lastSyncTime: Date.now() }, () => {
-                if (chrome.runtime.lastError) {
-                    console.error('Failed to update lastSyncTime:', chrome.runtime.lastError.message);
-                }
+            setStorageDirect({ lastSyncTime: Date.now() }).catch((err) => {
+                logger.error('Failed to update lastSyncTime:', err);
             });
             // 同期完了のUI通知を表示
             showSyncNotification(request.result);
@@ -93,13 +94,13 @@ async function checkAndSyncIfNeeded() {
     // Backgroundに自動同期の条件を確認
     chrome.runtime.sendMessage({ action: 'checkAutoSync' }, async (response) => {
         if (chrome.runtime.lastError) {
-            console.error('自動同期チェックエラー:', chrome.runtime.lastError);
+            logger.error('自動同期チェックエラー:', chrome.runtime.lastError);
             return;
         }
         
         // 同期条件を満たしていれば実行
         if (response && response.success && response.shouldSync) {
-            console.log('自動同期条件を満たしました - 同期を開始します');
+            logger.debug('自動同期条件を満たしました - 同期を開始します');
             await performAutoSync();
         }
     });
@@ -111,16 +112,16 @@ async function performAutoSync() {
         const data = await getSakaiDataForSync();
 
         if (data.assignments.length === 0 && data.quizzes.length === 0) {
-            console.log('同期するデータが見つかりませんでした');
+            logger.debug('同期するデータが見つかりませんでした');
             return;
         }
 
         // Googleカレンダーに同期
         const result = await syncToCalendar(data);
 
-        console.log(`自動同期完了: ${result.assignments.length + result.quizzes.length}件作成`);
+        logger.debug(`自動同期完了: ${result.assignments.length + result.quizzes.length}件作成`);
     } catch (error) {
-        console.error('自動同期に失敗:', error);
+        logger.error('自動同期に失敗:', error);
     }
 }
 
@@ -164,10 +165,15 @@ async function getSakaiDataForSync(): Promise<SyncData> {
     const assignments = await getAssignments(hostname, courses, useAssignmentCache);
     const quizzes = await getQuizzes(hostname, courses, useQuizCache);
     // 締切が今より前のものは除外
-    const totalAssignmentEntries = assignments.flatMap((assignment: EntityProtocol) => assignment.entries)
-        .filter((e: EntryProtocol) => e.dueTime > now);
-    const totalQuizEntries = quizzes.flatMap((quiz: EntityProtocol) => quiz.entries)
-        .filter((e: EntryProtocol) => e.dueTime > now);
+    // エントリにコース情報を付与してフラット化
+    const totalAssignmentEntries = assignments.flatMap((assignment: EntityProtocol) =>
+        assignment.entries.filter((e: EntryProtocol) => e.dueTime > now)
+            .map((e: any) => ({ ...e, courseName: assignment.course.name, context: assignment.course.id }))
+    );
+    const totalQuizEntries = quizzes.flatMap((quiz: EntityProtocol) =>
+        quiz.entries.filter((e: EntryProtocol) => e.dueTime > now)
+            .map((e: any) => ({ ...e, courseName: quiz.course.name, context: quiz.course.id }))
+    );
     return {
         assignments: totalAssignmentEntries,
         quizzes: totalQuizEntries
