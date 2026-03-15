@@ -196,78 +196,6 @@ async function loadClassroomInfo(hostname: string): Promise<Record<string, strin
     return result || {};
 }
 
-// 教室編集モーダル
-function showClassroomEditModal() {
-    const hostname = window.location.hostname;
-    const overlay = document.createElement('div');
-    overlay.className = 'cs-tact-overlay';
-    overlay.style.zIndex = '10001';
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) overlay.remove();
-    });
-    const modal = document.createElement('div');
-    modal.className = 'cs-tact-modal cs-timetable-modal';
-    const header = document.createElement('div');
-    header.className = 'cs-tact-modal-header';
-    const title = document.createElement('h2');
-    title.textContent = '教室編集';
-    header.appendChild(title);
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '×';
-    closeBtn.className = 'cs-tact-modal-close';
-    closeBtn.onclick = () => overlay.remove();
-    header.appendChild(closeBtn);
-    modal.appendChild(header);
-    const content = document.createElement('div');
-    content.className = 'cs-tact-modal-content';
-    content.style.maxHeight = '60vh';
-    content.style.overflowY = 'auto';
-    // 講義リスト
-    const courses = cachedCourses || [];
-    loadClassroomInfo(hostname).then(classroomMap => {
-        courses.forEach(course => {
-            const row = document.createElement('div');
-            row.style.display = 'flex';
-            row.style.alignItems = 'center';
-            row.style.marginBottom = '8px';
-            const label = document.createElement('span');
-            label.textContent = course.title.split('(')[0];
-            label.style.flex = '0 0 200px';
-            label.style.fontWeight = 'bold';
-            row.appendChild(label);
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = classroomMap[course.title] || course.room || '';
-            input.style.flex = '1';
-            input.style.marginLeft = '8px';
-            input.placeholder = '教室名を入力';
-            row.appendChild(input);
-            row.dataset.title = course.title;
-            content.appendChild(row);
-        });
-        // 保存ボタン
-        const saveBtn = document.createElement('button');
-        saveBtn.textContent = '保存';
-        saveBtn.className = 'cs-btn cs-btn-primary';
-        saveBtn.style.marginTop = '16px';
-        saveBtn.onclick = async () => {
-            const newMap: Record<string, string> = {};
-            content.querySelectorAll('div[data-title]')?.forEach(row => {
-                const t = row.getAttribute('data-title')!;
-                const val = (row.querySelector('input') as HTMLInputElement).value.trim();
-                if (val) newMap[t] = val;
-            });
-            await saveClassroomInfo(hostname, newMap);
-            overlay.remove();
-            updateTimetable();
-        };
-        content.appendChild(saveBtn);
-    });
-    modal.appendChild(content);
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-}
-
 export const showTimetableModal = (): void => {
     // 既存のモーダルがあれば削除
     const existingOverlay = document.querySelector('.cs-tact-overlay');
@@ -506,17 +434,9 @@ export const showTimetableModal = (): void => {
     };
     selectors.appendChild(showAllToggle);
 
-    // 教室編集ボタン追加
-    const classroomEditBtn = document.createElement('button');
-    classroomEditBtn.textContent = '教室編集';
-    classroomEditBtn.className = 'cs-btn cs-btn-secondary';
-    classroomEditBtn.style.marginLeft = '12px';
-    classroomEditBtn.onclick = showClassroomEditModal;
-    selectors.appendChild(classroomEditBtn);
-    
-    // PNG出力ボタン追加
+    // 設定・プレビューボタン
     const pngExportBtn = document.createElement('button');
-    pngExportBtn.textContent = 'プレビュー';
+    pngExportBtn.textContent = '設定・プレビュー';
     pngExportBtn.className = 'cs-btn cs-btn-primary';
     pngExportBtn.style.marginLeft = '12px';
     pngExportBtn.onclick = showCourseColorModal;
@@ -1275,30 +1195,38 @@ function showCourseColorModal() {
     });
     const modal = document.createElement('div');
     modal.className = 'cs-tact-modal cs-timetable-color-modal';
-    modal.style.maxHeight = '60vh';
-    modal.style.overflowY = 'auto';
+    modal.style.maxHeight = '85vh';
     
     const header = document.createElement('div');
     header.className = 'cs-tact-modal-header';
     
     const title = document.createElement('h2');
-    title.textContent = '教科の色設定';
+    title.textContent = '教科設定（色・教室）';
     header.appendChild(title);
     
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '×';
     closeBtn.className = 'cs-tact-modal-close';
     closeBtn.onclick = () => {
-        // 色設定を保存してから閉じる
+        // 色設定と教室情報を保存してから閉じる
         const currentColorMap: Record<string, string> = {};
+        const newClassroomMap: Record<string, string> = {};
         content.querySelectorAll('div[data-title]').forEach(row => {
             const rowTitle = (row as HTMLElement).dataset.title;
             const colorInput = row.querySelector('input[type="color"]') as HTMLInputElement;
+            const roomInput = row.querySelector('.cs-classroom-input') as HTMLInputElement;
             if (rowTitle && colorInput) {
                 currentColorMap[rowTitle] = colorInput.value;
             }
+            if (rowTitle && roomInput) {
+                const val = roomInput.value.trim();
+                if (val) newClassroomMap[rowTitle] = val;
+            }
         });
-        saveCourseColors(hostname, currentColorMap).then(() => {
+        Promise.all([
+            saveCourseColors(hostname, currentColorMap),
+            saveClassroomInfo(hostname, newClassroomMap),
+        ]).then(() => {
             updateTimetable();
         });
         colorOverlay.remove();
@@ -1308,9 +1236,8 @@ function showCourseColorModal() {
 
     const content = document.createElement('div');
     content.className = 'cs-tact-modal-content';
-    content.style.maxHeight = '60vh';
     content.style.overflowY = 'auto';
-    
+
     // 現在表示されている講義を取得
     const yearSelect = document.getElementById('cs-timetable-year') as HTMLSelectElement | null;
     const termSelect = document.getElementById('cs-timetable-term') as HTMLSelectElement | null;
@@ -1326,7 +1253,7 @@ function showCourseColorModal() {
         index === self.findIndex(c => c.title === course.title)
     );
     
-    loadCourseColors(hostname).then((colorMap) => {
+    Promise.all([loadCourseColors(hostname), loadClassroomInfo(hostname)]).then(([colorMap, classroomMap]) => {
         // ヘッダー説明
         const description = document.createElement('div');
         description.style.marginBottom = '16px';
@@ -1443,6 +1370,31 @@ function showCourseColorModal() {
                 presetRow.appendChild(swatch);
             });
             card.appendChild(presetRow);
+
+            // 教室名入力欄
+            const roomRow = document.createElement('div');
+            roomRow.style.display = 'flex';
+            roomRow.style.alignItems = 'center';
+            roomRow.style.gap = '8px';
+            roomRow.style.marginTop = '8px';
+            const roomLabel = document.createElement('span');
+            roomLabel.textContent = '教室:';
+            roomLabel.style.fontSize = '12px';
+            roomLabel.style.color = '#666';
+            roomLabel.style.flexShrink = '0';
+            roomRow.appendChild(roomLabel);
+            const roomInput = document.createElement('input');
+            roomInput.type = 'text';
+            roomInput.className = 'cs-classroom-input';
+            roomInput.value = classroomMap[course.title] || course.room || '';
+            roomInput.placeholder = '教室名を入力';
+            roomInput.style.flex = '1';
+            roomInput.style.padding = '4px 8px';
+            roomInput.style.fontSize = '12px';
+            roomInput.style.border = '1px solid #ccc';
+            roomInput.style.borderRadius = '4px';
+            roomRow.appendChild(roomInput);
+            card.appendChild(roomRow);
 
             card.dataset.title = course.title;
             content.appendChild(card);
@@ -1569,14 +1521,23 @@ function showCourseColorModal() {
         // Canvas生成の共通ロジック
         async function buildExportCanvas(): Promise<{ canvas: HTMLCanvasElement; filename: string } | null> {
             const currentColorMap: Record<string, string> = {};
+            const currentClassroomMap: Record<string, string> = {};
             content.querySelectorAll('div[data-title]').forEach(row => {
                 const rowTitle = (row as HTMLElement).dataset.title;
                 const colorInput = row.querySelector('input[type="color"]') as HTMLInputElement;
+                const roomInput = row.querySelector('.cs-classroom-input') as HTMLInputElement;
                 if (rowTitle && colorInput) {
                     currentColorMap[rowTitle] = colorInput.value;
                 }
+                if (rowTitle && roomInput) {
+                    const val = roomInput.value.trim();
+                    if (val) currentClassroomMap[rowTitle] = val;
+                }
             });
-            await saveCourseColors(hostname, currentColorMap);
+            await Promise.all([
+                saveCourseColors(hostname, currentColorMap),
+                saveClassroomInfo(hostname, currentClassroomMap),
+            ]);
 
             const yearSelect = document.getElementById('cs-timetable-year') as HTMLSelectElement;
             const termSelect = document.getElementById('cs-timetable-term') as HTMLSelectElement;
@@ -1585,7 +1546,7 @@ function showCourseColorModal() {
             const selectedTermLabel = termSelect.options[termSelect.selectedIndex].textContent || selectedTerm;
             const allCourses = (showAllCourses ? cachedAllCourses : cachedCourses) || [];
             const filteredCourses = filterCoursesByYearAndTerm(allCourses, selectedYear, selectedTerm);
-            const classroomData = await loadClassroomInfo(hostname);
+            const classroomData = currentClassroomMap;
 
             const exportDays = ['月', '火', '水', '木', '金'];
             const exportPeriodCount = 6;
