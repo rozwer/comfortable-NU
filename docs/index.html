@@ -11,7 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
         :root {
             --ink: #1a1714;
             --ink-soft: #3d3630;
@@ -28,540 +27,146 @@
             --ff-mincho: 'Shippori Mincho', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
             --ff-gothic: 'Zen Kaku Gothic New', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif;
         }
-
         html { scroll-behavior: smooth; }
-
         body {
             font-family: var(--ff-gothic);
             line-height: 1.85;
             color: var(--ink);
             background: var(--paper);
             -webkit-font-smoothing: antialiased;
-            position: relative;
         }
-
-        /* Noise texture overlay */
         body::before {
             content: '';
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 9999;
+            position: fixed; inset: 0;
+            pointer-events: none; z-index: 9999;
             opacity: 0.03;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
             background-size: 200px;
         }
 
-        /* ===== NAV ===== */
-        .nav {
-            position: fixed; top: 0; width: 100%; z-index: 100;
-            background: rgba(245, 240, 232, 0.92);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--paper-deep);
-        }
-        .nav-inner {
-            max-width: 1100px; margin: 0 auto; padding: 0 2rem;
-            display: flex; justify-content: space-between; align-items: center;
-            height: 56px;
-        }
-        .nav-brand {
-            display: flex; align-items: center; gap: 10px;
-            text-decoration: none; color: var(--ink);
-            font-family: var(--ff-mincho); font-weight: 800; font-size: 1.15rem;
-            letter-spacing: 0.02em;
-        }
+        /* NAV */
+        .nav { position: fixed; top: 0; width: 100%; z-index: 100; background: rgba(245,240,232,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--paper-deep); }
+        .nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 2rem; display: flex; justify-content: space-between; align-items: center; height: 56px; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-family: var(--ff-mincho); font-weight: 800; font-size: 1.15rem; letter-spacing: 0.02em; }
         .nav-brand img { width: 26px; height: 26px; }
-        .nav-links {
-            display: flex; list-style: none; gap: 2rem;
-        }
-        .nav-links a {
-            text-decoration: none; color: var(--ink-faint);
-            font-size: 0.82rem; font-weight: 500;
-            letter-spacing: 0.06em;
-            transition: color 0.2s;
-        }
+        .nav-links { display: flex; list-style: none; gap: 2rem; }
+        .nav-links a { text-decoration: none; color: var(--ink-faint); font-size: 0.82rem; font-weight: 500; letter-spacing: 0.06em; transition: color 0.2s; }
         .nav-links a:hover { color: var(--vermillion); }
-        .hamburger {
-            display: none; cursor: pointer; flex-direction: column; gap: 5px;
-            background: none; border: none; padding: 4px;
-        }
-        .hamburger span {
-            width: 20px; height: 1.5px; background: var(--ink); transition: 0.3s;
-            display: block;
-        }
-        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(4px, 4px); }
+        .hamburger { display: none; cursor: pointer; flex-direction: column; gap: 5px; background: none; border: none; padding: 4px; }
+        .hamburger span { width: 20px; height: 1.5px; background: var(--ink); transition: 0.3s; display: block; }
+        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(4px,4px); }
         .hamburger.active span:nth-child(2) { opacity: 0; }
-        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(4px, -4px); }
+        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(4px,-4px); }
 
-        /* ===== HERO ===== */
-        .hero {
-            padding: 140px 2rem 100px;
-            position: relative;
-            overflow: hidden;
-            background: var(--ink);
-            color: var(--paper);
-        }
-        .hero::before {
-            content: '';
-            position: absolute; inset: 0;
-            background:
-                radial-gradient(ellipse 80% 60% at 20% 80%, rgba(194, 54, 22, 0.12), transparent),
-                radial-gradient(ellipse 60% 50% at 85% 20%, rgba(44, 62, 107, 0.15), transparent);
-        }
-        .hero::after {
-            content: 'NU';
-            position: absolute;
-            right: -40px; bottom: -60px;
-            font-family: var(--ff-mincho);
-            font-size: clamp(200px, 25vw, 400px);
-            font-weight: 800;
-            color: rgba(245, 240, 232, 0.03);
-            line-height: 1;
-            pointer-events: none;
-            user-select: none;
-        }
-        .hero-inner {
-            max-width: 1100px; margin: 0 auto;
-            position: relative;
-        }
-        .hero-eyebrow {
-            font-size: 0.78rem;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            color: var(--vermillion-soft);
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            display: flex; align-items: center; gap: 1rem;
-        }
-        .hero-eyebrow::before {
-            content: '';
-            width: 40px; height: 1px;
-            background: var(--vermillion-soft);
-        }
-        .hero h1 {
-            font-family: var(--ff-mincho);
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 800;
-            line-height: 1.3;
-            margin-bottom: 1.5rem;
-            max-width: 700px;
-        }
-        .hero h1 em {
-            font-style: normal;
-            color: var(--vermillion-soft);
-        }
-        .hero-desc {
-            font-size: 1rem;
-            line-height: 1.9;
-            max-width: 560px;
-            color: rgba(245, 240, 232, 0.7);
-            margin-bottom: 2.5rem;
-        }
-        .hero-actions {
-            display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
-        }
-        .btn-cta {
-            display: inline-flex; align-items: center; gap: 0.5rem;
-            padding: 12px 28px;
-            font-family: var(--ff-gothic);
-            font-size: 0.88rem; font-weight: 700;
-            letter-spacing: 0.04em;
-            text-decoration: none;
-            border: none; cursor: pointer;
-            transition: all 0.25s;
-        }
-        .btn-cta-primary {
-            background: var(--vermillion);
-            color: var(--paper);
-        }
-        .btn-cta-primary:hover {
-            background: var(--vermillion-soft);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(194, 54, 22, 0.3);
-        }
-        .btn-cta-ghost {
-            background: transparent;
-            color: var(--paper);
-            border: 1px solid rgba(245, 240, 232, 0.25);
-        }
-        .btn-cta-ghost:hover {
-            border-color: rgba(245, 240, 232, 0.5);
-            background: rgba(245, 240, 232, 0.06);
-        }
-        .hero-stats {
-            display: flex; gap: 3rem; margin-top: 3.5rem;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(245, 240, 232, 0.1);
-        }
-        .hero-stat-num {
-            font-family: var(--ff-mincho);
-            font-size: 2.2rem; font-weight: 800;
-            color: var(--paper);
-            line-height: 1;
-        }
-        .hero-stat-label {
-            font-size: 0.75rem;
-            color: rgba(245, 240, 232, 0.45);
-            letter-spacing: 0.08em;
-            margin-top: 0.4rem;
-        }
+        /* HERO */
+        .hero { padding: 140px 2rem 100px; position: relative; overflow: hidden; background: var(--ink); color: var(--paper); }
+        .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 20% 80%, rgba(194,54,22,0.12), transparent), radial-gradient(ellipse 60% 50% at 85% 20%, rgba(44,62,107,0.15), transparent); }
+        .hero::after { content: 'NU'; position: absolute; right: -40px; bottom: -60px; font-family: var(--ff-mincho); font-size: clamp(200px,25vw,400px); font-weight: 800; color: rgba(245,240,232,0.03); line-height: 1; pointer-events: none; user-select: none; }
+        .hero-inner { max-width: 1100px; margin: 0 auto; position: relative; }
+        .hero-eyebrow { font-size: 0.78rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--vermillion-soft); font-weight: 700; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; }
+        .hero-eyebrow::before { content: ''; width: 40px; height: 1px; background: var(--vermillion-soft); }
+        .hero h1 { font-family: var(--ff-mincho); font-size: clamp(2rem,5vw,3.5rem); font-weight: 800; line-height: 1.3; margin-bottom: 1.5rem; max-width: 700px; }
+        .hero h1 em { font-style: normal; color: var(--vermillion-soft); }
+        .hero-desc { font-size: 1rem; line-height: 1.9; max-width: 520px; color: rgba(245,240,232,0.65); margin-bottom: 2.5rem; }
+        .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+        .btn-cta { display: inline-flex; align-items: center; gap: 0.5rem; padding: 12px 28px; font-family: var(--ff-gothic); font-size: 0.88rem; font-weight: 700; letter-spacing: 0.04em; text-decoration: none; border: none; cursor: pointer; transition: all 0.25s; }
+        .btn-cta-primary { background: var(--vermillion); color: var(--paper); }
+        .btn-cta-primary:hover { background: var(--vermillion-soft); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(194,54,22,0.3); }
+        .btn-cta-ghost { background: transparent; color: var(--paper); border: 1px solid rgba(245,240,232,0.25); }
+        .btn-cta-ghost:hover { border-color: rgba(245,240,232,0.5); background: rgba(245,240,232,0.06); }
 
-        /* ===== SECTION FRAMEWORK ===== */
-        .section {
-            padding: 80px 2rem;
-            position: relative;
-        }
-        .section-alt {
-            background: var(--paper-warm);
-        }
-        .section-dark {
-            background: var(--ink);
-            color: var(--paper);
-        }
-        .section-inner {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-        .section-header {
-            margin-bottom: 3.5rem;
-        }
-        .section-label {
-            font-size: 0.72rem;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: var(--vermillion);
-            font-weight: 700;
-            margin-bottom: 0.8rem;
-        }
-        .section-title {
-            font-family: var(--ff-mincho);
-            font-size: clamp(1.6rem, 3.5vw, 2.4rem);
-            font-weight: 800;
-            line-height: 1.3;
-        }
-        .section-subtitle {
-            font-size: 0.92rem;
-            color: var(--ink-faint);
-            margin-top: 0.8rem;
-            max-width: 500px;
-        }
-        .section-dark .section-subtitle {
-            color: rgba(245, 240, 232, 0.5);
-        }
+        /* SECTIONS */
+        .section { padding: 80px 2rem; }
+        .section-alt { background: var(--paper-warm); }
+        .section-dark { background: var(--ink); color: var(--paper); }
+        .section-inner { max-width: 1100px; margin: 0 auto; }
+        .section-header { margin-bottom: 3.5rem; }
+        .section-label { font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--vermillion); font-weight: 700; margin-bottom: 0.8rem; }
+        .section-title { font-family: var(--ff-mincho); font-size: clamp(1.6rem,3.5vw,2.4rem); font-weight: 800; line-height: 1.3; }
 
-        /* ===== FEATURE CARDS ===== */
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
-            background: var(--paper-deep);
-            border: 1px solid var(--paper-deep);
-        }
-        .f-card {
-            background: var(--paper);
-            padding: 2rem 1.8rem;
-            position: relative;
-            transition: background 0.3s;
-        }
-        .f-card:hover {
-            background: var(--paper-warm);
-        }
-        .f-card-num {
-            font-family: var(--ff-mincho);
-            font-size: 3.5rem;
-            font-weight: 800;
-            color: var(--paper-deep);
-            line-height: 1;
-            position: absolute;
-            top: 12px; right: 16px;
-            transition: color 0.3s;
-        }
-        .f-card:hover .f-card-num {
-            color: rgba(194, 54, 22, 0.1);
-        }
-        .f-card h3 {
-            font-family: var(--ff-mincho);
-            font-size: 1.05rem;
-            font-weight: 600;
-            margin-bottom: 0.6rem;
-            line-height: 1.4;
-        }
-        .f-card p {
-            font-size: 0.85rem;
-            color: var(--ink-faint);
-            line-height: 1.75;
-        }
-        .f-card ul {
-            list-style: none;
-            margin-top: 0.6rem;
-            font-size: 0.82rem;
-            color: var(--ink-faint);
-        }
-        .f-card ul li {
-            padding: 2px 0;
-            padding-left: 1em;
-            text-indent: -1em;
-        }
-        .f-card ul li::before {
-            content: '—';
-            color: var(--stone);
-            margin-right: 0.5em;
-        }
-        .tag {
-            display: inline-block;
-            font-size: 0.6rem;
-            padding: 1px 7px;
-            letter-spacing: 0.08em;
-            font-weight: 700;
-            vertical-align: middle;
-            margin-left: 6px;
-            border: 1px solid;
-        }
+        /* FEATURE GRID — icon + short text */
+        .fg { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--paper-deep); border: 1px solid var(--paper-deep); }
+        .fc { background: var(--paper); padding: 2.2rem 2rem; position: relative; transition: background 0.3s; }
+        .fc:hover { background: var(--paper-warm); }
+        .fc-icon { width: 40px; height: 40px; margin-bottom: 1rem; color: var(--ink-faint); transition: color 0.3s; }
+        .fc:hover .fc-icon { color: var(--vermillion); }
+        .fc h3 { font-family: var(--ff-mincho); font-size: 1.05rem; font-weight: 600; margin-bottom: 0.4rem; line-height: 1.4; }
+        .fc p { font-size: 0.84rem; color: var(--ink-faint); line-height: 1.7; }
+        .fc-num { position: absolute; top: 14px; right: 18px; font-family: var(--ff-mincho); font-size: 2.8rem; font-weight: 800; color: var(--paper-deep); line-height: 1; transition: color 0.3s; pointer-events: none; }
+        .fc:hover .fc-num { color: rgba(194,54,22,0.08); }
+        .tag { display: inline-block; font-size: 0.58rem; padding: 1px 6px; letter-spacing: 0.08em; font-weight: 700; vertical-align: middle; margin-left: 5px; border: 1px solid; }
         .tag-core { color: var(--indigo); border-color: var(--indigo); }
         .tag-tact { color: var(--vermillion); border-color: var(--vermillion); }
         .tag-v2 { color: var(--green-muted); border-color: var(--green-muted); }
 
-        /* Color legend */
-        .color-legend {
-            display: flex; gap: 0.8rem; flex-wrap: wrap;
-            margin-top: 0.6rem; font-size: 0.78rem; color: var(--ink-faint);
-        }
-        .c-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            display: inline-block; margin-right: 3px; vertical-align: middle;
-        }
+        /* HIGHLIGHTS — horizontal scroll cards */
+        .highlights { display: grid; grid-template-columns: repeat(4,1fr); gap: 2rem; }
+        .hl { text-align: center; }
+        .hl-icon { width: 56px; height: 56px; margin: 0 auto 1rem; color: var(--ink-faint); }
+        .hl h3 { font-family: var(--ff-mincho); font-size: 1.1rem; font-weight: 600; margin-bottom: 0.4rem; }
+        .hl p { font-size: 0.82rem; color: var(--ink-faint); line-height: 1.7; }
 
-        /* ===== DETAILS ===== */
-        .details-list {
-            display: flex; flex-direction: column;
-        }
-        .detail-item {
-            display: grid;
-            grid-template-columns: 80px 1fr;
-            gap: 0;
-            border-bottom: 1px solid var(--paper-deep);
-            padding: 2.5rem 0;
-            position: relative;
-        }
-        .detail-item:first-child { padding-top: 0; }
-        .detail-item:last-child { border-bottom: none; }
-        .detail-num {
-            font-family: var(--ff-mincho);
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--paper-deep);
-            line-height: 1;
-            padding-top: 0.15rem;
-        }
-        .detail-body h3 {
-            font-family: var(--ff-mincho);
-            font-size: 1.15rem;
-            font-weight: 600;
-            margin-bottom: 0.6rem;
-        }
-        .detail-body p {
-            font-size: 0.9rem;
-            color: var(--ink-soft);
-            margin-bottom: 0.5rem;
-        }
-        .detail-body ul {
-            margin: 0.5rem 0 0.5rem 1.2rem;
-            font-size: 0.88rem;
-            color: var(--ink-soft);
-        }
-        .detail-body li { margin-bottom: 0.25rem; }
-        .detail-body code {
-            font-size: 0.82rem;
-            background: var(--paper-warm);
-            padding: 1px 5px;
-            border-radius: 3px;
-            font-family: 'SF Mono', 'Fira Code', monospace;
-        }
-        .detail-sub {
-            margin: 0.8rem 0;
-            padding-left: 1rem;
-            border-left: 2px solid var(--paper-deep);
-        }
-        .detail-sub h4 {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--ink);
-            margin-bottom: 0.2rem;
-        }
-        .detail-sub p {
-            font-size: 0.85rem;
-        }
+        /* DOWNLOAD */
+        .dl-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.5rem; }
+        .dl-card { text-align: center; padding: 2rem 1rem; border: 1px solid rgba(245,240,232,0.12); transition: border-color 0.3s, background 0.3s; }
+        .dl-card:hover { border-color: rgba(245,240,232,0.25); background: rgba(245,240,232,0.04); }
+        .dl-card h3 { font-family: var(--ff-mincho); font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .dl-card p { font-size: 0.8rem; color: rgba(245,240,232,0.45); margin-bottom: 1.2rem; }
+        .dl-btn { display: inline-block; padding: 8px 24px; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.04em; text-decoration: none; border: 1px solid var(--vermillion); color: var(--vermillion-soft); transition: all 0.25s; }
+        .dl-btn:hover { background: var(--vermillion); color: var(--paper); }
+        .dl-btn-disabled { border-color: rgba(245,240,232,0.15); color: rgba(245,240,232,0.25); pointer-events: none; }
 
-        /* ===== DOWNLOAD ===== */
-        .dl-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1.5rem;
-        }
-        .dl-card {
-            text-align: center;
-            padding: 2rem 1rem;
-            border: 1px solid rgba(245, 240, 232, 0.12);
-            transition: border-color 0.3s, background 0.3s;
-        }
-        .dl-card:hover {
-            border-color: rgba(245, 240, 232, 0.25);
-            background: rgba(245, 240, 232, 0.04);
-        }
-        .dl-card h3 {
-            font-family: var(--ff-mincho);
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        .dl-card p {
-            font-size: 0.8rem;
-            color: rgba(245, 240, 232, 0.45);
-            margin-bottom: 1.2rem;
-        }
-        .dl-btn {
-            display: inline-block;
-            padding: 8px 24px;
-            font-size: 0.82rem;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            text-decoration: none;
-            border: 1px solid var(--vermillion);
-            color: var(--vermillion-soft);
-            transition: all 0.25s;
-        }
-        .dl-btn:hover {
-            background: var(--vermillion);
-            color: var(--paper);
-        }
-        .dl-btn-disabled {
-            border-color: rgba(245, 240, 232, 0.15);
-            color: rgba(245, 240, 232, 0.25);
-            pointer-events: none;
-        }
+        /* INFO */
+        .info-row { display: flex; gap: 3rem; flex-wrap: wrap; font-size: 0.88rem; color: var(--ink-soft); }
+        .info-row a { color: var(--vermillion); text-decoration: none; }
+        .info-row a:hover { text-decoration: underline; }
 
-        /* ===== INFO ===== */
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-        }
-        .info-block h3 {
-            font-family: var(--ff-mincho);
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.8rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--paper-deep);
-        }
-        .info-block ul {
-            list-style: none;
-            font-size: 0.88rem;
-            color: var(--ink-soft);
-        }
-        .info-block li {
-            padding: 0.4rem 0;
-        }
-        .info-block a {
-            color: var(--vermillion);
-            text-decoration: none;
-        }
-        .info-block a:hover { text-decoration: underline; }
-
-        /* ===== FOOTER ===== */
-        .footer {
-            padding: 3rem 2rem 2rem;
-            background: var(--ink);
-            color: rgba(245, 240, 232, 0.4);
-            font-size: 0.78rem;
-        }
-        .footer-inner {
-            max-width: 1100px; margin: 0 auto;
-            display: flex; flex-wrap: wrap; gap: 3rem;
-            justify-content: space-between;
-        }
-        .footer a {
-            color: rgba(245, 240, 232, 0.5);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
+        /* FOOTER */
+        .footer { padding: 3rem 2rem 2rem; background: var(--ink); color: rgba(245,240,232,0.4); font-size: 0.78rem; }
+        .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 3rem; justify-content: space-between; }
+        .footer a { color: rgba(245,240,232,0.5); text-decoration: none; transition: color 0.2s; }
         .footer a:hover { color: var(--paper); }
         .footer ul { list-style: none; }
         .footer li { margin-bottom: 0.3rem; }
-        .footer-title {
-            font-family: var(--ff-mincho);
-            font-weight: 600;
-            color: rgba(245, 240, 232, 0.6);
-            margin-bottom: 0.6rem;
-            font-size: 0.82rem;
-        }
-        .footer-bottom {
-            max-width: 1100px; margin: 2rem auto 0;
-            padding-top: 1.5rem;
-            border-top: 1px solid rgba(245, 240, 232, 0.08);
-            text-align: center;
-            color: rgba(245, 240, 232, 0.25);
-        }
+        .footer-title { font-family: var(--ff-mincho); font-weight: 600; color: rgba(245,240,232,0.6); margin-bottom: 0.6rem; font-size: 0.82rem; }
+        .footer-bottom { max-width: 1100px; margin: 2rem auto 0; padding-top: 1.5rem; border-top: 1px solid rgba(245,240,232,0.08); text-align: center; color: rgba(245,240,232,0.25); }
 
-        /* ===== ANIMATIONS ===== */
-        .reveal {
-            opacity: 0;
-            transform: translateY(24px);
-            transition: opacity 0.7s ease, transform 0.7s ease;
-        }
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        /* ANIMATIONS */
+        .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 900px) {
-            .features-grid { grid-template-columns: repeat(2, 1fr); }
-            .dl-grid { grid-template-columns: repeat(2, 1fr); }
-            .info-grid { grid-template-columns: 1fr; }
-            .hero-stats { gap: 2rem; }
+        /* RESPONSIVE */
+        @media (max-width:900px) {
+            .fg { grid-template-columns: repeat(2,1fr); }
+            .highlights { grid-template-columns: repeat(2,1fr); }
+            .dl-grid { grid-template-columns: repeat(2,1fr); }
         }
-        @media (max-width: 640px) {
-            .nav-links {
-                display: none;
-                position: fixed; top: 56px; left: 0; width: 100%;
-                background: rgba(245, 240, 232, 0.98);
-                backdrop-filter: blur(12px);
-                flex-direction: column; align-items: center;
-                padding: 1.5rem 0;
-                border-bottom: 1px solid var(--paper-deep);
-            }
+        @media (max-width:640px) {
+            .nav-links { display: none; position: fixed; top: 56px; left: 0; width: 100%; background: rgba(245,240,232,0.98); backdrop-filter: blur(12px); flex-direction: column; align-items: center; padding: 1.5rem 0; border-bottom: 1px solid var(--paper-deep); }
             .nav-links.active { display: flex; }
             .nav-links li { margin: 0.3rem 0; }
             .nav-links a { font-size: 0.95rem; }
             .hamburger { display: flex; }
             .hero { padding: 120px 1.5rem 70px; }
-            .hero-stats { flex-direction: column; gap: 1.2rem; }
-            .features-grid { grid-template-columns: 1fr; }
-            .detail-item { grid-template-columns: 50px 1fr; }
+            .fg { grid-template-columns: 1fr; }
+            .highlights { grid-template-columns: 1fr; }
             .dl-grid { grid-template-columns: 1fr; }
-            .f-card-num { font-size: 2.5rem; }
+            .fc-num { font-size: 2.2rem; }
             .section { padding: 60px 1.5rem; }
         }
     </style>
 </head>
 <body>
 
-<!-- Nav -->
 <nav class="nav">
     <div class="nav-inner">
-        <a href="#" class="nav-brand">
-            <img src="Image/128.png" alt="">Comfortable NU
-        </a>
+        <a href="#" class="nav-brand"><img src="Image/128.png" alt="">Comfortable NU</a>
         <ul class="nav-links" id="navMenu">
             <li><a href="#features">機能</a></li>
-            <li><a href="#details">詳細</a></li>
             <li><a href="#download">導入</a></li>
             <li><a href="privacy.html">プライバシー</a></li>
         </ul>
-        <button class="hamburger" id="hamburger" aria-label="メニュー">
-            <span></span><span></span><span></span>
-        </button>
+        <button class="hamburger" id="hamburger" aria-label="メニュー"><span></span><span></span><span></span></button>
     </div>
 </nav>
 
@@ -570,23 +175,45 @@
     <div class="hero-inner">
         <div class="hero-eyebrow">Browser Extension for Nagoya University</div>
         <h1>名古屋大学の<em>TACT</em>を、<br>もっと快適に</h1>
-        <p class="hero-desc">課題・小テストの一元管理、時間割、Google カレンダー同期、講義メモ、資料フォルダなど——学習に必要なすべてを拡張する Sakai LMS 向けブラウザ拡張機能。</p>
+        <p class="hero-desc">課題管理、時間割、カレンダー同期、講義メモ、資料フォルダ——15 の機能で学習を支援するブラウザ拡張機能。</p>
         <div class="hero-actions">
             <a href="#download" class="btn-cta btn-cta-primary">Chrome Web Store</a>
             <a href="https://github.com/rozwer/comfortable-NU" class="btn-cta btn-cta-ghost" target="_blank">GitHub →</a>
         </div>
-        <div class="hero-stats">
-            <div>
-                <div class="hero-stat-num">15</div>
-                <div class="hero-stat-label">機能</div>
+    </div>
+</section>
+
+<!-- Highlights -->
+<section class="section section-alt">
+    <div class="section-inner">
+        <div class="highlights reveal">
+            <div class="hl">
+                <svg class="hl-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="8" width="36" height="32" rx="3"/><path d="M6 16h36"/><circle cx="14" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="1.5" fill="currentColor" stroke="none"/><path d="M14 24h10M14 30h16M14 36h8"/>
+                </svg>
+                <h3>課題を一元管理</h3>
+                <p>全コースの課題・小テストを締切順に自動集約</p>
             </div>
-            <div>
-                <div class="hero-stat-num">4</div>
-                <div class="hero-stat-label">タブ構成</div>
+            <div class="hl">
+                <svg class="hl-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="6" width="36" height="36" rx="3"/><path d="M6 14h36M6 22h36M6 30h36M6 38h36"/><path d="M18 6v36M30 6v36"/>
+                </svg>
+                <h3>時間割を可視化</h3>
+                <p>登録講義を曜日×時限のテーブルで表示</p>
             </div>
-            <div>
-                <div class="hero-stat-num">MV3</div>
-                <div class="hero-stat-label">Manifest V3</div>
+            <div class="hl">
+                <svg class="hl-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="10" width="36" height="30" rx="3"/><path d="M6 18h36"/><path d="M14 10V6M34 10V6"/><circle cx="16" cy="26" r="2" fill="currentColor" stroke="none"/><circle cx="24" cy="26" r="2" fill="currentColor" stroke="none"/><circle cx="32" cy="26" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="34" r="2" fill="currentColor" stroke="none"/>
+                </svg>
+                <h3>カレンダー同期</h3>
+                <p>締切を Google カレンダーへ自動登録</p>
+            </div>
+            <div class="hl">
+                <svg class="hl-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 40V14l16-8 16 8v26"/><path d="M8 14l16 8 16-8"/><path d="M24 22v18"/><path d="M16 28h4M28 28h4"/><path d="M16 34h4M28 34h4"/>
+                </svg>
+                <h3>資料を横断ブラウズ</h3>
+                <p>全教科のファイルを学期別ツリーで一望</p>
             </div>
         </div>
     </div>
@@ -597,297 +224,126 @@
     <div class="section-inner">
         <div class="section-header reveal">
             <div class="section-label">Features</div>
-            <h2 class="section-title">機能一覧</h2>
-            <p class="section-subtitle">ポータル画面とコースページを拡張する 15 の機能</p>
+            <h2 class="section-title">全 15 機能</h2>
         </div>
-        <div class="features-grid reveal">
-            <div class="f-card">
-                <span class="f-card-num">01</span>
-                <h3>Sakai ヘッダー拡張 <span class="tag tag-core">CORE</span></h3>
-                <p>ヘッダーに各機能のボタンを追加。miniSakai・時間割・カレンダー同期・ダッシュボードなどをワンクリックで起動。</p>
+        <div class="fg reveal">
+
+            <div class="fc">
+                <span class="fc-num">01</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="4" width="36" height="8" rx="2"/><path d="M8 8h4M16 8h2M22 8h2M28 8h4"/></svg>
+                <h3>ヘッダー拡張 <span class="tag tag-core">CORE</span></h3>
+                <p>各機能へのボタンをヘッダーに追加</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">02</span>
+
+            <div class="fc">
+                <span class="fc-num">02</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="22" y="2" width="16" height="36" rx="2"/><path d="M26 10h8M26 16h8M26 22h6M26 28h4"/><rect x="2" y="2" width="18" height="36" rx="2" stroke-dasharray="3 2" opacity="0.3"/></svg>
                 <h3>miniSakai <span class="tag tag-core">CORE</span></h3>
-                <p>全コースの課題・小テスト・メモをサイドパネルに一覧表示。</p>
-                <ul>
-                    <li>課題一覧（締切色分け・残り時間）</li>
-                    <li>提出済み・非表示タブ</li>
-                    <li>カスタムメモ追加</li>
-                    <li>設定タブ（配色・表示切替）</li>
-                </ul>
+                <p>課題・小テスト・メモをサイドパネルに一覧表示</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">03</span>
+
+            <div class="fc">
+                <span class="fc-num">03</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="8" y="6" width="24" height="28" rx="4"/><path d="M14 14h12M14 20h8M14 26h10"/></svg>
                 <h3>subSakai</h3>
-                <p>拡張アイコンから開くポップアップ版 miniSakai。TACT を開かずに課題・メモを確認可能。読み取り専用。</p>
+                <p>ポップアップから課題を即確認（読み取り専用）</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">04</span>
-                <h3>コースバー拡張</h3>
-                <p>コースタブを締切カテゴリで色分け。未読課題への通知バッジも表示。</p>
-                <div class="color-legend">
-                    <span><span class="c-dot" style="background:#c23616"></span>1日以内</span>
-                    <span><span class="c-dot" style="background:#b8860b"></span>5日以内</span>
-                    <span><span class="c-dot" style="background:#4a7c59"></span>14日以内</span>
-                    <span><span class="c-dot" style="background:#8b8178"></span>14日超</span>
-                </div>
+
+            <div class="fc">
+                <span class="fc-num">04</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                    <rect x="2" y="14" width="9" height="12" rx="1.5" fill="rgba(194,54,22,0.15)" stroke="currentColor"/><rect x="15" y="14" width="9" height="12" rx="1.5" fill="rgba(184,134,11,0.15)" stroke="currentColor"/><rect x="28" y="14" width="9" height="12" rx="1.5" fill="rgba(74,124,89,0.15)" stroke="currentColor"/>
+                </svg>
+                <h3>コースバー色分け</h3>
+                <p>締切の緊急度でコースタブを自動色分け</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">05</span>
-                <h3>時間割モーダル</h3>
-                <p>登録講義を時間割形式で表示。年度・学期切替、教科色カスタマイズ、教室名入力、PNG エクスポートに対応。履修取り消し連動。</p>
+
+            <div class="fc">
+                <span class="fc-num">05</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2" width="36" height="36" rx="2"/><path d="M2 10h36M2 18h36M2 26h36M14 2v36M26 2v36"/></svg>
+                <h3>時間割</h3>
+                <p>年度・学期切替、色カスタマイズ、PNG 出力</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">06</span>
+
+            <div class="fc">
+                <span class="fc-num">06</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="6" width="32" height="28" rx="2"/><path d="M4 14h32"/><path d="M12 6V2M28 6V2"/><path d="M10 20l4 4 8-8" stroke-width="2"/></svg>
                 <h3>カレンダー同期</h3>
-                <p>課題・小テストの締切を Google カレンダーに同期。手動/自動同期、同期間隔設定、重複防止機能つき。</p>
+                <p>Google カレンダーへ自動 / 手動で締切を登録</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">07</span>
-                <h3>TACT メモタブ <span class="tag tag-tact">TACT</span></h3>
-                <p>コースページにメモタブを追加。現在の講義・全講義・検索の 3 タブでメモと外部リンクを管理。</p>
+
+            <div class="fc">
+                <span class="fc-num">07</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 4h28v32H6z" rx="2"/><path d="M12 12h16M12 18h12M12 24h14M12 30h8"/><path d="M6 4l6 0" stroke-width="3"/></svg>
+                <h3>メモ <span class="tag tag-tact">TACT</span></h3>
+                <p>講義ごとにメモと外部リンクを保存・検索</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">08</span>
-                <h3>TACT フォルダタブ <span class="tag tag-tact">TACT</span></h3>
-                <p>コースページに資料フォルダタブを追加。授業資料・課題・お知らせの 3 タブでファイルをツリー表示。一括ダウンロード対応。</p>
+
+            <div class="fc">
+                <span class="fc-num">08</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6h12v8H4zM10 14v6l10 0"/><path d="M20 16h12v6H20z"/><path d="M26 22v4l8 0"/><path d="M34 22h4v6h-4z" opacity="0.4"/><path d="M20 30h12v6H20z" opacity="0.4"/></svg>
+                <h3>フォルダ <span class="tag tag-tact">TACT</span></h3>
+                <p>授業資料・課題・お知らせをツリー表示</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">09</span>
-                <h3>横断ダッシュボード <span class="tag tag-v2">V2</span></h3>
-                <p>全コースの課題・小テストを週単位のガントチャート風に表示。未提出/提出済み/小テストを色分け。</p>
+
+            <div class="fc">
+                <span class="fc-num">09</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="8" width="36" height="24" rx="2"/><path d="M2 16h36"/><rect x="6" y="20" width="14" height="4" rx="1" fill="rgba(194,54,22,0.2)" stroke="currentColor"/><rect x="6" y="28" width="8" height="4" rx="1" fill="rgba(74,124,89,0.2)" stroke="currentColor"/><rect x="24" y="20" width="10" height="4" rx="1" fill="rgba(44,62,107,0.2)" stroke="currentColor"/></svg>
+                <h3>週間ダッシュボード <span class="tag tag-v2">V2</span></h3>
+                <p>ガントチャート風に全課題を週単位で表示</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">10</span>
-                <h3>新着ファイル検知 <span class="tag tag-v2">V2</span></h3>
-                <p>講義資料の更新を自動検知し、該当コースにバッジ表示。background アラームで定期チェック。</p>
+
+            <div class="fc">
+                <span class="fc-num">10</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 32V16l12-8 12 8v16"/><path d="M8 16l12 8 12-8"/><path d="M20 24v8"/><circle cx="32" cy="8" r="5" fill="var(--vermillion)" stroke="none"/><text x="32" y="11" text-anchor="middle" fill="white" font-size="8" font-weight="700" font-family="sans-serif">N</text></svg>
+                <h3>新着検知 <span class="tag tag-v2">V2</span></h3>
+                <p>資料の更新をバッジで自動通知</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">11</span>
+
+            <div class="fc">
+                <span class="fc-num">11</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 8h32M4 16h32M4 24h32M4 32h32"/><circle cx="8" cy="8" r="2" fill="var(--vermillion)" stroke="none"/><circle cx="8" cy="16" r="2" fill="var(--amber)" stroke="none"/><circle cx="8" cy="24" r="2" fill="var(--stone)" stroke="none"/><circle cx="8" cy="32" r="2" fill="var(--stone)" stroke="none"/></svg>
                 <h3>お知らせタイムライン <span class="tag tag-v2">V2</span></h3>
-                <p>全コースのお知らせを時系列で一覧表示。新着バッジ、本文プレビュー展開、コースフィルタ。</p>
+                <p>全コースのお知らせを時系列で横断一覧</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">12</span>
-                <h3>学習負荷可視化 <span class="tag tag-v2">V2</span></h3>
-                <p>今後 4 週間の締切数をカレンダー型ヒートマップで表示。日ごとの詳細をホバーで確認可能。</p>
+
+            <div class="fc">
+                <span class="fc-num">12</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                    <g opacity="0.15" fill="currentColor" stroke="none"><rect x="2" y="26" width="5" height="5" rx="1"/><rect x="9" y="26" width="5" height="5" rx="1"/><rect x="16" y="26" width="5" height="5" rx="1"/><rect x="23" y="26" width="5" height="5" rx="1"/><rect x="30" y="26" width="5" height="5" rx="1"/></g>
+                    <g opacity="0.3" fill="currentColor" stroke="none"><rect x="2" y="19" width="5" height="5" rx="1"/><rect x="9" y="19" width="5" height="5" rx="1"/><rect x="16" y="19" width="5" height="5" rx="1"/></g>
+                    <g opacity="0.6" fill="currentColor" stroke="none"><rect x="23" y="19" width="5" height="5" rx="1"/><rect x="2" y="12" width="5" height="5" rx="1"/></g>
+                    <g fill="currentColor" stroke="none"><rect x="9" y="12" width="5" height="5" rx="1"/><rect x="30" y="19" width="5" height="5" rx="1"/></g>
+                    <path d="M2 8h33" stroke-width="1" opacity="0.3"/>
+                </svg>
+                <h3>学習負荷ヒートマップ <span class="tag tag-v2">V2</span></h3>
+                <p>4 週間分の締切密度をカレンダー型で可視化</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">13</span>
+
+            <div class="fc">
+                <span class="fc-num">13</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                    <rect x="4" y="10" width="24" height="6" rx="1.5" fill="rgba(74,124,89,0.2)" stroke="currentColor"/><rect x="4" y="20" width="16" height="6" rx="1.5" fill="rgba(194,54,22,0.15)" stroke="currentColor"/><rect x="4" y="30" width="30" height="6" rx="1.5" fill="rgba(74,124,89,0.2)" stroke="currentColor"/>
+                    <text x="37" y="16" text-anchor="end" fill="currentColor" font-size="7" font-family="sans-serif" opacity="0.5">80%</text>
+                    <text x="37" y="26" text-anchor="end" fill="currentColor" font-size="7" font-family="sans-serif" opacity="0.5">53%</text>
+                    <text x="37" y="36" text-anchor="end" fill="currentColor" font-size="7" font-family="sans-serif" opacity="0.5">100</text>
+                </svg>
                 <h3>提出率トラッカー <span class="tag tag-v2">V2</span></h3>
-                <p>コースごとの提出率を横棒グラフで可視化。全体サマリーと未提出課題の展開表示に対応。</p>
+                <p>コースごとの提出状況を棒グラフで確認</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">14</span>
+
+            <div class="fc">
+                <span class="fc-num">14</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4h14v10H4z"/><path d="M22 4h14v10H22z"/><path d="M11 14v4h8"/><path d="M19 14v10H4v-6"/><path d="M29 14v4h-8"/><path d="M19 28h14v8H19z" opacity="0.4"/><path d="M4 28h12v8H4z" opacity="0.4"/><circle cx="34" cy="8" r="3" fill="var(--vermillion)" stroke="none" opacity="0.8"/></svg>
                 <h3>横断フォルダブラウザ <span class="tag tag-v2">V2</span></h3>
-                <p>全コースのファイルを学期/教科で自動分類。インクリメンタル検索、ZIP 一括ダウンロード、新着バッジ。</p>
+                <p>全教科を学期別に分類、検索・ZIP 一括 DL</p>
             </div>
-            <div class="f-card">
-                <span class="f-card-num">15</span>
+
+            <div class="fc">
+                <span class="fc-num">15</span>
+                <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="6" y="6" width="28" height="28" rx="3"/><path d="M14 14l12 12M26 14L14 26" stroke-width="2"/></svg>
                 <h3>履修取り消し</h3>
-                <p>不要なコースを非表示にし、時間割・プレビューから除外。各機能と連動して一貫した非表示を実現。</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Details -->
-<section class="section section-alt" id="details">
-    <div class="section-inner">
-        <div class="section-header reveal">
-            <div class="section-label">Specification</div>
-            <h2 class="section-title">機能詳細</h2>
-            <p class="section-subtitle">各機能の仕様と対応範囲</p>
-        </div>
-        <div class="details-list">
-
-            <div class="detail-item reveal">
-                <div class="detail-num">01</div>
-                <div class="detail-body">
-                    <h3>Sakai ヘッダー拡張</h3>
-                    <p>Sakai ポータルのヘッダー領域に miniSakai・時間割・カレンダー同期・ダッシュボード・お知らせ・負荷・提出率・フォルダの各ボタンを挿入します。ログイン済み画面でのみ表示され、DOM への直接挿入で動作します。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">02</div>
-                <div class="detail-body">
-                    <h3>miniSakai</h3>
-                    <p>Sakai 画面上にサイドパネルとして表示される中核機能。全コースの課題・小テスト・メモを一元管理します。</p>
-                    <div class="detail-sub">
-                        <h4>課題一覧タブ</h4>
-                        <p>全コースの課題・クイズを締切順に表示。残り時間、再提出可否バッジ、コースページリンクを表示。緊急度に応じて色分け。</p>
-                    </div>
-                    <div class="detail-sub">
-                        <h4>提出済みタブ</h4>
-                        <p>提出完了した課題を一覧表示。提出日時を確認可能。</p>
-                    </div>
-                    <div class="detail-sub">
-                        <h4>非表示タブ</h4>
-                        <p>マイナスボタンで非表示にした課題の一覧。復元操作が可能。</p>
-                    </div>
-                    <div class="detail-sub">
-                        <h4>設定タブ</h4>
-                        <p>配色テーマ、表示件数、通知設定を変更。即座に反映。</p>
-                    </div>
-                    <p>データ取得は Assignment API・Quiz API をコースごとに並列実行。一部コースが失敗しても残りで描画を継続します。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">03</div>
-                <div class="detail-body">
-                    <h3>subSakai</h3>
-                    <p>拡張アイコンクリックで開くポップアップ UI。TACT ページを開かずに課題・小テスト・メモを確認できます。保存済みデータのみで動作する読み取り専用モードで、ネットワーク通信は発生しません。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">04</div>
-                <div class="detail-body">
-                    <h3>コースバー拡張</h3>
-                    <p>Sakai のお気に入りコースバーを拡張。各コースタブを締切カテゴリ（1日以内=赤 / 5日以内=黄 / 14日以内=緑 / それ以上=灰）で色分けし、未読課題には通知バッジを表示します。miniSakai の課題データをもとに算出。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">05</div>
-                <div class="detail-body">
-                    <h3>時間割モーダル</h3>
-                    <p>登録講義を時間割表形式で表示するモーダル。年度・学期の切替、お気に入りのみ/全コース切替に対応。</p>
-                    <ul>
-                        <li>教科色設定: 教科ごとの色変更・教室名入力・個別/全体リセット</li>
-                        <li>PNG エクスポート: 出力サイズ選択付き</li>
-                        <li>履修取り消し連動: 非表示コースを時間割から自動除外</li>
-                    </ul>
-                    <p>データはポータル DOM（<code>a.link-container[title]</code> 等）から解析。ネットワーク fetch は不使用。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">06</div>
-                <div class="detail-body">
-                    <h3>カレンダー同期モーダル</h3>
-                    <p>Google カレンダーとの連携モーダル。課題・小テストの締切をカレンダーイベントとして自動登録。</p>
-                    <ul>
-                        <li>Google アカウント認証（OAuth 2.0）</li>
-                        <li>課題同期・クイズ同期を個別に ON/OFF</li>
-                        <li>手動同期 / 自動同期（間隔設定可能）</li>
-                        <li>送信済みキーによる重複登録防止</li>
-                        <li>最終同期時刻の表示・送信履歴クリア</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">07</div>
-                <div class="detail-body">
-                    <h3>TACT メモタブ</h3>
-                    <p>TACT コースページのツールメニューにメモ機能を追加。講義ごとのメモ本文と関連リンクを保存。</p>
-                    <div class="detail-sub">
-                        <h4>現在の講義タブ</h4>
-                        <p>閲覧中のコースに関連するメモを表示・編集。</p>
-                    </div>
-                    <div class="detail-sub">
-                        <h4>全講義タブ</h4>
-                        <p>全コースのメモを横断的に一覧表示。</p>
-                    </div>
-                    <div class="detail-sub">
-                        <h4>検索タブ</h4>
-                        <p>メモ内容をキーワードで検索。</p>
-                    </div>
-                    <p>データは <code>localStorage</code> に保存。ネットワーク通信なしで動作。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">08</div>
-                <div class="detail-body">
-                    <h3>TACT フォルダタブ</h3>
-                    <p>TACT コースページに資料フォルダ機能を追加。Content API / Assignment API / Announcement API からデータを取得し、ツリー形式で表示。</p>
-                    <div class="detail-sub">
-                        <h4>授業資料タブ</h4>
-                        <p>講義資料をフォルダ階層で表示。個別/一括ダウンロード対応。</p>
-                    </div>
-                    <div class="detail-sub">
-                        <h4>課題タブ</h4>
-                        <p>課題一覧と詳細（添付ファイル含む）を表示。</p>
-                    </div>
-                    <div class="detail-sub">
-                        <h4>お知らせタブ</h4>
-                        <p>コースのお知らせ一覧を表示。</p>
-                    </div>
-                    <p>キャッシュ TTL 2 時間。再読み込みボタンからの手動更新にも対応。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">09</div>
-                <div class="detail-body">
-                    <h3>横断事項</h3>
-                    <p>各機能が共有するインフラストラクチャ。</p>
-                    <ul>
-                        <li><strong>ストレージ</strong>: <code>chrome.storage.local</code>（ホスト別構造）と <code>localStorage</code>（ページローカル）を併用</li>
-                        <li><strong>API</strong>: Sakai REST API（Assignment / Quiz / Content / Announcement）+ Google OAuth2 / Calendar API</li>
-                        <li><strong>DOM 解析</strong>: <code>.fav-sites-entry</code> / <code>.link-container</code> / <code>#toolMenu ul</code> からの情報抽出</li>
-                        <li><strong>対応ブラウザ</strong>: Chrome（Manifest V3）。Firefox / Edge / Safari は将来対応</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">10</div>
-                <div class="detail-body">
-                    <h3>横断ダッシュボード</h3>
-                    <p>全コースの課題・小テストを週単位のガントチャート風ビューで表示。横軸が月〜日、縦軸が課題名で、<code>openTime</code>〜<code>dueTime</code> の期間を横バーで表現。未提出（赤系）/ 提出済み（緑系）/ 小テスト（青系）の色分け。週の前後切替が可能。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">11</div>
-                <div class="detail-body">
-                    <h3>新着ファイル検知</h3>
-                    <p>Content API の <code>modifiedTime</code> / <code>createdTime</code> を前回取得分と比較し、新着ファイルを自動検出。該当コースのサイドバーにバッジを表示し、フォルダ閲覧で自動消去。background アラームによる定期チェック（間隔設定可能）。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">12</div>
-                <div class="detail-body">
-                    <h3>お知らせタイムライン</h3>
-                    <p>全コースの Announcement API を並列取得し、<code>createdOn</code> で時系列ソートした横断タイムラインを表示。各お知らせにコース名・タイトル・日時・本文プレビュー（折りたたみ展開）。新着バッジと既読管理、コース名フィルタ機能つき。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">13</div>
-                <div class="detail-body">
-                    <h3>学習負荷可視化</h3>
-                    <p>今後 4 週間分の締切数をカレンダー型ヒートマップで表示。日ごとの課題・小テスト件数をセルの色濃度で表現し、ホバーで詳細を確認可能。週ごとの合計件数も併記。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">14</div>
-                <div class="detail-body">
-                    <h3>提出率トラッカー</h3>
-                    <p>コースごとの提出率を横棒グラフで可視化。全体の提出率サマリーを表示し、各コースの未提出課題一覧を展開表示可能。</p>
-                </div>
-            </div>
-
-            <div class="detail-item reveal">
-                <div class="detail-num">15</div>
-                <div class="detail-body">
-                    <h3>横断フォルダブラウザ</h3>
-                    <p>全コースのファイルを <code>/{学期+季節}/{教科名}/...</code> の形式で自動分類したツリーで表示。TACT のコース情報から学期を自動判定。</p>
-                    <ul>
-                        <li>ファイル名・フォルダ名でのインクリメンタル検索（全学期・全教科横断）</li>
-                        <li>検索結果はフルパス付きフラットリスト + ハイライト</li>
-                        <li>選択一括ダウンロード（ZIP）</li>
-                        <li>新着ファイル検知と連動した「NEW」バッジ表示</li>
-                    </ul>
-                </div>
+                <p>不要コースを全機能から一括非表示</p>
             </div>
 
         </div>
@@ -907,21 +363,9 @@
                 <p>Chrome Web Store</p>
                 <a href="https://chromewebstore.google.com/detail/comfortable-nu/adajbdapblogpigfidemhaddanpodbij" class="dl-btn" target="_blank">インストール</a>
             </div>
-            <div class="dl-card">
-                <h3>Edge</h3>
-                <p>準備中</p>
-                <span class="dl-btn dl-btn-disabled">近日公開</span>
-            </div>
-            <div class="dl-card">
-                <h3>Firefox</h3>
-                <p>準備中</p>
-                <span class="dl-btn dl-btn-disabled">近日公開</span>
-            </div>
-            <div class="dl-card">
-                <h3>Safari</h3>
-                <p>準備中</p>
-                <span class="dl-btn dl-btn-disabled">近日公開</span>
-            </div>
+            <div class="dl-card"><h3>Edge</h3><p>準備中</p><span class="dl-btn dl-btn-disabled">近日公開</span></div>
+            <div class="dl-card"><h3>Firefox</h3><p>準備中</p><span class="dl-btn dl-btn-disabled">近日公開</span></div>
+            <div class="dl-card"><h3>Safari</h3><p>準備中</p><span class="dl-btn dl-btn-disabled">近日公開</span></div>
         </div>
     </div>
 </section>
@@ -929,31 +373,15 @@
 <!-- Info -->
 <section class="section">
     <div class="section-inner">
-        <div class="section-header reveal">
-            <div class="section-label">Environment</div>
-            <h2 class="section-title">対応環境・ライセンス</h2>
-        </div>
-        <div class="info-grid reveal">
-            <div class="info-block">
-                <h3>対応バージョン</h3>
-                <ul>
-                    <li>名古屋大学 Sakai LMS（TACT）</li>
-                    <li>Sakai 20, 21（安定版）</li>
-                    <li>Sakai 12（未検証）</li>
-                </ul>
-            </div>
-            <div class="info-block">
-                <h3>ライセンス</h3>
-                <ul>
-                    <li>Apache-2.0 License</li>
-                    <li><a href="https://github.com/rozwer/comfortable-NU/blob/master/LICENSE" target="_blank">ライセンス全文 →</a></li>
-                </ul>
-            </div>
+        <div class="info-row reveal">
+            <span>名古屋大学 Sakai LMS（TACT）対応</span>
+            <span>Sakai 20 / 21（安定版）</span>
+            <span>Chrome Manifest V3</span>
+            <span>Apache-2.0 License — <a href="https://github.com/rozwer/comfortable-NU/blob/master/LICENSE" target="_blank">全文 →</a></span>
         </div>
     </div>
 </section>
 
-<!-- Footer -->
 <footer class="footer">
     <div class="footer-inner">
         <div>
@@ -985,7 +413,6 @@
 </footer>
 
 <script>
-// Hamburger
 document.getElementById('hamburger').addEventListener('click', function() {
     this.classList.toggle('active');
     document.getElementById('navMenu').classList.toggle('active');
@@ -996,15 +423,10 @@ document.querySelectorAll('.nav-links a').forEach(function(a) {
         document.getElementById('navMenu').classList.remove('active');
     });
 });
-
-// Scroll reveal
 var reveals = document.querySelectorAll('.reveal');
 var observer = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            observer.unobserve(entry.target);
-        }
+        if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
     });
 }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
 reveals.forEach(function(el) { observer.observe(el); });
