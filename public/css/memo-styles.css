@@ -15,11 +15,9 @@
 /* ヘッダー */
 .cs-memo-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #e1e5e9;
+    margin-bottom: 12px;
 }
 
 .cs-memo-title {
