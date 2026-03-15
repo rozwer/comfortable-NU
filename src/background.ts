@@ -21,15 +21,20 @@ function init() {
 
 // カレンダー同期用のアラームをセットアップ
 async function setupCalendarSyncAlarm() {
-  return new Promise<void>((resolve) => {
+  return new Promise<void>((resolve, reject) => {
     chrome.storage.local.get(['calendarSyncInterval', 'autoSyncEnabled'], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Failed to read sync settings:', chrome.runtime.lastError.message);
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
       const autoSyncEnabled = result.autoSyncEnabled !== false; // デフォルトはtrue
       
       // 既存のアラームをクリア
       chrome.alarms.clear(CALENDAR_SYNC_ALARM_NAME, () => {
         if (autoSyncEnabled) {
           // 自動同期が有効な場合のみアラームを作成
-          const interval = result.calendarSyncInterval || 60; // デフォルト60分
+          const interval = result.calendarSyncInterval || 240; // デフォルト240分
           chrome.alarms.create(CALENDAR_SYNC_ALARM_NAME, {
             periodInMinutes: interval
           });
@@ -43,18 +48,47 @@ async function setupCalendarSyncAlarm() {
   });
 }
 
-// 同期間隔を取得（分単位）
-async function getSyncInterval(): Promise<number> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['calendarSyncInterval'], (result) => {
-      // デフォルト60分
-      resolve(result.calendarSyncInterval || 60);
-    });
-  });
-}
-
 // Google Calendar sync background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // NUSSファイルをbackground経由でfetchし、base64エンコードして返す
+  if (request.type === 'FETCH_NUSS_FILE') {
+    const { downloadUrl, filename } = request;
+
+    // URLバリデーション: nuss.nagoya-u.ac.jp のみ許可
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(downloadUrl);
+    } catch {
+      sendResponse({ success: false, error: 'Invalid URL format', filename });
+      return true;
+    }
+    if (parsedUrl.protocol !== 'https:' || parsedUrl.hostname !== 'nuss.nagoya-u.ac.jp') {
+      sendResponse({ success: false, error: 'URL not allowed', filename });
+      return true;
+    }
+
+    fetch(downloadUrl)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .then(buffer => {
+        // base64変換: チャンク化でメモリ効率を改善
+        const bytes = new Uint8Array(buffer);
+        const CHUNK = 8192;
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+          binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + CHUNK)));
+        }
+        const base64 = btoa(binary);
+        sendResponse({ success: true, data: base64, filename });
+      })
+      .catch(error => {
+        sendResponse({ success: false, error: (error as Error).message, filename });
+      });
+    return true; // 非同期レスポンスのため
+  }
+
   (async () => {
     try {
       switch (request.action) {
@@ -115,7 +149,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'setAutoSyncEnabled': {
           // 自動同期の有効/無効設定
           const enabled = request.enabled;
-          chrome.storage.local.set({ autoSyncEnabled: enabled });
+          await new Promise<void>((resolve) => {
+            chrome.storage.local.set({ autoSyncEnabled: enabled }, () => resolve());
+          });
           await setupCalendarSyncAlarm(); // アラームを更新
           sendResponse({ success: true });
           break;
@@ -143,6 +179,11 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 async function shouldAutoSync(): Promise<boolean> {
   return new Promise((resolve) => {
     chrome.storage.local.get(['lastSyncTime', 'calendarSyncInterval', 'autoSyncEnabled'], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Failed to check auto sync settings:', chrome.runtime.lastError.message);
+        resolve(false);
+        return;
+      }
       // 自動同期が無効化されている場合は同期しない
       const autoSyncEnabled = result.autoSyncEnabled !== false; // デフォルトはtrue
       if (!autoSyncEnabled) {
@@ -151,8 +192,8 @@ async function shouldAutoSync(): Promise<boolean> {
       }
 
       const lastSyncTime = result.lastSyncTime || 0;
-      // デフォルト60分、ミリ秒に変換
-      const interval = (result.calendarSyncInterval || 60) * 60 * 1000;
+      // デフォルト240分、ミリ秒に変換
+      const interval = (result.calendarSyncInterval || 240) * 60 * 1000;
       const now = Date.now();
       
       // 最終同期時間 + 同期間隔 < 現在時刻 なら同期が必要
@@ -165,83 +206,80 @@ async function shouldAutoSync(): Promise<boolean> {
 // Google OAuth authentication with enhanced security
 async function authenticateGoogle(): Promise<string> {
   console.log('[DEBUG] authenticateGoogle function started');
-  
-  // 既存トークンを削除してから新規認証を行う
-  await new Promise<void>((resolve) => {
+
+  // まず既存トークンを非対話的に取得し、有効なら再利用する
+  const existingToken = await new Promise<string | null>((resolve) => {
     chrome.identity.getAuthToken({ interactive: false }, (token) => {
-      if (token) {
-        chrome.identity.removeCachedAuthToken({ token }, () => resolve());
+      if (chrome.runtime.lastError || !token) {
+        resolve(null);
       } else {
-        resolve();
+        resolve(token);
       }
     });
   });
 
-  return new Promise((resolve, reject) => {
-    // Generate cryptographically secure state parameter for CSRF protection
-    const state = generateSecureState();
-    console.log('[DEBUG] Generated CSRF state');
-    
-    // Store state parameter for verification
-    chrome.storage.local.set({ 'oauth_state': state }, () => {
-      console.log('[DEBUG] Stored OAuth state, starting getAuthToken...');
-      chrome.identity.getAuthToken({ 
-        interactive: true,
-        // Add state parameter for CSRF protection where possible
-        scopes: [
-          'https://www.googleapis.com/auth/calendar',
-          'https://www.googleapis.com/auth/userinfo.email',
-          'https://www.googleapis.com/auth/userinfo.profile'
-        ]
-      }, (token) => {
-        console.log('[DEBUG] getAuthToken callback executed');
-        console.log('[DEBUG] Chrome runtime error:', chrome.runtime.lastError);
-        console.log('[DEBUG] Token received:', !!token);
-        
-        if (chrome.runtime.lastError || !token) {
-          console.log('[DEBUG] Authentication failed:', chrome.runtime.lastError?.message);
-          // Clear stored state on failure
-          chrome.storage.local.remove('oauth_state');
-          reject(new Error(chrome.runtime.lastError?.message || 'No token'));
-        } else {
-          console.log('[DEBUG] Token received, verifying security...');
-          // Verify token validity before returning
-          verifyTokenSecurity(token)
-            .then(() => {
-              console.log('[DEBUG] Token security verified');
-              // Clear state after successful verification
-              chrome.storage.local.remove('oauth_state');
-              // Mark that user has explicitly authenticated
-              chrome.storage.local.set({ 'userAuthenticatedExplicitly': true }, () => {
-                console.log('[DEBUG] User authentication flag set');
-                resolve(token);
-              });
-            })
-            .catch((error) => {
-              console.log('[DEBUG] Token security verification failed:', error);
-              console.log('[DEBUG] Clearing authentication and retrying...');
-              chrome.storage.local.remove('oauth_state');
-              
-              // Clear the failed token and try fresh authentication
-              chrome.identity.removeCachedAuthToken({ token }, () => {
-                console.log('[DEBUG] Cached token cleared, attempting fresh authentication...');
-                // Recursive call for fresh authentication (only once to avoid infinite loop)
-                clearAuthenticationAndReauth()
-                  .then(resolve)
-                  .catch(reject);
-              });
-            });
-        }
+  if (existingToken) {
+    try {
+      await verifyTokenSecurity(existingToken);
+      console.log('[DEBUG] Existing token is valid, reusing it');
+      // 既存トークンが有効なのでそのまま返す（userAuthenticatedExplicitly は既に設定済みのはず）
+      await new Promise<void>((resolve) => {
+        chrome.storage.local.set({ 'userAuthenticatedExplicitly': true }, resolve);
       });
+      return existingToken;
+    } catch {
+      console.log('[DEBUG] Existing token is invalid, removing cached token and re-authenticating');
+      await new Promise<void>((resolve) => {
+        chrome.identity.removeCachedAuthToken({ token: existingToken }, () => resolve());
+      });
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    console.log('[DEBUG] Starting getAuthToken...');
+    chrome.identity.getAuthToken({
+      interactive: true,
+      scopes: [
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile'
+      ]
+    }, (token) => {
+      console.log('[DEBUG] getAuthToken callback executed');
+      console.log('[DEBUG] Chrome runtime error:', chrome.runtime.lastError);
+      console.log('[DEBUG] Token received:', !!token);
+
+      if (chrome.runtime.lastError || !token) {
+        console.log('[DEBUG] Authentication failed:', chrome.runtime.lastError?.message);
+        reject(new Error(chrome.runtime.lastError?.message || 'No token'));
+      } else {
+        console.log('[DEBUG] Token received, verifying security...');
+        // Verify token validity before returning
+        verifyTokenSecurity(token)
+          .then(() => {
+            console.log('[DEBUG] Token security verified');
+            // Mark that user has explicitly authenticated
+            chrome.storage.local.set({ 'userAuthenticatedExplicitly': true }, () => {
+              console.log('[DEBUG] User authentication flag set');
+              resolve(token);
+            });
+          })
+          .catch((error) => {
+            console.log('[DEBUG] Token security verification failed:', error);
+            console.log('[DEBUG] Clearing authentication and retrying...');
+
+            // Clear the failed token and try fresh authentication
+            chrome.identity.removeCachedAuthToken({ token }, () => {
+              console.log('[DEBUG] Cached token cleared, attempting fresh authentication...');
+              // Recursive call for fresh authentication (only once to avoid infinite loop)
+              clearAuthenticationAndReauth()
+                .then(resolve)
+                .catch(reject);
+            });
+          });
+      }
     });
   });
-}
-
-// Generate cryptographically secure state parameter
-function generateSecureState(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
 // Verify token security and validity
@@ -323,7 +361,7 @@ async function getGoogleAccounts(): Promise<any[]> {
         console.log('🔧 [AUTH DEBUG] Token exists:', !!token);
         console.log('🔧 [AUTH DEBUG] Chrome runtime error:', chrome.runtime.lastError);
         
-        const tryFetchUserInfo = async (tokenToUse: string, on401: () => void) => {
+        const tryFetchUserInfo = async (tokenToUse: string) => {
           try {
             console.log('[DEBUG] Verifying token security...');
             // Verify token before use
@@ -366,7 +404,11 @@ async function getGoogleAccounts(): Promise<any[]> {
             } else if (response.status === 401) {
               console.log('[DEBUG] Token expired (401), clearing auth flag');
               // Token expired or invalid, clear explicit auth flag and return empty array
-              chrome.storage.local.remove('userAuthenticatedExplicitly');
+              chrome.storage.local.remove('userAuthenticatedExplicitly', () => {
+                if (chrome.runtime.lastError) {
+                  console.error('Failed to clear auth flag:', chrome.runtime.lastError.message);
+                }
+              });
               console.log('Token expired, user needs to manually re-authenticate');
               resolve([]);
             } else {
@@ -380,36 +422,62 @@ async function getGoogleAccounts(): Promise<any[]> {
         };
         
         if (!token) {
-          console.log('[DEBUG] No existing token, clearing auth flag');
-          // No existing token, clear explicit auth flag and return empty array
-          chrome.storage.local.remove('userAuthenticatedExplicitly');
+          console.log('[DEBUG] No existing token (cache may have been cleared), returning empty without clearing auth flag');
+          // トークンキャッシュがクリアされた可能性があるため、フラグは削除しない
           resolve([]);
           return;
         }
-        
-        await tryFetchUserInfo(token, () => {
-          console.log('[DEBUG] Token is invalid, clearing auth flag');
-          // Token is invalid, clear explicit auth flag and return empty array
-          chrome.storage.local.remove('userAuthenticatedExplicitly');
-          resolve([]);
-        });
+
+        await tryFetchUserInfo(token);
       });
     });
   });
 }
 
 // 送信済みイベント管理
+const MAX_SENT_EVENT_KEYS = 500;
+
+// sentEventKeys の読み書きを直列化するキュー
+let sentKeysQueue: Promise<any> = Promise.resolve();
+
 async function getSentEventKeys(): Promise<Set<string>> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     chrome.storage.local.get(['sentEventKeys'], (result) => {
-      resolve(new Set(result.sentEventKeys || []));
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      const stored = result.sentEventKeys;
+      // 配列でない場合は空セットを返す
+      resolve(new Set(Array.isArray(stored) ? stored : []));
     });
   });
 }
 async function addSentEventKey(key: string) {
+  // キューで直列化し、並行呼び出しによるデータ消失を防ぐ
+  sentKeysQueue = sentKeysQueue.then(() => doAddSentEventKey(key), () => doAddSentEventKey(key));
+  return sentKeysQueue;
+}
+async function doAddSentEventKey(key: string) {
   const keys = await getSentEventKeys();
   keys.add(key);
-  chrome.storage.local.set({ sentEventKeys: Array.from(keys) });
+  // 上限を超えた場合、古いエントリを削除（Set は挿入順を保持 = FIFO）
+  if (keys.size > MAX_SENT_EVENT_KEYS) {
+    const excess = keys.size - MAX_SENT_EVENT_KEYS;
+    const iter = keys.values();
+    for (let i = 0; i < excess; i++) {
+      keys.delete(iter.next().value!);
+    }
+  }
+  await new Promise<void>((resolve, reject) => {
+    chrome.storage.local.set({ sentEventKeys: Array.from(keys) }, () => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      resolve();
+    });
+  });
 }
 function makeEventKey(item: any, type: string): string {
   // id+type+title+course名で一意化
@@ -508,9 +576,7 @@ async function syncToCalendar(data: any, token?: string): Promise<any> {
 
 // Create a calendar event with enhanced security validation
 async function createCalendarEvent(item: any, type: string, token: string): Promise<any> {
-  // Verify token before making API calls
-  await verifyTokenSecurity(token);
-  
+  // トークン検証は authenticateGoogle() / getGoogleAccounts() で実施済みのため不要
   // Validate input data
   if (!item || !item.title) {
     throw new Error('Invalid event data provided');
@@ -645,31 +711,30 @@ function sanitizeText(text: string): string {
 // Complete logout - remove all authentication data and cached tokens
 async function logoutGoogle(): Promise<void> {
   console.log('🔧 [LOGOUT DEBUG] Starting complete logout process...');
-  
+
   return new Promise((resolve) => {
-    // Step 1: Get and remove all cached auth tokens
-    chrome.identity.getAuthToken({ interactive: false }, (token) => {
-      console.log('🔧 [LOGOUT DEBUG] Found existing token:', !!token);
-      
-      if (token) {
-        // Remove the cached token
-        chrome.identity.removeCachedAuthToken({ token }, () => {
-          console.log('🔧 [LOGOUT DEBUG] Cached token removed');
-          
-          // Step 2: Clear all related storage data
-          clearAllAuthenticationData(() => {
-            console.log('🔧 [LOGOUT DEBUG] All authentication data cleared');
-            resolve();
-          });
-        });
-      } else {
-        // No token found, just clear storage data
-        clearAllAuthenticationData(() => {
-          console.log('🔧 [LOGOUT DEBUG] All authentication data cleared (no token found)');
-          resolve();
-        });
-      }
-    });
+    const clearStorage = () => {
+      clearAllAuthenticationData(() => {
+        console.log('🔧 [LOGOUT DEBUG] All authentication data cleared');
+        resolve();
+      });
+    };
+    // MV3: clearAllCachedAuthTokens が利用可能な場合はそちらを使用
+    if (typeof (chrome.identity as any).clearAllCachedAuthTokens === 'function') {
+      (chrome.identity as any).clearAllCachedAuthTokens(() => {
+        console.log('🔧 [LOGOUT DEBUG] All cached tokens removed');
+        clearStorage();
+      });
+    } else {
+      // フォールバック: 既存トークンを1つずつ削除
+      chrome.identity.getAuthToken({ interactive: false }, (token) => {
+        if (token) {
+          chrome.identity.removeCachedAuthToken({ token }, clearStorage);
+        } else {
+          clearStorage();
+        }
+      });
+    }
   });
 }
 
@@ -688,8 +753,11 @@ function clearAllAuthenticationData(callback?: () => void): void {
   ];
   
   chrome.storage.local.remove(keysToRemove, () => {
+    if (chrome.runtime.lastError) {
+      console.error('Failed to clear auth storage:', chrome.runtime.lastError.message);
+    }
     console.log('🔧 [LOGOUT DEBUG] Storage data cleared:', keysToRemove);
-    
+
     // Session storage is available in newer Chrome versions
     try {
       if ((chrome.storage as any).session) {
@@ -722,15 +790,18 @@ async function performCalendarSync() {
     if (tactTabs.length === 0) {
       console.log('TACTタブが見つかりません。同期をスキップします。');
       // 次回アラームの準備（スキップしてもアラームは継続する）
-      chrome.storage.local.get(['lastSyncAttempt'], (result) => {
-        const now = Date.now();
-        // 最後の試行から30分以上経過している場合はTACTタブを開くプロンプトを表示
-        if (!result.lastSyncAttempt || (now - result.lastSyncAttempt > 30 * 60 * 1000)) {
-          showNotification('同期に必要なTACTタブがありません', 
-            'カレンダー同期にはTACTページが必要です。同期を開始するにはTACTにログインしてください。');
-          chrome.storage.local.set({ lastSyncAttempt: now });
-        }
+      const attemptResult = await new Promise<any>((resolve) => {
+        chrome.storage.local.get(['lastSyncAttempt'], (result) => resolve(result));
       });
+      const now = Date.now();
+      // 最後の試行から30分以上経過している場合はTACTタブを開くプロンプトを表示
+      if (!attemptResult.lastSyncAttempt || (now - attemptResult.lastSyncAttempt > 30 * 60 * 1000)) {
+        showNotification('同期に必要なTACTタブがありません',
+          'カレンダー同期にはTACTページが必要です。同期を開始するにはTACTにログインしてください。');
+        await new Promise<void>((resolve) => {
+          chrome.storage.local.set({ lastSyncAttempt: now }, () => resolve());
+        });
+      }
       return { error: 'TACT_TAB_NOT_FOUND' };
     }
     
@@ -778,14 +849,16 @@ async function performCalendarSync() {
       
       // 既存トークンで認証を取得
       token = await new Promise<string>((resolve, reject) => {
-        chrome.identity.getAuthToken({ interactive: false }, (token) => {
-          if (chrome.runtime.lastError || !token) {
+        chrome.identity.getAuthToken({ interactive: false }, (t) => {
+          if (chrome.runtime.lastError || !t) {
             reject(new Error('No valid authentication token'));
           } else {
-            resolve(token);
+            resolve(t);
           }
         });
       });
+      // 取得したトークンを検証
+      await verifyTokenSecurity(token);
     } catch (authError) {
       console.error('Google認証トークンが無効:', authError);
       showNotification('カレンダー同期スキップ', 
@@ -796,7 +869,9 @@ async function performCalendarSync() {
     const result = await syncToCalendar(data, token);
     
     // 最終同期時刻を保存
-    chrome.storage.local.set({ lastSyncTime: Date.now() });
+    await new Promise<void>((resolve) => {
+      chrome.storage.local.set({ lastSyncTime: Date.now() }, () => resolve());
+    });
     
     // 結果の通知
     const totalEvents = result.assignments.length + result.quizzes.length;
@@ -834,33 +909,38 @@ async function performCalendarSync() {
 // Clear existing authentication and force re-authentication
 async function clearAuthenticationAndReauth(): Promise<string> {
   console.log('🔧 [AUTH CLEAR] Clearing existing authentication...');
-  
+
   // Clear stored authentication flags
-  chrome.storage.local.remove(['userAuthenticatedExplicitly', 'oauth_state']);
-  
+  await new Promise<void>((resolve) => {
+    chrome.storage.local.remove(['userAuthenticatedExplicitly'], () => resolve());
+  });
+
   // Perform simple re-authentication without recursive verification
   return new Promise((resolve, reject) => {
-    const state = generateSecureState();
-    chrome.storage.local.set({ 'oauth_state': state }, () => {
-      chrome.identity.getAuthToken({ 
-        interactive: true,
-        scopes: [
-          'https://www.googleapis.com/auth/calendar',
-          'https://www.googleapis.com/auth/userinfo.email',
-          'https://www.googleapis.com/auth/userinfo.profile'
-        ]
-      }, (token) => {
-        if (chrome.runtime.lastError || !token) {
-          chrome.storage.local.remove('oauth_state');
-          reject(new Error(chrome.runtime.lastError?.message || 'Fresh authentication failed'));
-        } else {
-          chrome.storage.local.remove('oauth_state');
-          chrome.storage.local.set({ 'userAuthenticatedExplicitly': true }, () => {
-            console.log('🔧 [AUTH CLEAR] Fresh authentication successful');
-            resolve(token);
+    chrome.identity.getAuthToken({
+      interactive: true,
+      scopes: [
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile'
+      ]
+    }, (token) => {
+      if (chrome.runtime.lastError || !token) {
+        reject(new Error(chrome.runtime.lastError?.message || 'Fresh authentication failed'));
+      } else {
+        // Verify token security before accepting it
+        verifyTokenSecurity(token)
+          .then(() => {
+            chrome.storage.local.set({ 'userAuthenticatedExplicitly': true }, () => {
+              console.log('🔧 [AUTH CLEAR] Fresh authentication successful');
+              resolve(token);
+            });
+          })
+          .catch((error) => {
+            console.error('🔧 [AUTH CLEAR] Token verification failed after reauth:', error);
+            reject(new Error('Token security verification failed after re-authentication'));
           });
-        }
-      });
+      }
     });
   });
 }

@@ -114,14 +114,20 @@ export class MemoManager {
     getAllNotes(): LectureNote[] {
         const stored = localStorage.getItem(STORAGE_KEYS.LECTURE_NOTES);
         if (!stored) return [];
-        
+
         try {
-            const notes = JSON.parse(stored);
-            return notes.map((note: any) => ({
-                ...note,
-                createdAt: new Date(note.createdAt),
-                updatedAt: new Date(note.updatedAt)
-            }));
+            const parsed = JSON.parse(stored);
+            if (!Array.isArray(parsed)) {
+                console.warn('Invalid lecture notes format, expected array');
+                return [];
+            }
+            return parsed
+                .filter((note: any) => note && typeof note === 'object' && typeof note.id === 'string')
+                .map((note: any) => ({
+                    ...note,
+                    createdAt: new Date(note.createdAt),
+                    updatedAt: new Date(note.updatedAt)
+                }));
         } catch (error) {
             console.error('メモの読み込みに失敗しました:', error);
             return [];
@@ -169,8 +175,15 @@ export class MemoManager {
 
         const allNotes = this.getAllNotes();
         allNotes.push(newNote);
-        
-        localStorage.setItem(STORAGE_KEYS.LECTURE_NOTES, JSON.stringify(allNotes));
+
+        try {
+            localStorage.setItem(STORAGE_KEYS.LECTURE_NOTES, JSON.stringify(allNotes));
+        } catch (error) {
+            if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+                throw new Error('ストレージの容量が不足しています。古いメモを削除してください。');
+            }
+            throw error;
+        }
         return noteId;
     }
 
@@ -189,8 +202,15 @@ export class MemoManager {
             links,
             updatedAt: new Date()
         };
-        
-        localStorage.setItem(STORAGE_KEYS.LECTURE_NOTES, JSON.stringify(allNotes));
+
+        try {
+            localStorage.setItem(STORAGE_KEYS.LECTURE_NOTES, JSON.stringify(allNotes));
+        } catch (error) {
+            if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+                throw new Error('ストレージの容量が不足しています。古いメモを削除してください。');
+            }
+            throw error;
+        }
         return true;
     }
 

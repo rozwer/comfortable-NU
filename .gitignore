@@ -302,3 +302,14 @@ $RECYCLE.BIN/
 google-calendar-sync-report.md
 
 sync-to-windows.sh
+
+# Claude Code / AI tooling
+.claude/
+.playwright-mcp/
+docs/.claude/
+Plans.md
+bun.lock
+
+# Timetable preview images
+timetable-*.png
+actual-timetable.png

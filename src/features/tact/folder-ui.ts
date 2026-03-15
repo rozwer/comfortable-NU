@@ -2,6 +2,7 @@
  * TACTフォルダ機能のUI管理
  * フォルダ表示・編集・操作のユーザーインターフェース
  */
+import JSZip from 'jszip';
 import { TactApiClient } from './tact-api';
 import { formatDateToString } from '../../utils';
 
@@ -372,13 +373,13 @@ export class FolderUI {
             try {
                 downloadButton.disabled = true;
                 downloadButton.textContent = 'ダウンロード中...';
-                
-                await this.downloadSelectedFiles(selectedCheckboxes);
-                
+
+                await this.downloadSelectedFiles(selectedCheckboxes, downloadButton);
+
                 // ダウンロード完了後、チェックボックスをリセット
                 selectedCheckboxes.forEach(cb => cb.checked = false);
                 updateSelectedCount();
-                
+
             } catch (error) {
                 console.error('ダウンロードエラー:', error);
                 alert('ダウンロード中にエラーが発生しました。');
@@ -393,57 +394,215 @@ export class FolderUI {
     }
 
     /**
-     * 選択されたファイルを個別にダウンロード
+     * 選択されたファイルをJSZipで一括ダウンロード
+     * NUSSファイルはZIPに含められないため個別処理する
      */
-    private async downloadSelectedFiles(checkboxes: HTMLInputElement[]): Promise<void> {
-        const filesToDownload = checkboxes.map(cb => ({
-            url: cb.getAttribute('data-url'),
-            filename: cb.getAttribute('data-filename')
-        })).filter(file => file.url && file.filename);
+    private async downloadSelectedFiles(
+        checkboxes: HTMLInputElement[],
+        progressButton?: HTMLButtonElement
+    ): Promise<void> {
+        const allFiles = checkboxes
+            .map(cb => ({
+                url: cb.getAttribute('data-url'),
+                filename: cb.getAttribute('data-filename'),
+                webLinkUrl: cb.getAttribute('data-weblink-url') || undefined
+            }))
+            .filter((file): file is { url: string; filename: string; webLinkUrl: string | undefined } =>
+                file.url !== null && file.filename !== null
+            );
 
-        if (filesToDownload.length === 0) {
+        if (allFiles.length === 0) {
             throw new Error('ダウンロード可能なファイルが見つかりません。');
         }
 
-        // 各ファイルを個別にダウンロード
-        let successCount = 0;
-        let errorCount = 0;
+        // NUSSファイルと通常ファイルを分離
+        const nussFiles = allFiles.filter(f => this.isNussLink(f.url));
+        const zipFiles = allFiles.filter(f => !this.isNussLink(f.url));
 
-        for (const file of filesToDownload) {
-            try {
-                if (file.url && file.filename) {
-                    await this.downloadSingleFile(file.url, file.filename);
-                    successCount++;
-                    
-                    // ダウンロード間隔を空ける（サーバーへの負荷軽減）
-                    if (filesToDownload.length > 1) {
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    }
+        const failedFiles: string[] = [];
+        const nussFailedFiles: Array<{ url: string; filename: string; webLinkUrl: string | undefined }> = [];
+
+        // ZIPオブジェクトを先に作成（NUSSファイルもまとめて追加するため）
+        const zip = new JSZip();
+
+        // ZIP対象ファイルをJSZipで一括ダウンロード
+        if (zipFiles.length > 0) {
+            const total = zipFiles.length;
+
+            for (let i = 0; i < total; i++) {
+                const file = zipFiles[i];
+
+                // プログレス表示を更新
+                if (progressButton) {
+                    progressButton.textContent = `ダウンロード中... (${i + 1}/${total})`;
                 }
-            } catch (error) {
-                console.error(`ファイル ${file.filename} のダウンロードに失敗:`, error);
-                errorCount++;
+
+                try {
+                    const response = await fetch(file.url, {
+                        method: 'GET',
+                        credentials: 'include'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP エラー: ${response.status}`);
+                    }
+
+                    const blob = await response.blob();
+                    zip.file(file.filename, blob);
+                } catch (error) {
+                    console.error(`ファイル ${file.filename} のZIP追加に失敗:`, error);
+                    failedFiles.push(file.filename);
+                }
             }
         }
 
-        // 結果を通知
-        if (errorCount > 0) {
-            alert(`ダウンロード完了: ${successCount}件成功, ${errorCount}件失敗`);
-        } else {
-            // 成功時は控えめな通知（複数ファイルの場合のみ）
-            if (filesToDownload.length > 1) {
-                console.log(`${successCount}件のファイルのダウンロードが完了しました`);
+        // NUSSファイルをbackground経由でfetchしてZIPに追加
+        if (nussFiles.length > 0) {
+            for (let i = 0; i < nussFiles.length; i++) {
+                const nussFile = nussFiles[i];
+
+                if (progressButton) {
+                    progressButton.textContent = `NUSS取得中... (${i + 1}/${nussFiles.length})`;
+                }
+
+                try {
+                    const webLinkUrl = nussFile.webLinkUrl;
+                    if (!webLinkUrl) throw new Error('webLinkUrl not found');
+
+                    const downloadUrl = webLinkUrl + '/download';
+                    const response = await new Promise<{ success: boolean; data?: string; error?: string }>((resolve) => {
+                        chrome.runtime.sendMessage(
+                            { type: 'FETCH_NUSS_FILE', downloadUrl, filename: nussFile.filename },
+                            (resp) => {
+                                if (chrome.runtime.lastError) {
+                                    resolve({ success: false, error: chrome.runtime.lastError.message });
+                                } else {
+                                    resolve(resp);
+                                }
+                            }
+                        );
+                    });
+
+                    if (!response || !response.success) {
+                        throw new Error(response ? response.error : 'No response from background');
+                    }
+
+                    // base64 → Uint8Array
+                    const binary = atob(response.data!);
+                    const bytes = new Uint8Array(binary.length);
+                    for (let j = 0; j < binary.length; j++) {
+                        bytes[j] = binary.charCodeAt(j);
+                    }
+                    zip.file(nussFile.filename, bytes);
+                    console.log(`NUSSファイル取得成功: ${nussFile.filename}`);
+                } catch (error) {
+                    console.error(`NUSSファイル ${nussFile.filename} の取得に失敗:`, error);
+                    nussFailedFiles.push(nussFile);
+                }
             }
+        }
+
+        // ZIPに追加されたファイルがある場合はダウンロード
+        const zipFileCount = Object.keys(zip.files).length;
+        if (zipFileCount > 0) {
+            // ZIPファイル名を生成: tact-files-YYYYMMDD.zip
+            const now = new Date();
+            const dateStr =
+                String(now.getFullYear()) +
+                String(now.getMonth() + 1).padStart(2, '0') +
+                String(now.getDate()).padStart(2, '0');
+            const zipFilename = `tact-files-${dateStr}.zip`;
+
+            if (progressButton) {
+                progressButton.textContent = 'ZIP生成中...';
+            }
+
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const downloadUrl = window.URL.createObjectURL(zipBlob);
+
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = zipFilename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            window.URL.revokeObjectURL(downloadUrl);
+        }
+
+        // NUSSファイルのfetch失敗分はフォールバック（手動ダウンロード案内）
+        if (nussFailedFiles.length > 0) {
+            alert(
+                `${nussFailedFiles.length}件のNUSSファイルを自動取得できませんでした。\n` +
+                `個別に開きます:\n` +
+                nussFailedFiles.map(f => `・${f.filename}`).join('\n')
+            );
+            for (const nussFile of nussFailedFiles) {
+                await this.handleNussFile(nussFile.url, nussFile.filename);
+            }
+        }
+
+        // 結果通知
+        const successCount = zipFiles.length - failedFiles.length;
+        if (failedFiles.length > 0) {
+            alert(
+                `ダウンロード完了: ${successCount}件成功, ${failedFiles.length}件失敗\n` +
+                `失敗したファイル:\n` +
+                failedFiles.map(n => `・${n}`).join('\n')
+            );
+        } else if (zipFiles.length > 0 || nussFiles.length > nussFailedFiles.length) {
+            console.log(`${successCount + (nussFiles.length - nussFailedFiles.length)}件のファイルをZIPでダウンロードしました`);
         }
     }
 
     /**
      * 単一ファイルをダウンロード
      */
-    private async downloadSingleFile(url: string, filename: string): Promise<void> {
+    private async downloadSingleFile(url: string, filename: string, webLinkUrl?: string): Promise<void> {
         try {
             // NUSSファイルかどうか判定
             if (this.isNussLink(url)) {
+                // webLinkUrl がある場合はbackground経由でfetch試行
+                if (webLinkUrl) {
+                    try {
+                        const downloadUrl = webLinkUrl + '/download';
+                        const response = await new Promise<{ success: boolean; data?: string; error?: string }>((resolve) => {
+                            chrome.runtime.sendMessage(
+                                { type: 'FETCH_NUSS_FILE', downloadUrl, filename },
+                                (resp) => {
+                                    if (chrome.runtime.lastError) {
+                                        resolve({ success: false, error: chrome.runtime.lastError.message });
+                                    } else {
+                                        resolve(resp);
+                                    }
+                                }
+                            );
+                        });
+
+                        if (response && response.success && response.data) {
+                            const binary = atob(response.data);
+                            const bytes = new Uint8Array(binary.length);
+                            for (let i = 0; i < binary.length; i++) {
+                                bytes[i] = binary.charCodeAt(i);
+                            }
+                            const blob = new Blob([bytes]);
+                            const blobUrl = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = blobUrl;
+                            link.download = filename;
+                            link.style.display = 'none';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(blobUrl);
+                            return;
+                        }
+                    } catch (nussError) {
+                        console.error(`NUSSファイル ${filename} のbackground fetch失敗:`, nussError);
+                    }
+                }
+                // フォールバック: 手動ダウンロード案内
                 await this.handleNussFile(url, filename);
                 return;
             }

@@ -12,6 +12,7 @@ export interface FileSystemNode {
     displayName: string; // 変更後ファイル名
     type: 'file' | 'folder';
     url?: string;
+    webLinkUrl?: string; // NUSSファイルのNextcloud共有URL
     originalContainer: string;
     displayContainer: string; // 変更後コンテナ
     visible: boolean; // 表示/非表示
@@ -75,6 +76,7 @@ export class FileStorage {
             displayName: existingNode?.displayName || item.title || item.name || 'Unnamed',
             type: isFolder ? 'folder' : 'file',
             url: item.url,
+            webLinkUrl: item.webLinkUrl,
             originalContainer: item.container || '/',
             displayContainer: existingNode?.displayContainer || item.container || '/',
             visible: existingNode?.visible ?? true,
@@ -149,7 +151,16 @@ export class FileStorage {
             const stored = localStorage.getItem(this.getStorageKey());
             if (stored) {
                 const data = JSON.parse(stored);
-                this.nodes = new Map(Object.entries(data));
+                if (data && typeof data === 'object' && !Array.isArray(data)) {
+                    // 各エントリが FileSystemNode の必須フィールドを持つか検証
+                    const validEntries = Object.entries(data).filter(([, v]: [string, any]) =>
+                        v && typeof v === 'object' && typeof v.id === 'string' && typeof v.originalName === 'string'
+                    );
+                    this.nodes = new Map(validEntries as [string, FileSystemNode][]);
+                } else {
+                    console.warn('Invalid file storage data format, resetting');
+                    this.nodes.clear();
+                }
             } else {
                 this.nodes.clear();
             }
@@ -160,14 +171,24 @@ export class FileStorage {
     }
 
     /**
-     * ローカルストレージに保存
+     * ローカルストレージに保存。失敗時はメモリ上の変更を元に戻す。
      */
-    private saveToStorage(): void {
+    private saveToStorage(): boolean {
+        // ロールバック用にスナップショットを保持
+        const snapshot = new Map(this.nodes);
         try {
             const data = Object.fromEntries(this.nodes);
             localStorage.setItem(this.getStorageKey(), JSON.stringify(data));
+            return true;
         } catch (error) {
-            console.error('Failed to save to storage:', error);
+            // 保存失敗時はメモリ状態をロールバック
+            this.nodes = snapshot;
+            if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+                console.error('localStorage quota exceeded. Consider clearing old site data.');
+            } else {
+                console.error('Failed to save to storage:', error);
+            }
+            return false;
         }
     }
 

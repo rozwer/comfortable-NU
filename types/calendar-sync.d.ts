@@ -13,6 +13,7 @@ export interface GoogleAccount {
   email: string;
   name: string;
   picture: string;
+  verified_email?: boolean;
 }
 
 export interface SyncResult {
@@ -65,20 +66,4 @@ export interface ChromeResponse {
   accounts?: GoogleAccount[];
   result?: SyncResult;
   error?: string;
-}
-
-// Chrome Identity API types
-declare global {
-  namespace chrome {
-    namespace identity {
-      function getAuthToken(details: {
-        interactive: boolean;
-        scopes?: string[];
-      }): Promise<string>;
-      
-      function removeCachedAuthToken(details: {
-        token: string;
-      }, callback: () => void): void;
-    }
-  }
 }

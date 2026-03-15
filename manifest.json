@@ -37,7 +37,8 @@
     "storage",
     "identity",
     "alarms",
-    "notifications"
+    "notifications",
+    "tabs"
   ],
   "oauth2": {
     "client_id": "320934121909-3mo570972bcc19chatsu8pcp6bevj7fm.apps.googleusercontent.com",
@@ -52,7 +53,8 @@
   },
   "host_permissions": [
     "https://tact.ac.thers.ac.jp/*",
-    "https://www.googleapis.com/*"
+    "https://www.googleapis.com/*",
+    "https://nuss.nagoya-u.ac.jp/*"
   ],
   "web_accessible_resources": [
     {

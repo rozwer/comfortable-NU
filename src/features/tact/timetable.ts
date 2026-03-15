@@ -7,7 +7,7 @@
  * このモジュールはTACTポータルに時間割表示機能を追加します
  */
 
-import { TimetableYearStorage, TimetableTermStorage } from "../../constant";
+import { TimetableYearStorage, TimetableTermStorage, TimetableShowAllCoursesStorage } from "../../constant";
 import { courseColorInfo } from "../../components/favoritesBar";
 import { fromStorage, toStorage } from "../storage";
 import { getStoredSettings } from "../setting/getSetting";
@@ -145,24 +145,29 @@ const SAMPLE_COURSES: CourseInfo[] = [
  * キャッシュされた講義情報
  */
 let cachedCourses: CourseInfo[] | null = null;
+let cachedAllCourses: CourseInfo[] | null = null;
+let showAllCourses = false;
 
 /**
  * 保存された時間割設定を読み込む
  * @param hostname サイトのホスト名
  * @returns 年度と学期の設定情報
  */
-async function loadTimetableSettings(hostname: string): Promise<{year: string, term: string}> {
+async function loadTimetableSettings(hostname: string): Promise<{year: string, term: string, showAll: boolean}> {
     // LocalStorageから年度と学期の設定を読み込む
-    const savedYear = await fromStorage<string | undefined>(hostname, TimetableYearStorage, 
+    const savedYear = await fromStorage<string | undefined>(hostname, TimetableYearStorage,
         (data: any) => data === undefined ? undefined : String(data));
-    
+
     const savedTerm = await fromStorage<string | undefined>(hostname, TimetableTermStorage,
         (data: any) => data === undefined ? undefined : String(data));
-    
+
+    const savedShowAll = await fromStorage<boolean>(hostname, TimetableShowAllCoursesStorage,
+        (data: any) => data === true);
+
     // 現在の年度をデフォルト値として使用
     const currentYear = new Date().getFullYear();
     const currentYearStr = currentYear.toString();
-    
+
     // 保存された年度が古すぎる場合（5年以上前）は現在の年度を使用
     let finalYear = currentYearStr;
     if (savedYear) {
@@ -173,12 +178,13 @@ async function loadTimetableSettings(hostname: string): Promise<{year: string, t
             console.warn(`保存された年度 ${savedYear} が古すぎるため、現在の年度 ${currentYearStr} を使用します。`);
         }
     }
-    
-    console.log(`設定読み込み - 保存年度: ${savedYear}, 保存学期: ${savedTerm}, 最終年度: ${finalYear}`);
-    
+
+    console.log(`設定読み込み - 保存年度: ${savedYear}, 保存学期: ${savedTerm}, 最終年度: ${finalYear}, 全コース表示: ${savedShowAll}`);
+
     return {
         year: finalYear,
-        term: savedTerm || 'spring'
+        term: savedTerm || 'spring',
+        showAll: savedShowAll
     };
 }
 
@@ -193,6 +199,11 @@ async function saveTimetableSettings(hostname: string, year: string, term: strin
     await toStorage(hostname, TimetableYearStorage, year);
     await toStorage(hostname, TimetableTermStorage, term);
     console.log(`時間割設定を保存しました - 年度: ${year}, 学期: ${term}`);
+}
+
+async function saveShowAllCourses(hostname: string, showAll: boolean): Promise<void> {
+    await toStorage(hostname, TimetableShowAllCoursesStorage, showAll);
+    console.log(`全コース表示設定を保存しました: ${showAll}`);
 }
 
 // 教室情報のストレージキー
@@ -249,7 +260,6 @@ function showClassroomEditModal() {
             input.placeholder = '教室名を入力';
             row.appendChild(input);
             row.dataset.title = course.title;
-            row.appendChild(input);
             content.appendChild(row);
         });
         // 保存ボタン
@@ -280,6 +290,10 @@ export const showTimetableModal = (): void => {
     if (existingModal) {
         existingModal.remove();
     }
+
+    // モーダル再表示時にキャッシュをクリアして最新のDOM状態を反映
+    cachedCourses = null;
+    cachedAllCourses = null;
     
     // 現在のホスト名を取得
     const currentHostname = window.location.hostname;
@@ -384,8 +398,18 @@ export const showTimetableModal = (): void => {
     // 保存されている設定を読み込む
     const currentSiteHostname = window.location.hostname;
     loadTimetableSettings(currentSiteHostname).then(settings => {
-        console.log(`読み込まれた設定 - 年度: ${settings.year}, 学期: ${settings.term}`);
-        
+        console.log(`読み込まれた設定 - 年度: ${settings.year}, 学期: ${settings.term}, 全コース表示: ${settings.showAll}`);
+
+        // 全コース表示の設定を反映
+        showAllCourses = settings.showAll;
+        const toggleBtn = document.getElementById('cs-timetable-show-all') as HTMLButtonElement | null;
+        if (toggleBtn) {
+            toggleBtn.textContent = showAllCourses ? '全コース' : 'お気に入りのみ';
+            toggleBtn.className = 'cs-btn ' + (showAllCourses ? 'cs-btn-primary' : 'cs-btn-secondary');
+        } else {
+            console.warn('トグルボタンが見つかりません。DOMタイミングの問題の可能性があります');
+        }
+
         // 年度セレクトボックスを設定
         let yearFound = false;
         for (let i = 0; i < yearSelect.options.length; i++) {
@@ -434,20 +458,28 @@ export const showTimetableModal = (): void => {
         // 講義情報の事前取得を試みる
         if (!cachedCourses) {
             try {
-                // 通常の取得方法を試す
                 let courses = fetchCoursesFromPortal();
-                
-                // 取得できなかった場合は代替手段を試す
                 if (!courses || courses.length === 0) {
                     courses = extractCoursesFromPage();
                 }
-                
                 if (courses && courses.length > 0) {
                     cachedCourses = courses;
                     console.log('講義情報をキャッシュしました:', cachedCourses);
                 }
             } catch (error) {
                 console.error('講義情報取得エラー:', error);
+            }
+        }
+        // 全コース情報も事前取得
+        if (!cachedAllCourses) {
+            try {
+                const allCourses = fetchAllCoursesFromAllSites();
+                if (allCourses && allCourses.length > 0) {
+                    cachedAllCourses = allCourses;
+                    console.log('全講義情報をキャッシュしました:', cachedAllCourses);
+                }
+            } catch (error) {
+                console.error('全講義情報取得エラー:', error);
             }
         }
         
@@ -467,7 +499,22 @@ export const showTimetableModal = (): void => {
     
     termSelector.appendChild(termSelect);
     selectors.appendChild(termSelector);
-    
+
+    // お気に入り/全コース切り替えトグル
+    const showAllToggle = document.createElement('button');
+    showAllToggle.id = 'cs-timetable-show-all';
+    showAllToggle.className = 'cs-btn ' + (showAllCourses ? 'cs-btn-primary' : 'cs-btn-secondary');
+    showAllToggle.textContent = showAllCourses ? '全コース' : 'お気に入りのみ';
+    showAllToggle.style.marginLeft = '12px';
+    showAllToggle.onclick = () => {
+        showAllCourses = !showAllCourses;
+        showAllToggle.textContent = showAllCourses ? '全コース' : 'お気に入りのみ';
+        showAllToggle.className = 'cs-btn ' + (showAllCourses ? 'cs-btn-primary' : 'cs-btn-secondary');
+        saveShowAllCourses(window.location.hostname, showAllCourses);
+        updateTimetable();
+    };
+    selectors.appendChild(showAllToggle);
+
     // 教室編集ボタン追加
     const classroomEditBtn = document.createElement('button');
     classroomEditBtn.textContent = '教室編集';
@@ -756,6 +803,67 @@ function extractCoursesFromPage(): CourseInfo[] {
 }
 
 /**
+ * 「全サイト」モーダル(.fav-sites-entry)からお気に入り以外も含む全コースを取得
+ */
+function fetchAllCoursesFromAllSites(): CourseInfo[] {
+    const allCourses: CourseInfo[] = [];
+    const entries = document.querySelectorAll('.fav-sites-entry');
+    console.log('全サイトエントリ数:', entries.length);
+
+    entries.forEach((entry) => {
+        const anchor = entry.querySelector('.fav-title a') as HTMLAnchorElement | null;
+        if (!anchor) return;
+
+        const title = anchor.title || anchor.textContent?.trim() || '';
+        const href = anchor.href;
+        if (!title || !href) return;
+
+        const titleMatch = title.match(/(.+)\((\d{4})年度(.+)[\/\\](.+)\)/);
+        if (!titleMatch) return;
+
+        const courseTitle = titleMatch[1].trim();
+        const year = titleMatch[2];
+        const term = titleMatch[3].trim();
+        const periodInfo = titleMatch[4].trim();
+
+        const dayPeriods = periodInfo.split(',').map(dp => {
+            return dp.replace(/([月火水木金土日])([一二三四五六七八九十]+)限/, (_, day, period) => {
+                const periodMap: { [key: string]: string } = {
+                    '一': '1', '二': '2', '三': '3', '四': '4', '五': '5',
+                    '六': '6', '七': '7', '八': '8', '九': '9', '十': '10'
+                };
+                return day + (periodMap[period] || period);
+            }).replace(/([月火水木金土日])([０-９]+)限/, (_, day, period) => {
+                return day + period.replace(/[０-９]/g, (s: string) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+            }).replace(/([月火水木金土日])([１２３４５６７８９０]+|[0-9]+)限/, (m, dayChar, num) => {
+                const conversion: {[key: string]: string} = {
+                    '１': '1', '２': '2', '３': '3', '４': '4', '５': '5',
+                    '６': '6', '７': '7', '８': '8', '９': '9', '０': '0'
+                };
+                let period = '';
+                for (let i = 0; i < num.length; i++) {
+                    period += conversion[num[i]] || num[i];
+                }
+                return dayChar + period;
+            });
+        });
+
+        allCourses.push({
+            title: courseTitle,
+            term,
+            academicYear: year,
+            dayPeriod: dayPeriods,
+            url: href,
+            room: '',
+            instructor: ''
+        });
+    });
+
+    console.log('全サイトから取得した講義情報:', allCourses);
+    return allCourses;
+}
+
+/**
  * 学期の表記を標準化
  */
 export function normalizeTerm(term: string): string {
@@ -763,21 +871,22 @@ export function normalizeTerm(term: string): string {
     const normalizedTerm = term.toLowerCase();
     
     if (normalizedTerm.includes('春') || normalizedTerm.includes('前期') || normalizedTerm.includes('spring')) {
-        if (normalizedTerm.includes('i') || normalizedTerm.includes('ⅰ') || normalizedTerm.includes('１') || 
-            normalizedTerm.includes('1') || normalizedTerm.includes('一')) 
-            return 'spring-1';
-        if (normalizedTerm.includes('ii') || normalizedTerm.includes('ⅱ') || normalizedTerm.includes('２') || 
-            normalizedTerm.includes('2') || normalizedTerm.includes('二')) 
+        // 'ii' を 'i' より先にチェック（'ii'.includes('i') === true のため）
+        if (normalizedTerm.includes('ii') || normalizedTerm.includes('ⅱ') || normalizedTerm.includes('２') ||
+            normalizedTerm.includes('2') || normalizedTerm.includes('二'))
             return 'spring-2';
+        if (normalizedTerm.includes('i') || normalizedTerm.includes('ⅰ') || normalizedTerm.includes('１') ||
+            normalizedTerm.includes('1') || normalizedTerm.includes('一'))
+            return 'spring-1';
         return 'spring';
     }
     if (normalizedTerm.includes('秋') || normalizedTerm.includes('後期') || normalizedTerm.includes('fall')) {
-        if (normalizedTerm.includes('i') || normalizedTerm.includes('ⅰ') || normalizedTerm.includes('１') || 
-            normalizedTerm.includes('1') || normalizedTerm.includes('一')) 
-            return 'fall-1';
-        if (normalizedTerm.includes('ii') || normalizedTerm.includes('ⅱ') || normalizedTerm.includes('２') || 
-            normalizedTerm.includes('2') || normalizedTerm.includes('二')) 
+        if (normalizedTerm.includes('ii') || normalizedTerm.includes('ⅱ') || normalizedTerm.includes('２') ||
+            normalizedTerm.includes('2') || normalizedTerm.includes('二'))
             return 'fall-2';
+        if (normalizedTerm.includes('i') || normalizedTerm.includes('ⅰ') || normalizedTerm.includes('１') ||
+            normalizedTerm.includes('1') || normalizedTerm.includes('一'))
+            return 'fall-1';
         return 'fall';
     }
     return 'spring'; // デフォルト
@@ -818,6 +927,296 @@ function extractCourseCategories(): Map<string, string> {
     return courseCategoryMap;
 }
 
+/**
+ * 年度・学期でコースをフィルタリングする共通関数
+ */
+function filterCoursesByYearAndTerm(courses: CourseInfo[], year: string, term: string): CourseInfo[] {
+    return courses.filter(course => {
+        let courseYear = course.academicYear || "";
+        if (!courseYear) {
+            const yearRegexMatch = course.title.match(/\((\d{4})年度/);
+            if (yearRegexMatch && yearRegexMatch[1]) {
+                courseYear = yearRegexMatch[1];
+            } else if (course.term && course.term.match(/(\d{4})年/)) {
+                const termYearMatch = course.term.match(/(\d{4})年/);
+                if (termYearMatch && termYearMatch[1]) {
+                    courseYear = termYearMatch[1];
+                }
+            }
+        }
+        let isYearMatching = courseYear === year;
+        if (!courseYear) {
+            isYearMatching = true;
+        }
+        const normalizedCourseTerm = normalizeTerm(course.term);
+        const normalizedSelectedTerm = term;
+        const courseTermBase = normalizedCourseTerm.split('-')[0];
+        const selectedTermBase = normalizedSelectedTerm.split('-')[0];
+        let termMatch = false;
+        if (normalizedCourseTerm === normalizedSelectedTerm) {
+            termMatch = true;
+        } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
+            termMatch = true;
+        } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
+            termMatch = true;
+        }
+        return isYearMatching && termMatch;
+    });
+}
+
+// --- Canvas 描画ヘルパー ---
+
+function hexToRgba(hex: string, a: number): string {
+    if (!hex || hex.length < 7 || hex[0] !== '#') return `rgba(170,170,170,${a})`;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(170,170,170,${a})`;
+    return `rgba(${r},${g},${b},${a})`;
+}
+
+function darkenHex(hex: string, amount: number): string {
+    if (!hex || hex.length < 7 || hex[0] !== '#') return 'rgb(110,110,110)';
+    const r = Math.round(parseInt(hex.slice(1, 3), 16) * (1 - amount));
+    const g = Math.round(parseInt(hex.slice(3, 5), 16) * (1 - amount));
+    const b = Math.round(parseInt(hex.slice(5, 7), 16) * (1 - amount));
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return 'rgb(110,110,110)';
+    return `rgb(${r},${g},${b})`;
+}
+
+function truncateText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
+    if (ctx.measureText(text).width <= maxW) return text;
+    for (let i = text.length - 1; i > 0; i--) {
+        const t = text.slice(0, i) + '…';
+        if (ctx.measureText(t).width <= maxW) return t;
+    }
+    return '…';
+}
+
+function drawWrappedText(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    lineHeight: number,
+    maxLines: number
+): number {
+    if (!text) return 0;
+    let line = '';
+    let drawn = 0;
+    for (let i = 0; i < text.length; i++) {
+        const test = line + text[i];
+        if (ctx.measureText(test).width > maxWidth && line.length > 0) {
+            if (drawn >= maxLines - 1) {
+                const rest = line + text.slice(i);
+                ctx.fillText(truncateText(ctx, rest, maxWidth), x, y + drawn * lineHeight);
+                return drawn + 1;
+            }
+            ctx.fillText(line, x, y + drawn * lineHeight);
+            line = text[i];
+            drawn++;
+        } else {
+            line = test;
+        }
+    }
+    ctx.fillText(line, x, y + drawn * lineHeight);
+    return drawn + 1;
+}
+
+function canvasRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+// アスペクト比プリセット
+const ASPECT_PRESETS: Record<string, { w: number; h: number; label: string }> = {
+    '9:16':  { w: 420,  h: 748,  label: '9:16 スマホ' },
+    '3:4':   { w: 540,  h: 720,  label: '3:4 タブレット' },
+    '1:1':   { w: 660,  h: 660,  label: '1:1 正方形' },
+    '16:9':  { w: 1120, h: 630,  label: '16:9 横長' },
+};
+
+/**
+ * 時間割を Canvas に描画して PNG ダウンロードする
+ */
+function renderTimetableToPng(
+    timetable: CourseInfo[][][],
+    days: string[],
+    periodCount: number,
+    colorMap: Record<string, string>,
+    classroomMap: Record<string, string>,
+    year: string,
+    termLabel: string,
+    aspectKey: string,
+): void {
+    if (!days.length || !periodCount) return;
+    const preset = ASPECT_PRESETS[aspectKey] || ASPECT_PRESETS['9:16'];
+    const dpr = Math.max(window.devicePixelRatio || 1, 2);
+    const canvasW = preset.w;
+    const canvasH = preset.h;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasW * dpr;
+    canvas.height = canvasH * dpr;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+
+    const margin = 14;
+    const titleBarH = 46;
+    const headerH = 30;
+    const periodColW = 32;
+    const gap = 3;
+    const font = '"Hiragino Sans", "Noto Sans JP", "Meiryo", sans-serif';
+
+    const gridLeft = margin + periodColW;
+    const gridTop = margin + titleBarH + headerH;
+    const cellW = (canvasW - margin * 2 - periodColW - gap * (days.length - 1)) / days.length;
+    const cellH = (canvasH - margin * 2 - titleBarH - headerH - gap * (periodCount - 1)) / periodCount;
+
+    // フォントサイズをセル幅に応じて調整
+    const titleFontSize = cellW < 90 ? 10 : cellW < 110 ? 11 : 12;
+    const subFontSize = cellW < 90 ? 9 : cellW < 110 ? 10 : 11;
+    const titleLH = titleFontSize + 3;
+    const subLH = subFontSize + 3;
+    const titleMaxLines = cellH < 110 ? 2 : 3;
+    const roomMaxLines = cellH < 110 ? 1 : 2;
+    const titleSize = canvasW < 500 ? 16 : 18;
+
+    // 背景カード
+    canvasRoundRect(ctx, margin - 2, margin - 2, canvasW - margin * 2 + 4, canvasH - margin * 2 + 4, 14);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    // タイトル
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = `bold ${titleSize}px ${font}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${year}年度  ${termLabel}`, canvasW / 2, margin + titleBarH / 2);
+
+    // 曜日ヘッダー
+    const headerY = margin + titleBarH;
+    days.forEach((day, i) => {
+        const x = gridLeft + i * (cellW + gap) + cellW / 2;
+        ctx.fillStyle = '#555555';
+        ctx.font = `600 13px ${font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(day, x, headerY + headerH / 2);
+    });
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(margin + 6, headerY + headerH - 1);
+    ctx.lineTo(canvasW - margin - 6, headerY + headerH - 1);
+    ctx.stroke();
+
+    // セル描画
+    for (let p = 0; p < periodCount; p++) {
+        const y = gridTop + p * (cellH + gap);
+
+        // 時限ラベル
+        ctx.fillStyle = '#999999';
+        ctx.font = `600 12px ${font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(p + 1), margin + periodColW / 2, y + cellH / 2);
+
+        for (let d = 0; d < days.length; d++) {
+            const x = gridLeft + d * (cellW + gap);
+            const coursesInCell = timetable[p][d];
+
+            if (coursesInCell.length > 0) {
+                const course = coursesInCell[0];
+                const color = colorMap[course.title] || '#ffffff';
+                const c = color === '#ffffff' ? '#aaaaaa' : color;
+                const pad = 6;
+                const maxW = cellW - pad * 2 - 2;
+
+                // セル背景（角丸 + 薄い色）
+                canvasRoundRect(ctx, x, y, cellW, cellH, 7);
+                ctx.fillStyle = hexToRgba(c, 0.13);
+                ctx.fill();
+
+                // 左ボーダー（角丸に沿う）
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x + 7, y);
+                ctx.lineTo(x, y);
+                ctx.quadraticCurveTo(x, y, x, y + 7);
+                ctx.lineTo(x, y + cellH - 7);
+                ctx.quadraticCurveTo(x, y + cellH, x + 7, y + cellH);
+                ctx.lineTo(x + 4, y + cellH);
+                ctx.lineTo(x + 4, y);
+                ctx.closePath();
+                ctx.fillStyle = c;
+                ctx.fill();
+                ctx.restore();
+
+                let curY = y + pad;
+                const textX = x + pad + 3;
+
+                // 教科名（折り返し）
+                ctx.fillStyle = darkenHex(c, 0.35);
+                ctx.font = `bold ${titleFontSize}px ${font}`;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                const title = course.title.split('(')[0].trim();
+                const tLines = drawWrappedText(ctx, title, textX, curY, maxW, titleLH, titleMaxLines);
+                curY += tLines * titleLH + 3;
+
+                // 教室名（折り返しOK）
+                const room = classroomMap[course.title] || course.room || '';
+                if (room) {
+                    ctx.fillStyle = '#555555';
+                    ctx.font = `${subFontSize}px ${font}`;
+                    const rLines = drawWrappedText(ctx, room, textX, curY, maxW, subLH, roomMaxLines);
+                    curY += rLines * subLH + 1;
+                }
+
+                // 担当教員
+                if (course.instructor) {
+                    ctx.fillStyle = '#888888';
+                    ctx.font = `${subFontSize}px ${font}`;
+                    drawWrappedText(ctx, course.instructor, textX, curY, maxW, subLH, 1);
+                }
+            } else {
+                // 空セル
+                canvasRoundRect(ctx, x, y, cellW, cellH, 7);
+                ctx.fillStyle = '#f7f7f7';
+                ctx.fill();
+                canvasRoundRect(ctx, x, y, cellW, cellH, 7);
+                ctx.strokeStyle = '#eeeeee';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+        }
+    }
+
+    // PNG としてダウンロード
+    canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `時間割_${year}_${termLabel}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 'image/png');
+}
+
 // 教科の色情報のストレージキー
 const CourseColorStorageKey = 'cs-timetable-course-colors';
 
@@ -856,47 +1255,14 @@ function showCourseColorModal() {
     content.style.overflowY = 'auto';
     
     // 現在表示されている講義を取得
-    const yearSelect = document.getElementById('cs-timetable-year') as HTMLSelectElement;
-    const termSelect = document.getElementById('cs-timetable-term') as HTMLSelectElement;
+    const yearSelect = document.getElementById('cs-timetable-year') as HTMLSelectElement | null;
+    const termSelect = document.getElementById('cs-timetable-term') as HTMLSelectElement | null;
+    if (!yearSelect || !termSelect) return;
     const year = yearSelect.value;
     const term = termSelect.value;
-    
+
     const courses = cachedCourses || SAMPLE_COURSES;
-    const filteredCourses = courses.filter(course => {
-        let courseYear = course.academicYear || "";
-        if (!courseYear) {
-            const yearRegexMatch = course.title.match(/\((\d{4})年度/);
-            if (yearRegexMatch && yearRegexMatch[1]) {
-                courseYear = yearRegexMatch[1];
-            } else if (course.term && course.term.match(/(\d{4})年/)) {
-                const termYearMatch = course.term.match(/(\d{4})年/);
-                if (termYearMatch && termYearMatch[1]) {
-                    courseYear = termYearMatch[1];
-                }
-            }
-        }
-        
-        let isYearMatching = courseYear === year;
-        if (!courseYear) {
-            isYearMatching = true;
-        }
-        
-        const normalizedCourseTerm = normalizeTerm(course.term);
-        const normalizedSelectedTerm = term;
-        const courseTermBase = normalizedCourseTerm.split('-')[0];
-        const selectedTermBase = normalizedSelectedTerm.split('-')[0];
-        
-        let termMatch = false;
-        if (normalizedCourseTerm === normalizedSelectedTerm) {
-            termMatch = true;
-        } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
-            termMatch = true;
-        } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
-            termMatch = true;
-        }
-        
-        return isYearMatching && termMatch;
-    });
+    const filteredCourses = filterCoursesByYearAndTerm(courses, year, term);
     
     // 重複する講義名を除去
     const uniqueCourses = filteredCourses.filter((course, index, self) => 
@@ -987,14 +1353,10 @@ function showCourseColorModal() {
             content.appendChild(row);
         });
         
-        // ボタンコンテナ
-        const buttonContainer = document.createElement('div');
-        buttonContainer.style.marginTop = '20px';
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.gap = '12px';
-        buttonContainer.style.justifyContent = 'center';
-        
         // 全てリセットボタン
+        const resetContainer = document.createElement('div');
+        resetContainer.style.marginTop = '16px';
+        resetContainer.style.textAlign = 'center';
         const resetAllBtn = document.createElement('button');
         resetAllBtn.textContent = '全てリセット';
         resetAllBtn.className = 'cs-btn cs-btn-secondary';
@@ -1009,178 +1371,109 @@ function showCourseColorModal() {
                 }
             });
         };
-        buttonContainer.appendChild(resetAllBtn);
-        
+        resetContainer.appendChild(resetAllBtn);
+        content.appendChild(resetContainer);
+
+        // アスペクト比選択セクション
+        const aspectSection = document.createElement('div');
+        aspectSection.style.marginTop = '20px';
+        aspectSection.style.padding = '12px';
+        aspectSection.style.backgroundColor = '#f8f9fa';
+        aspectSection.style.borderRadius = '6px';
+
+        const aspectLabel = document.createElement('p');
+        aspectLabel.style.fontSize = '14px';
+        aspectLabel.style.fontWeight = 'bold';
+        aspectLabel.style.marginBottom = '10px';
+        aspectLabel.style.color = '#333';
+        aspectLabel.textContent = '出力サイズ';
+        aspectSection.appendChild(aspectLabel);
+
+        const aspectBtnContainer = document.createElement('div');
+        aspectBtnContainer.style.display = 'flex';
+        aspectBtnContainer.style.gap = '8px';
+        aspectBtnContainer.style.justifyContent = 'center';
+        aspectBtnContainer.style.flexWrap = 'wrap';
+
+        let selectedAspect = '9:16';
+        const aspectKeys = Object.keys(ASPECT_PRESETS);
+        const aspectButtons: HTMLButtonElement[] = [];
+
+        aspectKeys.forEach(key => {
+            const btn = document.createElement('button');
+            btn.textContent = ASPECT_PRESETS[key].label;
+            btn.className = key === selectedAspect ? 'cs-btn cs-btn-primary' : 'cs-btn cs-btn-secondary';
+            btn.style.fontSize = '12px';
+            btn.style.padding = '6px 12px';
+            btn.onclick = () => {
+                selectedAspect = key;
+                aspectButtons.forEach((b, i) => {
+                    b.className = aspectKeys[i] === key ? 'cs-btn cs-btn-primary' : 'cs-btn cs-btn-secondary';
+                });
+            };
+            aspectButtons.push(btn);
+            aspectBtnContainer.appendChild(btn);
+        });
+
+        aspectSection.appendChild(aspectBtnContainer);
+        content.appendChild(aspectSection);
+
         // 出力ボタン
+        const exportContainer = document.createElement('div');
+        exportContainer.style.marginTop = '16px';
+        exportContainer.style.textAlign = 'center';
         const exportBtn = document.createElement('button');
-        exportBtn.textContent = '出力';
+        exportBtn.textContent = 'PNG をダウンロード';
         exportBtn.className = 'cs-btn cs-btn-primary';
+        exportBtn.style.padding = '10px 24px';
+        exportBtn.style.fontSize = '15px';
         exportBtn.onclick = async () => {
             // モーダルから現在の色設定を取得
             const currentColorMap: Record<string, string> = {};
             content.querySelectorAll('div[data-title]').forEach(row => {
-                const title = (row as HTMLElement).dataset.title;
+                const rowTitle = (row as HTMLElement).dataset.title;
                 const colorInput = row.querySelector('input[type="color"]') as HTMLInputElement;
-                if (title && colorInput) {
-                    currentColorMap[title] = colorInput.value;
+                if (rowTitle && colorInput) {
+                    currentColorMap[rowTitle] = colorInput.value;
                 }
             });
-            console.log('🎨 モーダルから取得した色設定:', currentColorMap);
-            
-            // 実データで時間割HTMLを生成
+
+            // 年度・学期を取得してフィルタリング
             const yearSelect = document.getElementById('cs-timetable-year') as HTMLSelectElement;
             const termSelect = document.getElementById('cs-timetable-term') as HTMLSelectElement;
-            const year = yearSelect.value;
-            const term = termSelect.value;
-            const courses = cachedCourses || SAMPLE_COURSES;
-            // フィルタリングは既存ロジックを流用
-            const filteredCourses = courses.filter(course => {
-                let courseYear = course.academicYear || "";
-                if (!courseYear) {
-                    const yearRegexMatch = course.title.match(/\((\d{4})年度/);
-                    if (yearRegexMatch && yearRegexMatch[1]) {
-                        courseYear = yearRegexMatch[1];
-                    } else if (course.term && course.term.match(/(\d{4})年/)) {
-                        const termYearMatch = course.term.match(/(\d{4})年/);
-                        if (termYearMatch && termYearMatch[1]) {
-                            courseYear = termYearMatch[1];
-                        }
-                    }
-                }
-                
-                let isYearMatching = courseYear === year;
-                if (!courseYear) {
-                    isYearMatching = true;
-                }
-                
-                const normalizedCourseTerm = normalizeTerm(course.term);
-                const normalizedSelectedTerm = term;
-                const courseTermBase = normalizedCourseTerm.split('-')[0];
-                const selectedTermBase = normalizedSelectedTerm.split('-')[0];
-                
-                let termMatch = false;
-                if (normalizedCourseTerm === normalizedSelectedTerm) {
-                    termMatch = true;
-                } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
-                    termMatch = true;
-                } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
-                    termMatch = true;
-                }
-                
-                return isYearMatching && termMatch;
-            });
-            // モーダルの色設定を使用（ストレージの代わりに）
-            const colorMap = currentColorMap;
-            // 教室情報を取得
-            const classroomMap = await loadClassroomInfo(hostname);
+            const selectedYear = yearSelect.value;
+            const selectedTerm = termSelect.value;
+            const selectedTermLabel = termSelect.options[termSelect.selectedIndex].textContent || selectedTerm;
+            const allCourses = (showAllCourses ? cachedAllCourses : cachedCourses) || SAMPLE_COURSES;
+            const filteredCourses = filterCoursesByYearAndTerm(allCourses, selectedYear, selectedTerm);
+
+            const classroomData = await loadClassroomInfo(hostname);
+
             // 時間割2次元配列を作成
-            const days = ['月', '火', '水', '木', '金'];
-            const periods = 6;
-            const timetable: CourseInfo[][][] = Array.from({length: periods}, () => Array.from({length: days.length}, () => [] as CourseInfo[]));
-            filteredCourses.forEach(course => {
-                course.dayPeriod.forEach(dp => {
-                    const dayIdx = days.findIndex(d => dp.startsWith(d));
-                    const period = parseInt(dp.replace(/[^0-9]/g, ''));
-                    if (dayIdx >= 0 && period >= 1 && period <= periods) {
-                        timetable[period-1][dayIdx].push(course);
+            const exportDays = ['月', '火', '水', '木', '金'];
+            const exportPeriodCount = 6;
+            const exportTimetable: CourseInfo[][][] = Array.from(
+                {length: exportPeriodCount},
+                () => Array.from({length: exportDays.length}, () => [] as CourseInfo[])
+            );
+            filteredCourses.forEach(c => {
+                c.dayPeriod.forEach(dp => {
+                    const dayIdx = exportDays.findIndex(d => dp.startsWith(d));
+                    const prd = parseInt(dp.replace(/[^0-9]/g, ''));
+                    if (dayIdx >= 0 && prd >= 1 && prd <= exportPeriodCount) {
+                        exportTimetable[prd - 1][dayIdx].push(c);
                     }
                 });
             });
-            // HTML生成
-            const periodLabels = [
-                '1限<br>8:45<br>10:15',
-                '2限<br>10:30<br>12:00',
-                '3限<br>13:00<br>14:30',
-                '4限<br>14:45<br>16:15',
-                '5限<br>16:30<br>18:00',
-                '6限<br>18:15<br>19:45'
-            ];
-            let timetableCells = '';
-            // ヘッダー
-            timetableCells += '<div class="cell header">時間</div>';
-            days.forEach(day => {
-                timetableCells += `<div class="cell header day-header">${day}曜日</div>`;
-            });
-            // 各時限
-            for(let p=0; p<periods; p++){
-                timetableCells += `<div class="cell time-header">${periodLabels[p]}</div>`;
-                for(let d=0; d<days.length; d++){
-                    const coursesInCell = timetable[p][d];
-                    if(coursesInCell.length>0){
-                        // 1つ目のみ表示（複数対応は必要なら拡張）
-                        const course = coursesInCell[0];
-                        let shortTitle = course.title.split('(')[0].trim();
-                        // 教室情報を優先的に設定から取得
-                        let room = classroomMap[course.title] || course.room || '教室未定';
-                        // 色設定
-                        const color = colorMap[course.title] || '#ffffff';
-                        // 背景色として設定（透明度付き）
-                        let backgroundColor: string;
-                        let borderColor: string;
-                        if (color === '#ffffff') {
-                            // 白色の場合は薄いグレーの背景にして、ボーダーも薄いグレーにする
-                            backgroundColor = '#f8f9fa';
-                            borderColor = '#dee2e6';
-                        } else {
-                            backgroundColor = `color-mix(in srgb, ${color} 20%, white)`;
-                            borderColor = color;
-                        }
-                        timetableCells += `<div class="cell" style="background-color:${backgroundColor};border-left:6px solid ${borderColor}"><div class="subject">${shortTitle}</div><div class="room">📍 ${room}</div></div>`;
-                    }else{
-                        timetableCells += '<div class="cell empty"><div class="subject"></div></div>';
-                    }
-                }
-            }
-            // CSS（スマホアスペクト比対応 & ホバー効果無効）
-            const timetableCss = `<style>\n*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f5f5f5;min-height:100vh;padding:10px;display:flex;justify-content:center;align-items:flex-start;}.container{background:white;border-radius:8px;padding:15px;box-shadow:0 2px 8px rgba(0,0,0,0.1);border:1px solid #e0e0e0;max-width:100vw;width:100%;aspect-ratio:9/16;max-height:90vh;}.timetable{display:grid;grid-template-columns:50px repeat(5,1fr);gap:1px;background:#e9ecef;border-radius:6px;padding:1px;font-size:0.75em;height:100%;}.cell{background:white;padding:8px 4px;text-align:center;border-radius:2px;position:relative;overflow:hidden;word-break:break-word;hyphens:auto;display:flex;flex-direction:column;justify-content:center;font-size:0.85rem;}.header{background:#495057;color:white;font-weight:600;font-size:0.8rem;}.time-header{background:#6c757d;color:white;font-weight:600;font-size:0.65rem;line-height:1.0;padding:4px 2px;}.subject{font-weight:600;color:#333;margin-bottom:2px;font-size:0.75rem;line-height:1.2;word-break:break-word;hyphens:auto;}.room{font-size:0.65rem;color:#555;background:#f8f9fa;padding:1px 3px;border-radius:2px;display:inline-block;margin-top:2px;border:1px solid #e0e0e0;}.empty{background:#f8f9fa;color:#6c757d;font-style:italic;opacity:0.8;}</style>`;
-            // モーダル生成（スマホアスペクト比対応）
-            const previewModal = document.createElement('div');
-            previewModal.className = 'cs-tact-modal cs-timetable-modal';
-            previewModal.style.zIndex = '10010';
-            previewModal.style.display = 'flex';
-            previewModal.style.flexDirection = 'column';
-            previewModal.style.alignItems = 'center';
-            previewModal.style.justifyContent = 'center';
-            previewModal.style.background = 'rgba(255,255,255,0.98)';
-            previewModal.style.padding = '8px';
-            previewModal.style.position = 'fixed';
-            previewModal.style.top = '50%';
-            previewModal.style.left = '50%';
-            previewModal.style.transform = 'translate(-50%, -50%)';
-            previewModal.style.width = '100vw';
-            previewModal.style.height = '100vh';
-            previewModal.style.maxWidth = '420px'; // スマホ幅に制限
-            previewModal.style.maxHeight = '100vh';
-            previewModal.style.overflowY = 'auto';
-            // 閉じるボタン（スマホ対応）
-            const closeBtn = document.createElement('button');
-            closeBtn.textContent = '×';
-            closeBtn.className = 'cs-tact-modal-close';
-            closeBtn.style.position = 'absolute';
-            closeBtn.style.top = '16px';
-            closeBtn.style.right = '16px';
-            closeBtn.style.fontSize = '24px';
-            closeBtn.style.zIndex = '10011';
-            closeBtn.onclick = () => previewModal.remove();
-            previewModal.appendChild(closeBtn);
-            // タイトル（スマホ対応）
-            const imgTitle = document.createElement('h2');
-            imgTitle.textContent = '時間割プレビュー';
-            imgTitle.style.marginBottom = '12px';
-            imgTitle.style.fontSize = '1.2rem';
-            imgTitle.style.textAlign = 'center';
-            previewModal.appendChild(imgTitle);
-            // HTML+CSS本体（スマホ対応メッセージ）
-            const htmlContainer = document.createElement('div');
-            htmlContainer.innerHTML = timetableCss + `<div class='container'><div class='timetable'>${timetableCells}</div></div><div style='margin-top:16px;text-align:center;font-size:0.9em;color:#495057;font-weight:bold;padding:0 10px;'>この画面をスクリーンショットして保存してください<br><span style='font-size:0.85em;font-weight:normal;color:#888;'>(長押し→画像として保存 も可)</span></div>`;
-            htmlContainer.style.background = 'none';
-            htmlContainer.style.boxShadow = 'none';
-            previewModal.appendChild(htmlContainer);
-            document.body.appendChild(previewModal);
+
+            renderTimetableToPng(
+                exportTimetable, exportDays, exportPeriodCount,
+                currentColorMap, classroomData, selectedYear, selectedTermLabel,
+                selectedAspect
+            );
         };
-        buttonContainer.appendChild(exportBtn);
-        
-        content.appendChild(buttonContainer);
+        exportContainer.appendChild(exportBtn);
+        content.appendChild(exportContainer);
     });
     
     modal.appendChild(content);
@@ -1233,76 +1526,61 @@ async function updateTimetable() {
     const days = ['', '月', '火', '水', '木', '金'];
     const periods = 6;
     let courses: CourseInfo[] = [];
-    if (cachedCourses && cachedCourses.length > 0) {
-        console.log('キャッシュされた講義情報を使用します', cachedCourses.length);
-        courses = cachedCourses;
-    } else {
-        try {
-            courses = fetchCoursesFromPortal();
-            console.log('fetchCoursesFromPortal結果:', courses);
-            if (!courses || courses.length === 0) {
-                courses = extractCoursesFromPage();
-                console.log('extractCoursesFromPage結果:', courses);
-            }
-            if (courses && courses.length > 0) {
-                cachedCourses = courses;
-            } else {
+
+    if (showAllCourses) {
+        // 全コース表示モード: fav-sites-entryから全コースを取得
+        if (cachedAllCourses && cachedAllCourses.length > 0) {
+            console.log('キャッシュされた全講義情報を使用します', cachedAllCourses.length);
+            courses = cachedAllCourses;
+        } else {
+            try {
+                courses = fetchAllCoursesFromAllSites();
+                if (courses && courses.length > 0) {
+                    cachedAllCourses = courses;
+                } else {
+                    // 全サイトが取得できない場合はお気に入りにフォールバック
+                    console.warn('全サイトからの取得に失敗、お気に入りにフォールバック');
+                    courses = fetchCoursesFromPortal();
+                    if (!courses || courses.length === 0) {
+                        courses = extractCoursesFromPage();
+                    }
+                    if (courses && courses.length > 0) {
+                        cachedCourses = courses;
+                    } else {
+                        courses = SAMPLE_COURSES;
+                    }
+                }
+            } catch (error) {
+                console.error('全講義情報取得エラー:', error);
                 courses = SAMPLE_COURSES;
             }
-        } catch (error) {
-            console.error('講義情報取得エラー:', error);
-            courses = SAMPLE_COURSES;
+        }
+    } else {
+        // お気に入りのみモード: 従来通り
+        if (cachedCourses && cachedCourses.length > 0) {
+            console.log('キャッシュされた講義情報を使用します', cachedCourses.length);
+            courses = cachedCourses;
+        } else {
+            try {
+                courses = fetchCoursesFromPortal();
+                console.log('fetchCoursesFromPortal結果:', courses);
+                if (!courses || courses.length === 0) {
+                    courses = extractCoursesFromPage();
+                    console.log('extractCoursesFromPage結果:', courses);
+                }
+                if (courses && courses.length > 0) {
+                    cachedCourses = courses;
+                } else {
+                    courses = SAMPLE_COURSES;
+                }
+            } catch (error) {
+                console.error('講義情報取得エラー:', error);
+                courses = SAMPLE_COURSES;
+            }
         }
     }
     console.log(`選択された年度: ${year}, 学期: ${term}`);
-    const filteredCourses = courses.filter(course => {
-        let courseYear = course.academicYear || "";
-        if (!courseYear) {
-            const yearRegexMatch = course.title.match(/\((\d{4})年度/);
-            if (yearRegexMatch && yearRegexMatch[1]) {
-                courseYear = yearRegexMatch[1];
-            } else if (course.term && course.term.match(/(\d{4})年/)) {
-                const termYearMatch = course.term.match(/(\d{4})年/);
-                if (termYearMatch && termYearMatch[1]) {
-                    courseYear = termYearMatch[1];
-                }
-            }
-        }
-        let isYearMatching = courseYear === year;
-        if (!courseYear) {
-            isYearMatching = true;
-        }
-        const normalizedCourseTerm = normalizeTerm(course.term);
-        const normalizedSelectedTerm = term;
-        const courseTermBase = normalizedCourseTerm.split('-')[0];
-        const selectedTermBase = normalizedSelectedTerm.split('-')[0];
-        let termMatch = false;
-        if (normalizedCourseTerm === normalizedSelectedTerm) {
-            termMatch = true;
-        } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
-            termMatch = true;
-        } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
-            termMatch = true;
-        } else if (courseTermBase === selectedTermBase) {
-            termMatch = false;
-        } else {
-            termMatch = false;
-        }
-        let termMatchReason = '';
-        if (normalizedCourseTerm === normalizedSelectedTerm) {
-            termMatchReason = '完全一致';
-        } else if (courseTermBase === selectedTermBase && !normalizedSelectedTerm.includes('-')) {
-            termMatchReason = '大分類一致（選択が大分類のみ）';
-        } else if (courseTermBase === selectedTermBase && !normalizedCourseTerm.includes('-')) {
-            termMatchReason = '大分類一致（講義が大分類のみ）';
-        } else if (courseTermBase === selectedTermBase) {
-            termMatchReason = '大分類一致だが細分類不一致（表示しない）';
-        } else {
-            termMatchReason = '不一致';
-        }
-        console.log(`フィルタリング - 講義: ${course.title}, 保存年度: ${course.academicYear || "なし"}, 抽出年度: ${courseYear || "不明"}, 選択年度: ${year}, 学期: ${course.term}, 正規化: ${normalizedCourseTerm}, 年度一致: ${isYearMatching}, 学期一致: ${termMatch}, 理由: ${termMatchReason}`);
-        return isYearMatching && termMatch;
-    });
+    const filteredCourses = filterCoursesByYearAndTerm(courses, year, term);
     // 教室情報を一度だけ取得
     loadClassroomInfo(currentSiteHostname).then(classroomMap => {
         const table = document.createElement('table');

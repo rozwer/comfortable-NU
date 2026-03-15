@@ -73,7 +73,11 @@ function setupAutoSyncCheck() {
         } else if (request.action === 'syncCompleted') {
             console.log(`同期完了通知: 課題${request.result.assignments}件、クイズ${request.result.quizzes}件`);
             // 最終同期時刻を更新
-            chrome.storage.local.set({ lastSyncTime: Date.now() });
+            chrome.storage.local.set({ lastSyncTime: Date.now() }, () => {
+                if (chrome.runtime.lastError) {
+                    console.error('Failed to update lastSyncTime:', chrome.runtime.lastError.message);
+                }
+            });
             // 同期完了のUI通知を表示
             showSyncNotification(request.result);
         }

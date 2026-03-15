@@ -7,11 +7,19 @@
  */
 import { FileStorage } from './file-storage';
 
+/** HTMLエスケープ（XSS対策） */
+function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+}
+
 export interface TactContentItem {
     title: string;
     type: string;
     container: string;
     url?: string;
+    webLinkUrl?: string; // NUSSファイルのNextcloud共有URL
     numChildren?: number;
     name?: string;
 }
@@ -21,6 +29,7 @@ export interface FolderTreeNode {
     type: 'folder' | 'file';
     children?: FolderTreeNode[];
     url?: string;
+    webLinkUrl?: string; // NUSSファイルのNextcloud共有URL
     numChildren?: number;
     isContainer?: boolean;
     nodeId?: string; // ストレージのノードIDを保持
@@ -116,6 +125,7 @@ export class TactApiClient {
                 type: isFolder ? 'folder' : 'file',
                 children: isFolder ? {} : undefined,
                 url: isFolder ? undefined : node.url,
+                webLinkUrl: isFolder ? undefined : node.webLinkUrl,
                 numChildren: node.numChildren,
                 nodeId: node.id, // ノードIDを追加
                 isContainer: false
@@ -128,6 +138,7 @@ export class TactApiClient {
                 name: node.name,
                 type: node.type,
                 url: node.url,
+                webLinkUrl: node.webLinkUrl,
                 numChildren: node.numChildren,
                 nodeId: node.nodeId // ノードIDを保持
             };
@@ -195,6 +206,7 @@ export class TactApiClient {
                     type: isFolder ? 'folder' : 'file',
                     children: isFolder ? {} : undefined,
                     url: isFolder ? undefined : item.url,
+                    webLinkUrl: isFolder ? undefined : item.webLinkUrl,
                     numChildren: item.numChildren || 0,
                     isContainer: false
                 } as any;
@@ -207,6 +219,7 @@ export class TactApiClient {
                 name: node.name,
                 type: node.type,
                 url: node.url,
+                webLinkUrl: node.webLinkUrl,
                 numChildren: node.numChildren
             };
 
@@ -266,16 +279,18 @@ export class TactApiClient {
             const nodeId = node.nodeId || this.generateNodeId(node);
             
             // 編集モード時に移動ボタンを追加
-            const moveButton = isEditMode ? `<button class="move-btn" data-item-id="${nodeId}" title="移動">📁</button>` : '';
-            
+            const safeName = escapeHtml(node.name);
+            const safeNodeId = escapeHtml(nodeId);
+            const moveButton = isEditMode ? `<button class="move-btn" data-item-id="${safeNodeId}" title="移動">📁</button>` : '';
+
             if (node.type === 'folder') {
                 const folderClass = hasChildren ? 'folder-item collapsible' : 'folder-item';
                 const toggleIcon = hasChildren ? '<span class="toggle-icon">▼</span>' : '';
-                let html = `<li class="${folderClass}" data-node-id="${nodeId}">
-                    ${toggleIcon}<span class="folder-name">${icon} 
-                    <span class="editable-name" data-original="${node.name}">${node.name}</span>
+                let html = `<li class="${folderClass}" data-node-id="${safeNodeId}">
+                    ${toggleIcon}<span class="folder-name">${icon}
+                    <span class="editable-name" data-original="${safeName}">${safeName}</span>
                     <span class="edit-icon" title="名前を変更">✏️</span>${moveButton}</span>`;
-                
+
                 if (hasChildren) {
                     html += '<ul class="folder-children">';
                     node.children!.forEach(child => {
@@ -286,11 +301,14 @@ export class TactApiClient {
                 html += '</li>';
                 return html;
             } else {
-                const checkboxId = `file-${nodeId}`;
-                const checkbox = node.url ? `<input type="checkbox" class="file-checkbox" id="${checkboxId}" data-url="${node.url}" data-filename="${node.name}">` : '';
-                const fileName = node.url 
-                    ? `<a href="${node.url}" target="_blank" class="file-link"><span class="editable-name" data-original="${node.name}">${node.name}</span></a>`
-                    : `<span class="editable-name" data-original="${node.name}">${node.name}</span>`;
+                const checkboxId = `file-${safeNodeId}`;
+                const safeUrl = node.url ? escapeHtml(node.url) : '';
+                const safeWebLinkUrl = node.webLinkUrl ? escapeHtml(node.webLinkUrl) : '';
+                const weblinkAttr = safeWebLinkUrl ? ` data-weblink-url="${safeWebLinkUrl}"` : '';
+                const checkbox = node.url ? `<input type="checkbox" class="file-checkbox" id="${checkboxId}" data-url="${safeUrl}" data-filename="${safeName}"${weblinkAttr}>` : '';
+                const fileName = node.url
+                    ? `<a href="${safeUrl}" target="_blank" class="file-link"><span class="editable-name" data-original="${safeName}">${safeName}</span></a>`
+                    : `<span class="editable-name" data-original="${safeName}">${safeName}</span>`;
                 
                 // NUSSファイルラベルを追加
                 const nussLabel = (node.url && this.isNussUrl(node.url)) 
