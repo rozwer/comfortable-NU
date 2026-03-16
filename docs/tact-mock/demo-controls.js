@@ -9,19 +9,21 @@
   'use strict';
 
   // ===== Configuration =====
+  // _demoBasePath は demo-shim.js で URL 書き換え前に保存済み
+  const BASE = window._demoBasePath || '';
   const EXT_CSS_FILES = [
-    'ext/css/comfortable-sakai.css',
-    'ext/css/tact-extension.css',
-    'ext/css/date-picker.css',
-    'ext/css/material-dialog.css',
-    'ext/css/minus-button.css',
-    'ext/css/submission-tracker.css',
-    'ext/css/calendar-sync.css',
-    'ext/css/memo-styles.css',
-    'ext/css/submitted-styles.css'
+    BASE + 'ext/css/comfortable-sakai.css',
+    BASE + 'ext/css/tact-extension.css',
+    BASE + 'ext/css/date-picker.css',
+    BASE + 'ext/css/material-dialog.css',
+    BASE + 'ext/css/minus-button.css',
+    BASE + 'ext/css/submission-tracker.css',
+    BASE + 'ext/css/calendar-sync.css',
+    BASE + 'ext/css/memo-styles.css',
+    BASE + 'ext/css/submitted-styles.css'
   ];
 
-  const EXT_SCRIPT = 'ext/content_script.js';
+  const EXT_SCRIPT = BASE + 'ext/content_script.js';
 
   // ===== State =====
   let isExtensionOn = false;

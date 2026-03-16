@@ -14,6 +14,13 @@
   // ----------------------------------------------------------------
   window.__COMFORTABLE_NU_DEMO__ = true;
 
+  // URL 書き換え前のベースパスを保存（リソース読み込みに使用）
+  // 例: "https://rozwer.github.io/comfortable-NU/tact-mock/"
+  var loc = window.location;
+  var pathDir = loc.pathname.replace(/\/[^\/]*$/, '/'); // 末尾ファイル名を除去
+  if (!pathDir.endsWith('/')) pathDir += '/';
+  window._demoBasePath = loc.origin + pathDir;
+
   // ----------------------------------------------------------------
   // 1. chrome.storage.local (localStorage バックエンド)
   // ----------------------------------------------------------------
@@ -133,15 +140,15 @@
    * public/ ディレクトリを ../../public/ として参照する。
    */
   var RESOURCE_MAP = {
-    'img/closeBtn.svg':     'ext/img/closeBtn.svg',
-    'img/logo.png':         'ext/img/logo.png',
-    'img/scheduleBtn.svg':  'ext/img/scheduleBtn.svg',
-    'img/favoriteBtn.svg':  'ext/img/favoriteBtn.svg',
-    'img/trackerBtn.svg':   'ext/img/trackerBtn.svg',
-    'img/folderBtn.svg':    'ext/img/folderBtn.svg',
-    'img/miniSakaiBtn.png': 'ext/img/miniSakaiBtn.png',
-    'css/date-picker.css':  'ext/css/date-picker.css',
-    'css/memo-styles.css':  'ext/css/memo-styles.css'
+    'img/closeBtn.svg':     window._demoBasePath + 'ext/img/closeBtn.svg',
+    'img/logo.png':         window._demoBasePath + 'ext/img/logo.png',
+    'img/scheduleBtn.svg':  window._demoBasePath + 'ext/img/scheduleBtn.svg',
+    'img/favoriteBtn.svg':  window._demoBasePath + 'ext/img/favoriteBtn.svg',
+    'img/trackerBtn.svg':   window._demoBasePath + 'ext/img/trackerBtn.svg',
+    'img/folderBtn.svg':    window._demoBasePath + 'ext/img/folderBtn.svg',
+    'img/miniSakaiBtn.png': window._demoBasePath + 'ext/img/miniSakaiBtn.png',
+    'css/date-picker.css':  window._demoBasePath + 'ext/css/date-picker.css',
+    'css/memo-styles.css':  window._demoBasePath + 'ext/css/memo-styles.css'
   };
 
   /** sendMessage ハンドラ定義 */
@@ -197,7 +204,7 @@
     lastError: null,
 
     getURL: function (path) {
-      return RESOURCE_MAP[path] || ('ext/' + path);
+      return RESOURCE_MAP[path] || (window._demoBasePath + 'ext/' + path);
     },
 
     sendMessage: function (message, callback) {
@@ -243,7 +250,7 @@
   var i18nMessages = {};
   try {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'ext/_locales/ja/messages.json', false); // 同期
+    xhr.open('GET', window._demoBasePath + 'ext/_locales/ja/messages.json', false); // 同期
     xhr.send();
     if (xhr.status === 200) {
       i18nMessages = JSON.parse(xhr.responseText);
