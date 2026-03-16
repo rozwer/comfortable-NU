@@ -1,7 +1,7 @@
 {
   "name": "Comfortable NU",
   "description": "__MSG_EXTENSION_DESCRIPTION__",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "manifest_version": 3,
   "default_locale": "en",
   "icons": {
@@ -28,8 +28,8 @@
         "css/submission-tracker.css"
       ],
       "matches": [
-        "http://*/*",
-        "https://*/*"
+        "https://tact.ac.thers.ac.jp/*",
+        "https://nuss.nagoya-u.ac.jp/*"
       ]
     }
   ],
@@ -81,8 +81,8 @@
         "img/folderBtn.svg"
       ],
       "matches": [
-        "http://*/*",
-        "https://*/*"
+        "https://tact.ac.thers.ac.jp/*",
+        "https://nuss.nagoya-u.ac.jp/*"
       ]
     }
   ]

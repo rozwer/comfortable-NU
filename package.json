@@ -1,6 +1,6 @@
 {
   "name": "comfortable-nu",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Comfortable NU is a Web browser extension for managing assignments and quizzes on Sakai LMS for Nagoya University.",
   "main": "index.ts",
   "scripts": {
