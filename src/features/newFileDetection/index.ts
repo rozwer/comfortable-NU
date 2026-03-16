@@ -61,7 +61,7 @@ async function fetchContentItems(siteId: string): Promise<ContentItem[] | null> 
         const data: ContentApiResponse = await response.json();
         return data.content_collection ?? [];
     } catch (error) {
-        logger.error(`Failed to fetch content for site ${siteId}:`, error);
+        logger.warn(`Failed to fetch content for site ${siteId}:`, error);
         return null;
     }
 }

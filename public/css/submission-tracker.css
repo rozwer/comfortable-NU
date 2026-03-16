@@ -35,7 +35,7 @@
 .cs-st-overall-rate {
     font-size: 52px;
     font-weight: 700;
-    color: #1d4561;
+    color: #112B72;
     line-height: 1.1;
     margin-bottom: 8px;
 }
@@ -74,7 +74,7 @@
 }
 
 .cs-st-stat-total .cs-st-stat-num {
-    color: #1d4561;
+    color: #112B72;
 }
 
 /* 全体グラフのマージン調整 */
@@ -125,8 +125,8 @@
 .cs-st-courses-title {
     margin: 0 0 12px 0;
     font-size: 15px;
-    color: #1d4561;
-    border-bottom: 2px solid #1d4561;
+    color: #112B72;
+    border-bottom: 2px solid #112B72;
     padding-bottom: 6px;
 }
 

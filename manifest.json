@@ -25,8 +25,7 @@
         "css/calendar-sync.css",
         "css/material-dialog.css",
         "css/submitted-styles.css",
-        "css/submission-tracker.css",
-        "css/cross-folder-browser.css"
+        "css/submission-tracker.css"
       ],
       "matches": [
         "http://*/*",

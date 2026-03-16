@@ -7,7 +7,8 @@
 /* メモコンテナ全体 */
 .cs-memo-container {
     width: 100%;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
 }
@@ -104,7 +105,9 @@
 /* コンテンツエリア */
 .cs-memo-content-area {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 16px;
 }
 

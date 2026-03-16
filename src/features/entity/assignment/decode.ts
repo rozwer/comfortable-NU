@@ -17,7 +17,14 @@ import { CurrentTime } from "../../../constant";
  */
 export const decodeAssignmentFromAPI = (data: Record<string, any>): Array<AssignmentEntry> => {
     return data.assignment_collection
-        .filter((json: any) => json.closeTime.epochSecond >= CurrentTime)
+        .filter((json: any) => {
+            // 提出済み課題は closeTime が過去でも保持する
+            if (json.submissions && json.submissions.length > 0 &&
+                json.submissions[0].dateSubmitted && json.submissions[0].dateSubmitted !== '') {
+                return true;
+            }
+            return json.closeTime.epochSecond >= CurrentTime;
+        })
         .map((json: any) => {
             // ユーザーによる提出状態を確認
             let submitted = false;

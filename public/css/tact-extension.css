@@ -23,7 +23,7 @@
 
 /* カスタムアイコンのスタイル */
 .cs-custom-icon {
-  color: #265b81; /* TACTの青色に合わせる */
+  color: #112B72; /* 統一ブランドカラー */
   font-size: 18px;
   margin-right: 8px;
   position: relative;
@@ -51,19 +51,30 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* オーバーレイ（ビューポート全体をカバーし、モーダルを中央配置） */
+.cs-tact-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.35);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
 /* モーダルのスタイル */
 .cs-tact-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   background: white;
   width: 95vw;
   max-width: 1200px;
   max-height: 90vh;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  z-index: 10000;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -75,7 +86,7 @@
   align-items: center;
   padding: 10px 20px;
   border-bottom: 1px solid #e0e0e0;
-  background-color: #265b81;
+  background-color: #112B72;
   color: white;
 }
 
@@ -96,7 +107,8 @@
 
 .cs-tact-modal-content {
   padding: 10px 16px;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -126,13 +138,13 @@
 
 .cs-folder-header h4 {
   margin: 0;
-  color: #265b81;
+  color: #112B72;
   font-size: 16px;
 }
 
 .cs-folder-add-btn {
   padding: 5px 10px;
-  background-color: #265b81;
+  background-color: #112B72;
   color: white;
   border: none;
   border-radius: 4px;
@@ -142,7 +154,7 @@
 }
 
 .cs-folder-add-btn:hover {
-  background-color: #1d4561;
+  background-color: #0D1F54;
 }
 
 .cs-folder-list {
@@ -210,12 +222,12 @@
 
 .cs-forum-header h3 {
   margin: 0;
-  color: #265b81;
+  color: #112B72;
 }
 
 .cs-forum-new-post-btn {
   padding: 8px 15px;
-  background-color: #265b81;
+  background-color: #112B72;
   color: white;
   border: none;
   border-radius: 4px;
@@ -225,7 +237,7 @@
 }
 
 .cs-forum-new-post-btn:hover {
-  background-color: #1d4561;
+  background-color: #0D1F54;
 }
 
 .cs-forum-category-tabs {
@@ -246,9 +258,9 @@
 }
 
 .cs-forum-category-tab.active {
-  background-color: #265b81;
+  background-color: #112B72;
   color: white;
-  border-color: #265b81;
+  border-color: #112B72;
 }
 
 .cs-forum-category-tab:hover:not(.active) {
@@ -279,7 +291,7 @@
 
 .cs-forum-post-title {
   margin: 0 0 5px 0;
-  color: #265b81;
+  color: #112B72;
   font-size: 16px;
 }
 
@@ -321,6 +333,11 @@
   max-height: 90vh !important;
 }
 
+.cs-classroom-edit-modal {
+  width: 90vw;
+  max-width: 560px;
+}
+
 .cs-timetable-container {
   display: flex;
   flex-direction: column;
@@ -353,15 +370,17 @@
 #cs-timetable {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .cs-timetable-table {
   width: 100%;
+  height: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  flex: 1;
+}
+
+.cs-timetable-table tbody tr {
+  height: calc(100% / 6);
 }
 
 .cs-timetable-table th,
@@ -391,7 +410,6 @@
 
 .cs-timetable-cell,
 .cs-timetable-period {
-  height: calc(75vh / 6);
   overflow: hidden;
   position: relative;
   padding: 4px;
@@ -459,21 +477,21 @@
 .cs-timetable-title {
   font-size: 12px;
   font-weight: bold;
-  color: #265b81;
+  color: #112B72;
   margin-bottom: 3px;
   padding: 2px 0;
   transition: all 0.2s ease;
 }
 
 .cs-timetable-cell:hover .cs-timetable-title {
-  color: #1a3f5c; /* ホバー時に色を少し濃くする */
+  color: #0D1F54; /* ホバー時に色を少し濃くする */
 }
 
 .cs-timetable-course {
   font-size: 11px;
   margin-bottom: 3px;
   font-weight: bold;
-  color: #265b81;
+  color: #112B72;
   word-break: break-word;
   overflow: hidden;
   display: -webkit-box;
@@ -481,7 +499,7 @@
 
 .cs-timetable-title {
   font-weight: bold;
-  color: #265b81;
+  color: #112B72;
   cursor: pointer;
   transition: color 0.2s;
   -webkit-box-orient: vertical;
@@ -492,14 +510,14 @@
 }
 
 .cs-timetable-link {
-  color: #265b81;
+  color: #112B72;
   text-decoration: none;
   transition: color 0.2s;
   display: block;
 }
 
 .cs-timetable-link:hover {
-  color: #1a3f5c;
+  color: #0D1F54;
   text-decoration: underline;
 }
 
@@ -726,7 +744,7 @@
 .edit-input {
   font-family: inherit;
   font-size: inherit;
-  border: 1px solid #007acc;
+  border: 1px solid #007bff;
   outline: none;
   background: white;
   padding: 2px 4px;
@@ -799,7 +817,7 @@
 }
 
 .edit-mode-btn {
-    background-color: #007acc;
+    background-color: #007bff;
     color: white;
     border: none;
     padding: 8px 16px;
@@ -810,7 +828,7 @@
 }
 
 .edit-mode-btn:hover {
-    background-color: #005a9e;
+    background-color: #0056b3;
 }
 
 .edit-mode-indicator {
@@ -874,7 +892,7 @@
 
 .edit-mode .file-item:hover,
 .edit-mode .folder-item:hover {
-    border-color: #007acc;
+    border-color: #007bff;
     background-color: rgba(0, 122, 204, 0.05);
 }
 
@@ -924,7 +942,7 @@
     margin: 0 0 15px 0;
     color: #333;
     font-size: 18px;
-    border-bottom: 2px solid #007acc;
+    border-bottom: 2px solid #007bff;
     padding-bottom: 8px;
 }
 
@@ -955,7 +973,7 @@
 }
 
 .folder-option.selected {
-    background-color: #007acc;
+    background-color: #007bff;
     color: white;
 }
 
@@ -998,12 +1016,12 @@
 }
 
 .btn-primary {
-    background-color: #007acc;
+    background-color: #007bff;
     color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-    background-color: #005a9e;
+    background-color: #0056b3;
 }
 
 .btn-primary:disabled {
@@ -1035,12 +1053,12 @@
 }
 
 .tact-controls .btn-primary {
-  background-color: #007acc;
+  background-color: #007bff;
   color: white;
 }
 
 .tact-controls .btn-primary:hover:not(:disabled) {
-  background-color: #005a9e;
+  background-color: #0056b3;
   transform: translateY(-1px);
 }
 
@@ -1092,7 +1110,7 @@
 
 .folder-select:focus {
     outline: none;
-    border-color: #007acc;
+    border-color: #007bff;
     box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
 }
 
@@ -1271,8 +1289,8 @@
 
 .tab-button.active {
     background-color: #fff;
-    color: #007acc;
-    border-bottom-color: #007acc;
+    color: #007bff;
+    border-bottom-color: #007bff;
     font-weight: 600;
 }
 

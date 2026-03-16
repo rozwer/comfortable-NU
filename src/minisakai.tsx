@@ -12,6 +12,7 @@ import { createRoot } from "react-dom/client";
 import { MiniSakaiRoot } from "./components/main";
 import { Settings } from "./features/setting/types";
 
+
 /**
  * Toggle state for miniSakai
  */
@@ -103,16 +104,6 @@ submissionTrackerButton.addEventListener("click", () => {
     });
 });
 
-// 横断フォルダブラウザボタンの作成
-export const folderBrowserButton = document.createElement("button");
-folderBrowserButton.className = "cs-header-btn cs-folder-browser-btn";
-folderBrowserButton.title = "フォルダ";
-folderBrowserButton.innerHTML = `<img src="${chrome.runtime.getURL("img/folderBtn.svg")}" alt="folder">`;
-folderBrowserButton.addEventListener("click", () => {
-    import("./features/crossFolderBrowser").then(({ showCrossFolderBrowser }) => {
-        showCrossFolderBrowser();
-    });
-});
 
 /**
  * Add a button to open miniSakai.
@@ -135,7 +126,6 @@ export function addMiniSakaiBtn(): void {
         if (!topbar.contains(favoriteButton)) topbar.appendChild(favoriteButton);
         if (!topbar.contains(scheduleButton)) topbar.appendChild(scheduleButton);
         if (!topbar.contains(submissionTrackerButton)) topbar.appendChild(submissionTrackerButton);
-        if (!topbar.contains(folderBrowserButton)) topbar.appendChild(folderBrowserButton);
         if (!topbar.contains(hamburger)) topbar.appendChild(hamburger);
     } catch (e) {
         console.log("could not launch miniSakai.");

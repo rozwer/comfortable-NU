@@ -79,7 +79,7 @@
 }
 
 .cs-datepicker-header {
-  background-color: #1d4561;
+  background-color: #112B72;
   color: white;
   padding: 10px 14px;
   display: flex;
@@ -156,13 +156,13 @@
 }
 
 .cs-datepicker-save-button {
-  background-color: #1d4561;
-  border: 1px solid #1d4561;
+  background-color: #112B72;
+  border: 1px solid #112B72;
   color: white;
 }
 
 .cs-datepicker-save-button:hover {
-  background-color: #5070b8;
+  background-color: #0D1F54;
 }
 
 /* 永久非表示オプション用のスタイル */
@@ -171,7 +171,7 @@
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #b0b0b0;
-  border-left: 4px solid #1d4561;
+  border-left: 4px solid #112B72;
   background: #fff;
 }
 
@@ -202,7 +202,7 @@
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #b0b0b0;
-  border-left: 4px solid #1d4561;
+  border-left: 4px solid #112B72;
   text-align: center;
   background: #fff;
 }
@@ -210,7 +210,7 @@
 .cs-datepicker-permanent-info p {
   margin: 0;
   font-size: 13px;
-  color: #1d4561;
+  color: #112B72;
   font-weight: 500;
 }
 

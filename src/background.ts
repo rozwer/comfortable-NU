@@ -230,6 +230,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     sendResponse({ success: true });
                     break;
                 }
+                case "performCalendarSync": {
+                    // コンテンツスクリプトからの自動同期要求をバックグラウンドで実行
+                    const syncResult = await performCalendarSync();
+                    sendResponse({ success: true, ...syncResult });
+                    break;
+                }
                 default:
                     sendResponse({ success: false, error: "Unknown action" });
             }
@@ -567,8 +573,85 @@ async function doAddSentEventKey(key: string) {
     await setStorageDirect({ sentEventKeys: Array.from(keys) });
 }
 function makeEventKey(item: any, type: string): string {
-    // id+type+course名で一意化（titleは変更される可能性があるため除外）
-    return `${type}:${item.id || ""}:${item.context || item.courseName || ""}`;
+    // id+type+course+期限で一意化。id が空の場合は title+期限でフォールバック
+    const id = item.id || "";
+    const due = item.dueTime || item.dueDate || "";
+    const fallback = id ? "" : (item.title || "");
+    return `${type}:${id}${fallback}:${item.context || item.courseName || ""}:${due}`;
+}
+
+// Google Calendar から拡張機能が作成済みのイベント ID セットを取得
+// { ids: Set, partial: boolean } を返す。partial=true は一部の type で失敗したことを示す
+// 致命的エラー（401 認証切れ）の場合は例外を投げる
+interface CalendarQueryResult {
+    ids: Set<string>;
+    partial: boolean; // true: 一部 type の取得に失敗（成功分は保持）
+}
+async function getExistingCalendarEventIds(token: string): Promise<CalendarQueryResult | null> {
+    const existingIds = new Set<string>();
+    let partial = false;
+    try {
+        // 1日前から未来のイベントを検索（タイムゾーンずれへのバッファ）
+        const timeMin = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+        for (const itemType of ["assignment", "quiz"]) {
+            let pageToken: string | undefined;
+            let typeFailed = false;
+            do {
+                const params = new URLSearchParams({
+                    timeMin,
+                    maxResults: "250",
+                    singleEvents: "true",
+                    fields: "items(extendedProperties),nextPageToken",
+                });
+                params.append("privateExtendedProperty", `itemType=${itemType}`);
+                if (pageToken) params.set("pageToken", pageToken);
+
+                const response = await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            Accept: "application/json",
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    logger.error(`Calendar query failed (${itemType}): HTTP ${response.status}`);
+                    if (response.status === 401) {
+                        // 認証切れ: POST も失敗するため同期を中断すべき
+                        throw new Error("Calendar API authentication failed (401)");
+                    }
+                    // 403/429/5xx: この type はスキップし、取得済み分は保持
+                    typeFailed = true;
+                    partial = true;
+                    break;
+                }
+
+                const data = await response.json();
+                for (const event of data.items || []) {
+                    const id = event.extendedProperties?.private?.sakaiAssignmentId;
+                    if (id) {
+                        existingIds.add(`${itemType}:${id}`);
+                    }
+                }
+                pageToken = data.nextPageToken;
+            } while (pageToken);
+
+            if (typeFailed) {
+                logger.debug(`Calendar query: ${itemType} failed, continuing with partial results`);
+            }
+        }
+    } catch (error: any) {
+        if (error.message?.includes("401")) {
+            // 401 は呼び出し元に伝播して同期を中断
+            throw error;
+        }
+        logger.error("Failed to query existing calendar events:", error);
+        return null; // ネットワークエラー → フォールバックへ
+    }
+    return { ids: existingIds, partial };
 }
 
 // Sync assignments and quizzes to Google Calendar with enhanced security
@@ -584,12 +667,56 @@ async function syncToCalendar(data: any, token?: string): Promise<any> {
     }
 
     const results = { assignments: [], quizzes: [], errors: [] } as any;
-    const sentKeys = await getSentEventKeys();
     const now = Math.floor(Date.now() / 1000);
+
+    // カレンダー上の既存イベントを取得（重複防止の一次情報源）
+    // 401 認証切れの場合はここで例外が飛び、同期を中断する
+    let calendarResult: CalendarQueryResult | null = null;
+    try {
+        calendarResult = await getExistingCalendarEventIds(token);
+    } catch (authError: any) {
+        // 401: トークンが無効なので POST も失敗する → 同期中断
+        logger.error("Calendar dedup failed with auth error, aborting sync:", authError);
+        return { assignments: [], quizzes: [], errors: [{ type: "auth", title: "N/A", error: authError.message }] };
+    }
+
+    // ローカルキャッシュ: カレンダー API が完全に使えない場合、または空 id のフォールバック用
+    // partial の場合でもローカルを補助的に使う
+    const needLocalFallback = calendarResult === null || calendarResult.partial;
+    const localSentKeys = needLocalFallback ? await getSentEventKeys() : null;
+    const existingEventIds = calendarResult?.ids ?? null;
+
+    if (existingEventIds) {
+        logger.debug(`Calendar dedup: ${existingEventIds.size} existing events found (partial=${calendarResult?.partial})`);
+    } else {
+        logger.debug("Calendar dedup unavailable, using local sentKeys fallback");
+    }
 
     // Rate limiting: limit to 50 operations per sync to respect API limits
     let operationCount = 0;
     const maxOperations = 50;
+
+    // 重複チェック共通関数
+    function isDuplicate(item: any, type: string): boolean {
+        // 1. カレンダー API で確認（id がある場合）
+        if (existingEventIds && item.id && existingEventIds.has(`${type}:${item.id}`)) return true;
+        // 2. ローカルキャッシュで確認（API 失敗時 or 空 id のフォールバック）
+        if (localSentKeys) {
+            const key = makeEventKey(item, type);
+            if (localSentKeys.has(key)) return true;
+        }
+        return false;
+    }
+
+    // イベント作成成功時のセット更新（同一 run 内の重複防止）
+    function markCreated(item: any, type: string): void {
+        if (existingEventIds && item.id) {
+            existingEventIds.add(`${type}:${item.id}`);
+        }
+        if (localSentKeys) {
+            localSentKeys.add(makeEventKey(item, type));
+        }
+    }
 
     // Sync assignments
     if (data.assignments && Array.isArray(data.assignments)) {
@@ -609,13 +736,13 @@ async function syncToCalendar(data: any, token?: string): Promise<any> {
             const due = assignment.dueTime || assignment.dueDate;
             if (!due || due <= now) continue; // 過去はスキップ
 
-            const key = makeEventKey(assignment, "assignment");
-            if (sentKeys.has(key)) continue;
+            if (isDuplicate(assignment, "assignment")) continue;
 
             try {
                 const event = await createCalendarEvent(assignment, "assignment", token!);
                 results.assignments.push({ title: assignment.title, success: true, eventId: event.id });
-                await addSentEventKey(key);
+                markCreated(assignment, "assignment");
+                await addSentEventKey(makeEventKey(assignment, "assignment"));
                 operationCount++;
             } catch (error: any) {
                 results.errors.push({ type: "assignment", title: assignment.title, error: error.message });
@@ -641,13 +768,13 @@ async function syncToCalendar(data: any, token?: string): Promise<any> {
             const due = quiz.dueTime || quiz.dueDate;
             if (!due || due <= now) continue; // 過去はスキップ
 
-            const key = makeEventKey(quiz, "quiz");
-            if (sentKeys.has(key)) continue;
+            if (isDuplicate(quiz, "quiz")) continue;
 
             try {
                 const event = await createCalendarEvent(quiz, "quiz", token!);
                 results.quizzes.push({ title: quiz.title, success: true, eventId: event.id });
-                await addSentEventKey(key);
+                markCreated(quiz, "quiz");
+                await addSentEventKey(makeEventKey(quiz, "quiz"));
                 operationCount++;
             } catch (error: any) {
                 results.errors.push({ type: "quiz", title: quiz.title, error: error.message });
@@ -959,11 +1086,14 @@ async function performCalendarSync() {
 
         const result = await syncToCalendar(data, token);
 
-        // 最終同期時刻を保存
-        await setStorageDirect({ lastSyncTime: Date.now() });
-
         // 結果の通知
         const totalEvents = result.assignments.length + result.quizzes.length;
+
+        // 実際にイベントが作成された場合のみ最終同期時刻を保存
+        // 空振り時に更新すると、直後に追加された課題が次の間隔まで取り込まれなくなる
+        if (totalEvents > 0) {
+            await setStorageDirect({ lastSyncTime: Date.now() });
+        }
         if (totalEvents > 0) {
             showNotification("カレンダー同期完了", `${totalEvents}件のイベントをGoogleカレンダーに同期しました`);
         }

@@ -2,10 +2,10 @@
  * TACTフォルダ機能のUI管理
  * フォルダ表示・編集・操作のユーザーインターフェース
  */
-import JSZip from 'jszip';
 import { TactApiClient } from './tact-api';
 import { formatDateToString } from '../../utils';
 import { createLogger } from '../../utils/logger';
+import { renderTreeHTML, bindTreeInteractions, TreeNode, TreeCallbacks, isNussLink, unwrapIntermediateFolders } from '../shared/tree-ui';
 const logger = createLogger('folder-ui');
 
 export class FolderUI {
@@ -129,20 +129,29 @@ export class FolderUI {
                 localStorage.setItem(cacheKey, JSON.stringify(tree));
                 localStorage.setItem(cacheTimeKey, now.toString());
             }
-            const treeHTML = this.tactApiClient.renderTreeAsHTML(tree, this.isEditMode);
-            containerElement.innerHTML = `
-                <div class="tact-structure-results">
-                    <div class="tact-tree">
-                        <h4>🌲 フォルダ構造</h4>
-                        <div class="tree-display">${treeHTML || '<p>構造が見つかりませんでした</p>'}</div>
-                    </div>
-                    <div class="tact-raw-data" style="margin-top: 20px;"></div>
-                </div>
-            `;
-            this.addFolderToggleListeners(containerElement);
-            this.addEditListeners(containerElement);
-            this.addDownloadListeners(containerElement);
-            this.addMoveButtonListeners(containerElement);
+            let treeNodes = unwrapIntermediateFolders((tree.children || []) as TreeNode[]);
+            // ルートレベルの空フォルダを除去（Content API のルートコレクション対策）
+            treeNodes = treeNodes.filter(n => n.type !== 'folder' || (n.children && n.children.length > 0));
+            const treeHTML = renderTreeHTML(treeNodes, {
+                isEditMode: this.isEditMode,
+                showDownloadControls: true,
+            });
+            const resultsDiv = document.createElement('div');
+            resultsDiv.className = 'tact-structure-results';
+            const treeDiv = document.createElement('div');
+            treeDiv.className = 'tact-tree';
+            const heading = document.createElement('h4');
+            heading.textContent = '🌲 フォルダ構造';
+            treeDiv.appendChild(heading);
+            const displayDiv = document.createElement('div');
+            displayDiv.className = 'tree-display';
+            // renderTreeHTML は escapeHtml 済みの安全な HTML のみを生成
+            displayDiv.innerHTML = treeHTML || '<p>構造が見つかりませんでした</p>';
+            treeDiv.appendChild(displayDiv);
+            resultsDiv.appendChild(treeDiv);
+            containerElement.textContent = '';
+            containerElement.appendChild(resultsDiv);
+            bindTreeInteractions(containerElement, this.getTreeCallbacks());
         } catch (error) {
             logger.error('フォルダ構造の読み込みに失敗:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -198,114 +207,23 @@ export class FolderUI {
     }
 
     /**
-     * フォルダのトグル機能を追加
+     * ツリー操作のコールバックを返す（shared/tree-ui 用）
      */
-    private addFolderToggleListeners(container: Element): void {
-        const collapsibleFolders = container.querySelectorAll('.folder-item.collapsible');
-        
-        collapsibleFolders.forEach(folder => {
-            const toggleIcon = folder.querySelector('.toggle-icon');
-            const folderName = folder.querySelector('.folder-name');
-            const children = folder.querySelector('.folder-children') as HTMLElement;
-            
-            if (toggleIcon && folderName && children) {
-                const toggleFolder = () => {
-                    const isCollapsed = children.style.display === 'none';
-                    children.style.display = isCollapsed ? 'block' : 'none';
-                    toggleIcon.textContent = isCollapsed ? '▼' : '▶';
-                };
-                
-                // クリックイベントを追加
-                [toggleIcon, folderName].forEach(element => {
-                    element.addEventListener('click', toggleFolder);
-                    (element as HTMLElement).style.cursor = 'pointer';
-                });
-            }
-        });
+    private getTreeCallbacks(): TreeCallbacks {
+        return {
+            onRename: (nodeId: string, newName: string): boolean => {
+                return this.tactApiClient.renameItem(nodeId, newName);
+            },
+            onMove: (nodeId: string): void => {
+                this.showMoveDestinationDialog(nodeId);
+            },
+            onRefreshTree: () => {
+                this.refreshTreeDisplay();
+            },
+        };
     }
 
-    /**
-     * ファイル名編集機能を追加
-     */
-    private addEditListeners(container: Element): void {
-        const editIcons = container.querySelectorAll('.edit-icon');
-        
-        editIcons.forEach(editIcon => {
-            editIcon.addEventListener('click', (e) => {
-                e.stopPropagation(); // イベントバブリングを防ぐ
-                
-                const editableElement = editIcon.parentElement?.querySelector('.editable-name');
-                const nodeElement = editIcon.closest('[data-node-id]');
-                
-                if (editableElement && nodeElement) {
-                    this.makeEditable(editableElement as HTMLElement, nodeElement as HTMLElement);
-                }
-            });
-        });
-    }
 
-    /**
-     * 要素を編集可能にする
-     */
-    private makeEditable(editableElement: HTMLElement, nodeElement: HTMLElement): void {
-        const originalText = editableElement.textContent || '';
-        const nodeId = nodeElement.getAttribute('data-node-id');
-        
-        // 入力フィールドを作成
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = originalText;
-        input.className = 'edit-input';
-        input.style.cssText = 'border: 1px solid #007acc; outline: none; background: white; padding: 2px;';
-        
-        // 確定処理
-        const saveEdit = () => {
-            const newName = input.value.trim();
-            if (newName && newName !== originalText && nodeId) {
-                // ファイル名を更新
-                if (this.tactApiClient.renameItem(nodeId, newName)) {
-                    editableElement.textContent = newName;
-                    editableElement.setAttribute('data-original', newName);
-                    
-                    // ツリーを再構築して表示を更新
-                    this.refreshTreeDisplay();
-                } else {
-                    alert('ファイル名の変更に失敗しました');
-                }
-            }
-            
-            // 入力フィールドを元に戻す
-            editableElement.style.display = '';
-            input.remove();
-        };
-        
-        // キャンセル処理
-        const cancelEdit = () => {
-            editableElement.style.display = '';
-            input.remove();
-        };
-        
-        // イベントリスナー
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                saveEdit();
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                cancelEdit();
-            }
-        });
-        
-        input.addEventListener('blur', saveEdit);
-        
-        // 要素を置き換え
-        editableElement.style.display = 'none';
-        editableElement.parentNode?.insertBefore(input, editableElement.nextSibling);
-        
-        // フォーカスして選択
-        input.focus();
-        input.select();
-    }
 
     /**
      * ツリー表示を更新
@@ -315,380 +233,23 @@ export class FolderUI {
         if (!containerElement) return;
 
         try {
-            // ストレージからツリー構造を再構築
             const tree = this.tactApiClient.buildFileTreeFromStorage();
-            const treeHTML = this.tactApiClient.renderTreeAsHTML(tree, this.isEditMode);
+            let treeNodes = unwrapIntermediateFolders((tree.children || []) as TreeNode[]);
+            treeNodes = treeNodes.filter(n => n.type !== 'folder' || (n.children && n.children.length > 0));
+            const treeHTML = renderTreeHTML(treeNodes, {
+                isEditMode: this.isEditMode,
+                showDownloadControls: true,
+            });
 
-            // ツリー部分のみを更新
             const treeDisplayElement = containerElement.querySelector('.tree-display');
             if (treeDisplayElement) {
+                // renderTreeHTML は escapeHtml 済みの安全な HTML のみを生成
                 treeDisplayElement.innerHTML = treeHTML || '<p>構造が見つかりませんでした</p>';
-                
-                // イベントリスナーを再設定
-                this.addFolderToggleListeners(containerElement);
-                this.addEditListeners(containerElement);
-                this.addDownloadListeners(containerElement);
-                
-                // 編集モードの場合は移動ボタン機能を追加
-                if (this.isEditMode) {
-                    this.addMoveButtonListeners(containerElement);
-                }
+                bindTreeInteractions(containerElement, this.getTreeCallbacks());
             }
         } catch (error) {
             logger.error('ツリー表示の更新に失敗:', error);
         }
-    }
-
-    /**
-     * ダウンロード機能を追加
-     */
-    private addDownloadListeners(container: Element): void {
-        const downloadButton = container.querySelector('#download-selected') as HTMLButtonElement;
-        const selectedCountSpan = container.querySelector('.selected-count') as HTMLSpanElement;
-        const checkboxes = container.querySelectorAll('.file-checkbox') as NodeListOf<HTMLInputElement>;
-
-        if (!downloadButton || !selectedCountSpan) return;
-
-        // チェックボックスの選択状態を監視
-        const updateSelectedCount = () => {
-            const selectedCheckboxes = Array.from(checkboxes).filter(cb => cb.checked);
-            const count = selectedCheckboxes.length;
-            
-            selectedCountSpan.textContent = `(${count}件選択)`;
-            downloadButton.disabled = count === 0;
-        };
-
-        // 各チェックボックスにイベントリスナーを追加
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', updateSelectedCount);
-        });
-
-        // ダウンロードボタンのクリックイベント
-        downloadButton.addEventListener('click', async () => {
-            const selectedCheckboxes = Array.from(checkboxes).filter(cb => cb.checked);
-            
-            if (selectedCheckboxes.length === 0) {
-                alert('ダウンロードするファイルを選択してください。');
-                return;
-            }
-
-            try {
-                downloadButton.disabled = true;
-                downloadButton.textContent = 'ダウンロード中...';
-
-                await this.downloadSelectedFiles(selectedCheckboxes, downloadButton);
-
-                // ダウンロード完了後、チェックボックスをリセット
-                selectedCheckboxes.forEach(cb => cb.checked = false);
-                updateSelectedCount();
-
-            } catch (error) {
-                logger.error('ダウンロードエラー:', error);
-                alert('ダウンロード中にエラーが発生しました。');
-            } finally {
-                downloadButton.disabled = false;
-                downloadButton.textContent = '選択したファイルをダウンロード';
-            }
-        });
-
-        // 初期状態を設定
-        updateSelectedCount();
-    }
-
-    /**
-     * 選択されたファイルをJSZipで一括ダウンロード
-     * NUSSファイルはZIPに含められないため個別処理する
-     */
-    private async downloadSelectedFiles(
-        checkboxes: HTMLInputElement[],
-        progressButton?: HTMLButtonElement
-    ): Promise<void> {
-        const allFiles = checkboxes
-            .map(cb => ({
-                url: cb.getAttribute('data-url'),
-                filename: cb.getAttribute('data-filename'),
-                webLinkUrl: cb.getAttribute('data-weblink-url') || undefined
-            }))
-            .filter((file): file is { url: string; filename: string; webLinkUrl: string | undefined } =>
-                file.url !== null && file.filename !== null
-            );
-
-        if (allFiles.length === 0) {
-            throw new Error('ダウンロード可能なファイルが見つかりません。');
-        }
-
-        // 50件以上の場合は確認警告
-        if (allFiles.length > 50) {
-            const proceed = confirm(`${allFiles.length}件のファイルをダウンロードします。メモリ使用量が大きくなる可能性があります。続行しますか？`);
-            if (!proceed) return;
-        }
-
-        // NUSSファイルと通常ファイルを分離
-        const nussFiles = allFiles.filter(f => this.isNussLink(f.url));
-        const zipFiles = allFiles.filter(f => !this.isNussLink(f.url));
-
-        const failedFiles: string[] = [];
-        const nussFailedFiles: Array<{ url: string; filename: string; webLinkUrl: string | undefined }> = [];
-
-        // ZIPオブジェクトを先に作成（NUSSファイルもまとめて追加するため）
-        const zip = new JSZip();
-
-        // ZIP対象ファイルをJSZipで一括ダウンロード
-        if (zipFiles.length > 0) {
-            const total = zipFiles.length;
-
-            for (let i = 0; i < total; i++) {
-                const file = zipFiles[i];
-
-                // プログレス表示を更新
-                if (progressButton) {
-                    progressButton.textContent = `ダウンロード中... (${i + 1}/${total})`;
-                }
-
-                try {
-                    const response = await fetch(file.url, {
-                        method: 'GET',
-                        credentials: 'include'
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP エラー: ${response.status}`);
-                    }
-
-                    const blob = await response.blob();
-                    zip.file(file.filename, blob);
-                } catch (error) {
-                    logger.error(`ファイル ${file.filename} のZIP追加に失敗:`, error);
-                    failedFiles.push(file.filename);
-                }
-            }
-        }
-
-        // NUSSファイルをbackground経由でfetchしてZIPに追加
-        if (nussFiles.length > 0) {
-            for (let i = 0; i < nussFiles.length; i++) {
-                const nussFile = nussFiles[i];
-
-                if (progressButton) {
-                    progressButton.textContent = `NUSS取得中... (${i + 1}/${nussFiles.length})`;
-                }
-
-                try {
-                    const webLinkUrl = nussFile.webLinkUrl;
-                    if (!webLinkUrl) throw new Error('webLinkUrl not found');
-
-                    const downloadUrl = webLinkUrl + '/download';
-                    const response = await new Promise<{ success: boolean; data?: string; error?: string }>((resolve) => {
-                        chrome.runtime.sendMessage(
-                            { type: 'FETCH_NUSS_FILE', downloadUrl, filename: nussFile.filename },
-                            (resp) => {
-                                if (chrome.runtime.lastError) {
-                                    resolve({ success: false, error: chrome.runtime.lastError.message });
-                                } else {
-                                    resolve(resp);
-                                }
-                            }
-                        );
-                    });
-
-                    if (!response || !response.success) {
-                        throw new Error(response ? response.error : 'No response from background');
-                    }
-
-                    // base64 → Uint8Array
-                    const binary = atob(response.data!);
-                    const bytes = new Uint8Array(binary.length);
-                    for (let j = 0; j < binary.length; j++) {
-                        bytes[j] = binary.charCodeAt(j);
-                    }
-                    zip.file(nussFile.filename, bytes);
-                    logger.debug(`NUSSファイル取得成功: ${nussFile.filename}`);
-                } catch (error) {
-                    logger.error(`NUSSファイル ${nussFile.filename} の取得に失敗:`, error);
-                    nussFailedFiles.push(nussFile);
-                }
-            }
-        }
-
-        // ZIPに追加されたファイルがある場合はダウンロード
-        const zipFileCount = Object.keys(zip.files).length;
-        if (zipFileCount > 0) {
-            // ZIPファイル名を生成: tact-files-YYYYMMDD.zip
-            const now = new Date();
-            const dateStr =
-                String(now.getFullYear()) +
-                String(now.getMonth() + 1).padStart(2, '0') +
-                String(now.getDate()).padStart(2, '0');
-            const zipFilename = `tact-files-${dateStr}.zip`;
-
-            if (progressButton) {
-                progressButton.textContent = 'ZIP生成中...';
-            }
-
-            const zipBlob = await zip.generateAsync({ type: 'blob' });
-            const downloadUrl = window.URL.createObjectURL(zipBlob);
-
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = zipFilename;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            window.URL.revokeObjectURL(downloadUrl);
-        }
-
-        // NUSSファイルのfetch失敗分はフォールバック（手動ダウンロード案内）
-        if (nussFailedFiles.length > 0) {
-            alert(
-                `${nussFailedFiles.length}件のNUSSファイルを自動取得できませんでした。\n` +
-                `個別に開きます:\n` +
-                nussFailedFiles.map(f => `・${f.filename}`).join('\n')
-            );
-            for (const nussFile of nussFailedFiles) {
-                await this.handleNussFile(nussFile.url, nussFile.filename);
-            }
-        }
-
-        // 結果通知
-        const successCount = zipFiles.length - failedFiles.length;
-        if (failedFiles.length > 0) {
-            alert(
-                `ダウンロード完了: ${successCount}件成功, ${failedFiles.length}件失敗\n` +
-                `失敗したファイル:\n` +
-                failedFiles.map(n => `・${n}`).join('\n')
-            );
-        } else if (zipFiles.length > 0 || nussFiles.length > nussFailedFiles.length) {
-            logger.debug(`${successCount + (nussFiles.length - nussFailedFiles.length)}件のファイルをZIPでダウンロードしました`);
-        }
-    }
-
-    /**
-     * 単一ファイルをダウンロード
-     */
-    private async downloadSingleFile(url: string, filename: string, webLinkUrl?: string): Promise<void> {
-        try {
-            // NUSSファイルかどうか判定
-            if (this.isNussLink(url)) {
-                // webLinkUrl がある場合はbackground経由でfetch試行
-                if (webLinkUrl) {
-                    try {
-                        const downloadUrl = webLinkUrl + '/download';
-                        const response = await new Promise<{ success: boolean; data?: string; error?: string }>((resolve) => {
-                            chrome.runtime.sendMessage(
-                                { type: 'FETCH_NUSS_FILE', downloadUrl, filename },
-                                (resp) => {
-                                    if (chrome.runtime.lastError) {
-                                        resolve({ success: false, error: chrome.runtime.lastError.message });
-                                    } else {
-                                        resolve(resp);
-                                    }
-                                }
-                            );
-                        });
-
-                        if (response && response.success && response.data) {
-                            const binary = atob(response.data);
-                            const bytes = new Uint8Array(binary.length);
-                            for (let i = 0; i < binary.length; i++) {
-                                bytes[i] = binary.charCodeAt(i);
-                            }
-                            const blob = new Blob([bytes]);
-                            const blobUrl = window.URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = blobUrl;
-                            link.download = filename;
-                            link.style.display = 'none';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(blobUrl);
-                            return;
-                        }
-                    } catch (nussError) {
-                        logger.error(`NUSSファイル ${filename} のbackground fetch失敗:`, nussError);
-                    }
-                }
-                // フォールバック: 手動ダウンロード案内
-                await this.handleNussFile(url, filename);
-                return;
-            }
-
-            const response = await fetch(url, {
-                method: 'GET',
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP エラー: ${response.status}`);
-            }
-
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = filename;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            window.URL.revokeObjectURL(downloadUrl);
-        } catch (error) {
-            logger.error(`ファイル ${filename} のダウンロードに失敗:`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * NUSSリンクかどうか判定
-     */
-    private isNussLink(url: string): boolean {
-        return url.includes('nuss.nagoya-u.ac.jp') || url.includes('https%3A__nuss.nagoya-u.ac.jp');
-    }
-
-    /**
-     * NUSSファイルの警告表示とリンク開き
-     */
-    private async handleNussFile(url: string, filename: string): Promise<void> {
-        logger.debug(`⚠️ NUSSファイル検出: ${filename}`);
-        
-        // 警告メッセージを表示
-        const message = `NUSSファイル「${filename}」は現在ダウンロードできません。\n\nブラウザの別タブでNUSSサイトを開きます。\n手動でダウンロードしてください。`;
-        
-        if (confirm(message)) {
-            logger.debug(`🌐 NUSSリンクを新しいタブで開きます: ${url}`);
-            window.open(url, '_blank');
-        } else {
-            logger.debug('👤 ユーザーがNUSSリンクを開くのをキャンセルしました');
-        }
-    }
-
-    /**
-     * 移動ボタン機能を追加
-     */
-    private addMoveButtonListeners(container: Element): void {
-        if (!this.isEditMode) return;
-
-        const moveButtons = container.querySelectorAll('.move-btn');
-        logger.debug(`移動ボタンリスナーを追加中... (編集モード: ${this.isEditMode})`);
-        logger.debug(`移動ボタン数: ${moveButtons.length}`);
-        
-        moveButtons.forEach(button => {
-            const btnElement = button as HTMLButtonElement;
-            const itemId = btnElement.getAttribute('data-item-id');
-            
-            if (itemId) {
-                logger.debug(`移動ボタンを設定: ${itemId}`);
-                btnElement.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    this.showMoveDestinationDialog(itemId);
-                });
-            }
-        });
     }
 
     /**
@@ -1368,7 +929,7 @@ export class FolderUI {
                                     ${attachment.name}
                                 </a>
                                 <span class="file-size">(${attachment.size || ''})</span>
-                                ${this.isNussLink(attachment.url) ? '<span class="nuss-label" style="color: #28a745; font-weight: bold; margin-left: 8px;">nuss</span>' : ''}
+                                ${isNussLink(attachment.url) ? '<span class="nuss-label" style="color: #28a745; font-weight: bold; margin-left: 8px;">nuss</span>' : ''}
                             </div>
                         `).join('') : '<span>添付なし</span>'}
                     </div>
@@ -1556,7 +1117,14 @@ export class FolderUI {
         for (const attachment of attachments) {
             if (attachment.url && attachment.filename) {
                 try {
-                    await this.downloadSingleFile(attachment.url, attachment.filename);
+                    const resp = await fetch(attachment.url, { method: 'GET', credentials: 'include' });
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const blob = await resp.blob();
+                    const dlUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = dlUrl; a.download = attachment.filename; a.style.display = 'none';
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    window.URL.revokeObjectURL(dlUrl);
                     logger.debug(`✅ ダウンロード完了: ${attachment.filename}`);
                 } catch (error) {
                     logger.error(`❌ ダウンロード失敗: ${attachment.filename}`, error);

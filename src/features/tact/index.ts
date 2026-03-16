@@ -12,6 +12,7 @@ import { TACT_HOSTNAME } from '../../constant';
  * @returns TACTポータルであればtrue、そうでなければfalse
  */
 export const isTactPortal = (): boolean => {
+    if ((window as any).__COMFORTABLE_NU_DEMO__) return true;
     return window.location.href.includes(TACT_HOSTNAME);
 };
 

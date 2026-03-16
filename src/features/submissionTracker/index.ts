@@ -27,7 +27,23 @@ export interface OverallSummary {
 /**
  * 全コースの課題提出状況を取得する
  */
-async function fetchAllSubmissionData(): Promise<CourseSubmissionSummary[]> {
+const CACHE_KEY = "cs-submission-tracker-cache";
+const CACHE_TIME_KEY = "cs-submission-tracker-cache-time";
+const CACHE_EXPIRE_SECONDS = 2 * 60 * 60; // 2時間
+
+async function fetchAllSubmissionData(forceRefresh = false): Promise<CourseSubmissionSummary[]> {
+    // キャッシュチェック
+    if (!forceRefresh) {
+        const cached = localStorage.getItem(CACHE_KEY);
+        const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+        if (cached && cachedTime) {
+            const elapsed = (Date.now() - parseInt(cachedTime, 10)) / 1000;
+            if (elapsed < CACHE_EXPIRE_SECONDS) {
+                return JSON.parse(cached);
+            }
+        }
+    }
+
     const courses = fetchCourse();
     const baseURL = getBaseURL();
 
@@ -38,7 +54,7 @@ async function fetchAllSubmissionData(): Promise<CourseSubmissionSummary[]> {
     const pending = courses.map(async (course) => {
         const url = `${baseURL}/direct/assignment/site/${course.id}.json`;
         try {
-            const resp = await fetch(url, { cache: "no-cache" });
+            const resp = await fetch(url);
             if (!resp.ok) {
                 return null;
             }
@@ -69,6 +85,11 @@ async function fetchAllSubmissionData(): Promise<CourseSubmissionSummary[]> {
             summaries.push(r.value);
         }
     }
+
+    // キャッシュに保存
+    localStorage.setItem(CACHE_KEY, JSON.stringify(summaries));
+    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+
     return summaries;
 }
 
@@ -323,12 +344,19 @@ function buildModalContent(
  * 提出率モーダルを表示する
  */
 export const showSubmissionTrackerModal = (): void => {
-    // 既存のモーダルがあれば削除
-    const existing = document.querySelector(".cs-st-modal");
-    if (existing) {
-        existing.remove();
+    // 既存のオーバーレイがあれば削除（トグル動作）
+    const existingOverlay = document.querySelector(".cs-tact-overlay .cs-st-modal");
+    if (existingOverlay) {
+        existingOverlay.closest(".cs-tact-overlay")?.remove();
         return;
     }
+
+    // オーバーレイを作成（ビューポート全体をカバーし、モーダルを中央配置）
+    const overlay = document.createElement("div");
+    overlay.className = "cs-tact-overlay";
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
 
     // モーダルコンテナ
     const modal = document.createElement("div");
@@ -345,7 +373,7 @@ export const showSubmissionTrackerModal = (): void => {
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "×";
     closeBtn.className = "cs-tact-modal-close";
-    closeBtn.addEventListener("click", () => modal.remove());
+    closeBtn.addEventListener("click", () => overlay.remove());
     header.appendChild(closeBtn);
 
     modal.appendChild(header);
@@ -360,7 +388,8 @@ export const showSubmissionTrackerModal = (): void => {
     contentArea.appendChild(loading);
 
     modal.appendChild(contentArea);
-    document.body.appendChild(modal);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
 
     // 非同期でデータ取得
     fetchAllSubmissionData()

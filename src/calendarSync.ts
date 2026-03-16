@@ -19,6 +19,8 @@ function sendMessage(action: string, data?: any): Promise<ChromeResponse> {
     chrome.runtime.sendMessage({ action, ...data } as ChromeMessage, (response: ChromeResponse) => {
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
+      } else if (!response) {
+        reject(new Error('No response from background script'));
       } else if (response.success) {
         resolve(response);
       } else {
@@ -389,12 +391,12 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
 
     // Get current site data
     const hostname = window.location.hostname;
+    const courses = fetchCourse();
     let assignments: any[] = [];
     let quizzes: any[] = [];
 
     if (syncAssignments) {
       try {
-        const courses = fetchCourse();
         assignments = await getAssignments(hostname, courses, false);
         const allEntries = assignments.flatMap(assignment => assignment.entries);
         showSyncStatus(modal, `課題データを取得しました (${allEntries.length}件)`, 'info');
@@ -405,7 +407,6 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
 
     if (syncQuizzes) {
       try {
-        const courses = fetchCourse();
         quizzes = await getQuizzes(hostname, courses, false);
         const allEntries = quizzes.flatMap(quiz => quiz.entries);
         showSyncStatus(modal, `クイズデータを取得しました (${allEntries.length}件)`, 'info');
@@ -416,9 +417,17 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
 
     // 現在時刻取得
     const now = Math.floor(Date.now() / 1000);
-    // 締切が今より前のものは除外
-    const totalAssignmentEntries = assignments.flatMap(assignment => assignment.entries).filter(e => (e.dueTime || e.dueDate) > now);
-    const totalQuizEntries = quizzes.flatMap(quiz => quiz.entries).filter(e => (e.dueTime || e.dueDate) > now);
+    // 締切が今より前のものは除外し、コース情報を付与
+    const totalAssignmentEntries = assignments.flatMap(assignment =>
+      assignment.entries
+        .filter((e: any) => (e.dueTime || e.dueDate) > now)
+        .map((e: any) => ({ ...e, courseName: assignment.course?.name || '', context: assignment.course?.id || '' }))
+    );
+    const totalQuizEntries = quizzes.flatMap(quiz =>
+      quiz.entries
+        .filter((e: any) => (e.dueTime || e.dueDate) > now)
+        .map((e: any) => ({ ...e, courseName: quiz.course?.name || '', context: quiz.course?.id || '' }))
+    );
     if (totalAssignmentEntries.length === 0 && totalQuizEntries.length === 0) {
       showSyncStatus(modal, '同期するデータが見つかりませんでした（未来の締切のある課題・クイズがありません）', 'error');
       return;
@@ -428,13 +437,16 @@ async function performSync(modal: HTMLElement, forceSync: boolean = false) {
     showSyncStatus(modal, 'Googleカレンダーに同期中...', 'info');
 
     const result = await syncToCalendar(totalAssignmentEntries, totalQuizEntries, token);
-    // 最終同期時刻保存
-    await setLastSyncTime(Date.now());
-    const lastSyncTimeLabel = modal.querySelector('#lastSyncTimeLabel') as HTMLElement;
-    if (lastSyncTimeLabel) lastSyncTimeLabel.textContent = '最終同期: ' + formatDateTime(Date.now());
 
     // Show results
     const totalSuccess = result.assignments.length + result.quizzes.length;
+
+    // 実際にイベントが作成された場合のみ最終同期時刻を保存
+    if (totalSuccess > 0) {
+      await setLastSyncTime(Date.now());
+      const lastSyncTimeLabel = modal.querySelector('#lastSyncTimeLabel') as HTMLElement;
+      if (lastSyncTimeLabel) lastSyncTimeLabel.textContent = '最終同期: ' + formatDateTime(Date.now());
+    }
     const totalErrors = result.errors.length;
     if (totalErrors === 0) {
       showSyncStatus(modal, `✅ 同期完了: ${totalSuccess}件のイベントが作成されました`, 'success');
@@ -521,6 +533,8 @@ export function showSyncModal() {
   // 送信済み履歴クリアボタン
   const clearBtn = modal.querySelector('#clearSentBtn');
   clearBtn?.addEventListener('click', async () => {
+    const confirmed = confirm('ローカルの送信済み履歴をクリアしますか？\n\nカレンダー側での重複チェックがあるため、通常は重複作成されません。\nカレンダーAPI接続に失敗した場合のみ重複の可能性があります。');
+    if (!confirmed) return;
     await clearSentEventKeys();
     showSyncStatus(modal, '送信済み履歴をクリアしました', 'success');
   });

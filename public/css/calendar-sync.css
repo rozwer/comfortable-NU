@@ -35,13 +35,13 @@
   flex-direction: column;
 }
 
-/* ヘッダー: material-dialog (#0064cd) に統一 */
+/* ヘッダー: material-dialog (#112B72) に統一 */
 .cs-sync-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background-color: #0064cd;
+  background-color: #112B72;
   color: white;
 }
 
@@ -159,7 +159,7 @@
 .cs-auth-notice {
   background: #f5f5f5;
   border: 1px solid #ddd;
-  border-left: 4px solid #0064cd;
+  border-left: 4px solid #112B72;
   border-radius: 4px;
   padding: 14px;
   margin-bottom: 14px;
@@ -215,7 +215,7 @@
 }
 
 .cs-connected-label {
-  background: #0064cd;
+  background: #112B72;
   color: #fff;
   font-size: 11px;
   border-radius: 3px;
@@ -297,7 +297,7 @@
 }
 
 .cs-auto-sync-toggle input:checked + .cs-toggle-slider {
-  background-color: #0064cd;
+  background-color: #112B72;
 }
 
 .cs-auto-sync-toggle input:checked + .cs-toggle-slider:before {
@@ -394,13 +394,13 @@
 }
 
 .cs-sync-btn-primary {
-  background-color: #0064cd;
-  border: 1px solid #0064cd;
+  background-color: #112B72;
+  border: 1px solid #112B72;
   color: white;
 }
 
 .cs-sync-btn-primary:hover:not(:disabled) {
-  background-color: #0050a5;
+  background-color: #0D1F54;
 }
 
 .cs-sync-btn-secondary {

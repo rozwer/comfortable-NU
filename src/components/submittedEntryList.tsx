@@ -201,9 +201,9 @@ export function SubmittedCourse(props: {
             {props.isSubset ? (
                 <div className={aClass}>{props.courseName}</div>
             ) : (
-                <a className={aClass} href={props.coursePage}>
+                <div className={aClass} style={{ cursor: "default" }}>
                     {props.courseName}
-                </a>
+                </div>
             )}
 
             {/* 課題一覧を表示 */}

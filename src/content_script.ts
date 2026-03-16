@@ -92,11 +92,14 @@ function setupAutoSyncCheck() {
                 });
             return true; // 非同期レスポンスを示す
         } else if (request.action === "syncCompleted") {
+            const totalEvents = (request.result.assignments || 0) + (request.result.quizzes || 0);
             logger.debug(`同期完了通知: 課題${request.result.assignments}件、クイズ${request.result.quizzes}件`);
-            // 最終同期時刻を更新
-            setStorageDirect({ lastSyncTime: Date.now() }).catch((err) => {
-                logger.error("Failed to update lastSyncTime:", err);
-            });
+            // 実際にイベントが作成された場合のみ最終同期時刻を更新
+            if (totalEvents > 0) {
+                setStorageDirect({ lastSyncTime: Date.now() }).catch((err) => {
+                    logger.error("Failed to update lastSyncTime:", err);
+                });
+            }
             // 同期完了のUI通知を表示
             showSyncNotification(request.result);
         }
@@ -124,53 +127,38 @@ async function checkAndSyncIfNeeded() {
     });
 }
 
-// 自動同期を実行
+// 自動同期を実行（バックグラウンドに委任してトークン取得を含む完全な同期を行う）
 async function performAutoSync() {
     try {
-        const data = await getSakaiDataForSync();
+        const result = await new Promise<any>((resolve, reject) => {
+            chrome.runtime.sendMessage({ action: "performCalendarSync" }, (response) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                    return;
+                }
+                if (!response) {
+                    reject(new Error("No response from background script"));
+                    return;
+                }
+                resolve(response);
+            });
+        });
 
-        if (data.assignments.length === 0 && data.quizzes.length === 0) {
-            logger.debug("同期するデータが見つかりませんでした");
+        if (result.error) {
+            logger.debug(`自動同期スキップ: ${result.error}`);
             return;
         }
 
-        // Googleカレンダーに同期
-        const result = await syncToCalendar(data);
-
-        logger.debug(`自動同期完了: ${result.assignments.length + result.quizzes.length}件作成`);
+        const totalEvents = (result.assignments?.length || 0) + (result.quizzes?.length || 0);
+        logger.debug(`自動同期完了: ${totalEvents}件作成`);
     } catch (error) {
         logger.error("自動同期に失敗:", error);
     }
 }
 
-// syncToCalendar関数の定義
 interface SyncData {
     assignments: EntryProtocol[];
     quizzes: EntryProtocol[];
-}
-interface SyncResult {
-    assignments: { title: string; success: boolean; eventId: string }[];
-    quizzes: { title: string; success: boolean; eventId: string }[];
-    errors: { type: string; title: string; error: string }[];
-}
-async function syncToCalendar(data: SyncData): Promise<SyncResult> {
-    return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage(
-            {
-                action: "syncToCalendar",
-                data: data,
-            },
-            (response) => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                } else if (!response || !response.success) {
-                    reject(new Error(response?.error || "Unknown error"));
-                } else {
-                    resolve(response.result);
-                }
-            }
-        );
-    });
 }
 
 // Sakai LMSからの課題・クイズデータを同期のために取得

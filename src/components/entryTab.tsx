@@ -84,9 +84,9 @@ function MiniSakaiCourse(props: {
             {props.isSubset ? (
                 <div className={aClass}>{props.courseName}</div>
             ) : (
-                <a className={aClass} href={props.coursePage}>
+                <div className={aClass} style={{ cursor: "default" }}>
                     {props.courseName}
-                </a>
+                </div>
             )}
 
             {elements}

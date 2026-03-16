@@ -138,15 +138,17 @@ async function loadTimetableSettings(hostname: string): Promise<{year: string, t
     const savedShowAll = await fromStorage<boolean>(hostname, TimetableShowAllCoursesStorage,
         (data: any) => data === true);
 
-    // 現在の年度をデフォルト値として使用
-    const currentYear = new Date().getFullYear();
-    const currentYearStr = currentYear.toString();
+    // 日本の学年度は4月開始: 1〜3月はまだ前年度
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const academicYear = now.getMonth() < 3 ? currentYear - 1 : currentYear; // 0=Jan,1=Feb,2=Mar
+    const currentYearStr = academicYear.toString();
 
     // 保存された年度が古すぎる場合（5年以上前）は現在の年度を使用
     let finalYear = currentYearStr;
     if (savedYear) {
         const savedYearNum = parseInt(savedYear);
-        if (!isNaN(savedYearNum) && savedYearNum >= currentYear - 5) {
+        if (!isNaN(savedYearNum) && savedYearNum >= academicYear - 5) {
             finalYear = savedYear;
         } else {
             logger.warn(`保存された年度 ${savedYear} が古すぎるため、現在の年度 ${currentYearStr} を使用します。`);
@@ -155,9 +157,10 @@ async function loadTimetableSettings(hostname: string): Promise<{year: string, t
 
     logger.debug(`設定読み込み - 保存年度: ${savedYear}, 保存学期: ${savedTerm}, 最終年度: ${finalYear}, 全コース表示: ${savedShowAll}`);
 
-    // 学期値のバリデーション
+    // 学期値のバリデーション（保存値がなければ現在の月から推定: 4〜9月=春, 10〜3月=秋）
     const validTerms = ['spring', 'spring-1', 'spring-2', 'fall', 'fall-1', 'fall-2'];
-    const finalTerm = savedTerm && validTerms.includes(savedTerm) ? savedTerm : 'spring';
+    const defaultTerm = now.getMonth() >= 3 && now.getMonth() <= 8 ? 'spring' : 'fall';
+    const finalTerm = savedTerm && validTerms.includes(savedTerm) ? savedTerm : defaultTerm;
 
     return {
         year: finalYear,
@@ -278,8 +281,9 @@ export const showTimetableModal = (): void => {
     const yearSelect = document.createElement('select');
     yearSelect.id = 'cs-timetable-year';
     
-    // 現在の年から前後5年の選択肢を追加（範囲を拡大）
-    const currentYear = new Date().getFullYear();
+    // 日本の学年度は4月開始: 1〜3月はまだ前年度
+    const now = new Date();
+    const currentYear = now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
     for (let year = currentYear - 5; year <= currentYear + 2; year++) {
         const option = document.createElement('option');
         option.value = String(year);
@@ -360,11 +364,12 @@ export const showTimetableModal = (): void => {
             }
         }
         
-        // 保存された学期がセレクトボックスにない場合、デフォルト学期を選択
+        // 保存された学期がセレクトボックスにない場合、現在の月に基づくデフォルト学期を選択
         if (!termFound) {
-            logger.warn(`保存された学期 ${settings.term} がセレクトボックスにありません。デフォルト学期 'spring' を選択します。`);
+            const defaultTerm = new Date().getMonth() >= 3 && new Date().getMonth() <= 8 ? 'spring' : 'fall';
+            logger.warn(`保存された学期 ${settings.term} がセレクトボックスにありません。デフォルト学期 '${defaultTerm}' を選択します。`);
             for (let i = 0; i < termSelect.options.length; i++) {
-                if (termSelect.options[i].value === 'spring') {
+                if (termSelect.options[i].value === defaultTerm) {
                     termSelect.selectedIndex = i;
                     break;
                 }
@@ -537,17 +542,21 @@ function fetchCoursesFromPortal(): CourseInfo[] {
                 
                 // 曜日と時限の情報を抽出 例: "月４限,木３限"
                 const dayPeriods = periodInfo.split(',').map(dp => {
+                    return dp.trim()
                     // 漢数字を算用数字に変換
-                    return dp.replace(/([月火水木金土日])([一二三四五六七八九十]+)限/, (_, day, period) => {
+                    .replace(/([月火水木金土日])([一二三四五六七八九十]+)限/, (_, day, period) => {
                         const periodMap: { [key: string]: string } = {
                             '一': '1', '二': '2', '三': '3', '四': '4', '五': '5',
                             '六': '6', '七': '7', '八': '8', '九': '9', '十': '10'
                         };
                         return day + (periodMap[period] || period);
-                    }).replace(/([月火水木金土日])([０-９]+)限/, (_, day, period) => {
-                        // 全角数字を半角数字に変換
+                    })
+                    // 全角数字を半角数字に変換
+                    .replace(/([月火水木金土日])([０-９]+)限/, (_, day, period) => {
                         return day + period.replace(/[０-９]/g, (s: string) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-                    });
+                    })
+                    // 半角数字+限（例: 金1限 → 金1）
+                    .replace(/([月火水木金土日])([0-9]+)限/, '$1$2');
                 });
                 
                 logger.debug('変換後の曜日時限:', dayPeriods);
@@ -1584,8 +1593,9 @@ function showCourseColorModal() {
             const selectedTerm = termSelect.value;
             const selectedTermLabel = termSelect.options[termSelect.selectedIndex].textContent || selectedTerm;
             const allCourses = (showAllCourses ? cachedAllCourses : cachedCourses) || [];
-            const filteredCourses = filterCoursesByYearAndTerm(allCourses, selectedYear, selectedTerm)
-                .filter(c => !currentDroppedMap[c.title]);
+            const exportFiltered = filterCoursesByYearAndTerm(allCourses, selectedYear, selectedTerm)
+                .filter(c => !currentDroppedMap[c.title])
+                .filter((c, i, self) => i === self.findIndex(x => x.title === c.title));
             const classroomData = currentClassroomMap;
 
             const exportDays = ['月', '火', '水', '木', '金'];
@@ -1594,7 +1604,7 @@ function showCourseColorModal() {
                 {length: exportPeriodCount},
                 () => Array.from({length: exportDays.length}, () => [] as CourseInfo[])
             );
-            filteredCourses.forEach(c => {
+            exportFiltered.forEach(c => {
                 c.dayPeriod.forEach(dp => {
                     const dayIdx = exportDays.findIndex(d => dp.startsWith(d));
                     const prd = parseInt(dp.replace(/[^0-9]/g, ''));
@@ -1794,7 +1804,11 @@ async function updateTimetable() {
     const yearTermFiltered = filterCoursesByYearAndTerm(courses, year, term);
     // 教室情報と履修取り消し情報を取得
     Promise.all([loadClassroomInfo(currentSiteHostname), loadDroppedCourses(currentSiteHostname)]).then(([classroomMap, droppedMap]) => {
-    const filteredCourses = yearTermFiltered.filter(c => !droppedMap[c.title]);
+    const filteredCoursesRaw = yearTermFiltered.filter(c => !droppedMap[c.title]);
+    // 重複する講義を除去（同じタイトルの講義は1つだけ表示）
+    const filteredCourses = filteredCoursesRaw.filter((course, index, self) =>
+        index === self.findIndex(c => c.title === course.title)
+    );
         const table = document.createElement('table');
         table.className = 'cs-timetable-table';
         table.style.tableLayout = 'fixed';

@@ -475,7 +475,7 @@ input, textarea, select {
 }
 
 .cs-checkbox:checked + label:before {
-    background: #0064cd;
+    background: #112B72;
     border-radius: 10px;
 }
 
@@ -508,7 +508,7 @@ input, textarea, select {
     vertical-align: middle;
     width: 20px;
     height: 20px;
-    background: #0064cd;
+    background: #112B72;
     border-radius: 10px;
     margin: 3px 5px 0 5px;
     cursor: pointer;
@@ -516,7 +516,7 @@ input, textarea, select {
 }
 
 .cs-minus-button:hover {
-    background: #004e9e;
+    background: #0D1F54;
 }
 
 .cs-minus-button::after {
@@ -588,9 +588,9 @@ input, textarea, select {
 }
 
 .cs-tab-bar > label.cs-tab-active {
-    background-color: #0064cd;
+    background-color: #112B72;
     color: #fffdfd;
-    border-color: #0064cd;
+    border-color: #112B72;
     font-weight: bold;
 }
 
@@ -785,7 +785,7 @@ input, textarea, select {
     width: 15px;
     height: 15px;
     border-radius: 10px;
-    background-color: #0064cd;
+    background-color: #112B72;
     color: white;
     text-align: center;
     line-height: 15px;
