@@ -10,18 +10,18 @@
 
   // ===== Configuration =====
   const EXT_CSS_FILES = [
-    '/tact-mock/ext/css/comfortable-sakai.css',
-    '/tact-mock/ext/css/tact-extension.css',
-    '/tact-mock/ext/css/date-picker.css',
-    '/tact-mock/ext/css/material-dialog.css',
-    '/tact-mock/ext/css/minus-button.css',
-    '/tact-mock/ext/css/submission-tracker.css',
-    '/tact-mock/ext/css/calendar-sync.css',
-    '/tact-mock/ext/css/memo-styles.css',
-    '/tact-mock/ext/css/submitted-styles.css'
+    'ext/css/comfortable-sakai.css',
+    'ext/css/tact-extension.css',
+    'ext/css/date-picker.css',
+    'ext/css/material-dialog.css',
+    'ext/css/minus-button.css',
+    'ext/css/submission-tracker.css',
+    'ext/css/calendar-sync.css',
+    'ext/css/memo-styles.css',
+    'ext/css/submitted-styles.css'
   ];
 
-  const EXT_SCRIPT = '/tact-mock/ext/content_script.js';
+  const EXT_SCRIPT = 'ext/content_script.js';
 
   // ===== State =====
   let isExtensionOn = false;

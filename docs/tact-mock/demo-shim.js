@@ -133,15 +133,15 @@
    * public/ ディレクトリを ../../public/ として参照する。
    */
   var RESOURCE_MAP = {
-    'img/closeBtn.svg':     '/tact-mock/ext/img/closeBtn.svg',
-    'img/logo.png':         '/tact-mock/ext/img/logo.png',
-    'img/scheduleBtn.svg':  '/tact-mock/ext/img/scheduleBtn.svg',
-    'img/favoriteBtn.svg':  '/tact-mock/ext/img/favoriteBtn.svg',
-    'img/trackerBtn.svg':   '/tact-mock/ext/img/trackerBtn.svg',
-    'img/folderBtn.svg':    '/tact-mock/ext/img/folderBtn.svg',
-    'img/miniSakaiBtn.png': '/tact-mock/ext/img/miniSakaiBtn.png',
-    'css/date-picker.css':  '/tact-mock/ext/css/date-picker.css',
-    'css/memo-styles.css':  '/tact-mock/ext/css/memo-styles.css'
+    'img/closeBtn.svg':     'ext/img/closeBtn.svg',
+    'img/logo.png':         'ext/img/logo.png',
+    'img/scheduleBtn.svg':  'ext/img/scheduleBtn.svg',
+    'img/favoriteBtn.svg':  'ext/img/favoriteBtn.svg',
+    'img/trackerBtn.svg':   'ext/img/trackerBtn.svg',
+    'img/folderBtn.svg':    'ext/img/folderBtn.svg',
+    'img/miniSakaiBtn.png': 'ext/img/miniSakaiBtn.png',
+    'css/date-picker.css':  'ext/css/date-picker.css',
+    'css/memo-styles.css':  'ext/css/memo-styles.css'
   };
 
   /** sendMessage ハンドラ定義 */
@@ -197,7 +197,7 @@
     lastError: null,
 
     getURL: function (path) {
-      return RESOURCE_MAP[path] || ('/tact-mock/ext/' + path);
+      return RESOURCE_MAP[path] || ('ext/' + path);
     },
 
     sendMessage: function (message, callback) {
@@ -243,7 +243,7 @@
   var i18nMessages = {};
   try {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/tact-mock/ext/_locales/ja/messages.json', false); // 同期
+    xhr.open('GET', 'ext/_locales/ja/messages.json', false); // 同期
     xhr.send();
     if (xhr.status === 200) {
       i18nMessages = JSON.parse(xhr.responseText);
@@ -566,6 +566,9 @@
   // ----------------------------------------------------------------
   // 拡張機能の getBaseURL() は location.href に "/portal" が含まれることを前提とする。
   // demo-controls.js の turnOn() から呼び出す（リロード時に404にならないよう遅延実行）
+  // 元のパスを保存（復元用）
+  var _originalPathname = window.location.pathname;
+
   window._demoRewriteURL = function () {
     if (!window.location.pathname.includes('/portal')) {
       try {
@@ -585,7 +588,7 @@
   window._demoRestoreURL = function () {
     if (window.location.pathname.includes('/portal')) {
       try {
-        history.replaceState(null, '', '/tact-mock/index.html');
+        history.replaceState(null, '', _originalPathname);
         console.log('[Demo Shim] URL restored to', window.location.href);
       } catch (e) {
         console.warn('[Demo Shim] Failed to restore URL:', e);
