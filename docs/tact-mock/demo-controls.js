@@ -198,14 +198,13 @@
     // 5. Update fav-sites-entry links for fetchCourse()
     updateFavSitesLinks(currentYear);
 
-    // 6. URL を /portal パスに書き換え（拡張機能の getBaseURL() 互換）
-    if (window._demoRewriteURL) window._demoRewriteURL();
-
-    // 7. Load extension CSS
+    // 6. Load extension CSS & script BEFORE URL rewrite
+    //    (relative paths resolve against current URL)
     loadExtensionCSS();
-
-    // 8. Load extension script
     loadExtensionScript();
+
+    // 7. URL を /portal パスに書き換え（拡張機能の getBaseURL() 互換）
+    if (window._demoRewriteURL) window._demoRewriteURL();
 
     updateStatus('拡張機能 ON - ' + currentYear + '年度');
   }
