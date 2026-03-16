@@ -86,7 +86,7 @@
 
         /* FEATURE GRID — icon + short text */
         .fg { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--paper-deep); border: 1px solid var(--paper-deep); }
-        .fc { background: var(--paper); padding: 2.2rem 2rem; position: relative; transition: background 0.3s; }
+        .fc { background: var(--paper); padding: 2.2rem 2rem; position: relative; transition: background 0.3s; cursor: pointer; }
         .fc:hover { background: var(--paper-warm); }
         .fc-icon { width: 40px; height: 40px; margin-bottom: 1rem; color: var(--ink-faint); transition: color 0.3s; }
         .fc:hover .fc-icon { color: var(--vermillion); }
@@ -94,6 +94,12 @@
         .fc p { font-size: 0.84rem; color: var(--ink-faint); line-height: 1.7; }
         .fc-num { position: absolute; top: 14px; right: 18px; font-family: var(--ff-mincho); font-size: 2.8rem; font-weight: 800; color: var(--paper-deep); line-height: 1; transition: color 0.3s; pointer-events: none; }
         .fc:hover .fc-num { color: rgba(194,54,22,0.08); }
+        .fc-detail { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease; opacity: 0; margin-top: 0; }
+        .fc.open .fc-detail { max-height: 200px; opacity: 1; margin-top: 0.8rem; }
+        .fc-detail p { font-size: 0.78rem; color: var(--ink-soft); line-height: 1.8; border-top: 1px solid var(--paper-deep); padding-top: 0.7rem; }
+        .fc::after { content: ''; position: absolute; bottom: 12px; right: 18px; width: 8px; height: 8px; border-right: 1.5px solid var(--stone); border-bottom: 1.5px solid var(--stone); transform: rotate(45deg); transition: transform 0.3s; opacity: 0.4; }
+        .fc:hover::after { opacity: 0.7; }
+        .fc.open::after { transform: rotate(-135deg); }
         .tag { display: inline-block; font-size: 0.58rem; padding: 1px 6px; letter-spacing: 0.08em; font-weight: 700; vertical-align: middle; margin-left: 5px; border: 1px solid; }
         .tag-core { color: var(--indigo); border-color: var(--indigo); }
         .tag-tact { color: var(--vermillion); border-color: var(--vermillion); }
@@ -235,6 +241,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="4" width="36" height="8" rx="2"/><path d="M8 8h4M16 8h2M22 8h2M28 8h4"/></svg>
                 <h3>ヘッダー拡張 <span class="tag tag-core">CORE</span></h3>
                 <p>各機能へのボタンをヘッダーに追加</p>
+                <div class="fc-detail"><p>TACT のヘッダーに miniSakai・時間割・カレンダー同期・提出率トラッカーへのアイコンボタンを配置。ワンクリックで各機能にアクセスできます。</p></div>
             </div>
 
             <div class="fc">
@@ -242,6 +249,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="22" y="2" width="16" height="36" rx="2"/><path d="M26 10h8M26 16h8M26 22h6M26 28h4"/><rect x="2" y="2" width="18" height="36" rx="2" stroke-dasharray="3 2" opacity="0.3"/></svg>
                 <h3>miniSakai <span class="tag tag-core">CORE</span></h3>
                 <p>課題・小テスト・メモをサイドパネルに一覧表示</p>
+                <div class="fc-detail"><p>全コースの課題と小テストを締切順に自動集約するサイドパネル。緊急度に応じた色分け、提出済み/非表示の管理、バックグラウンド自動取得に対応。</p></div>
             </div>
 
             <div class="fc">
@@ -249,6 +257,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="8" y="6" width="24" height="28" rx="4"/><path d="M14 14h12M14 20h8M14 26h10"/></svg>
                 <h3>subSakai</h3>
                 <p>ポップアップから課題を即確認（読み取り専用）</p>
+                <div class="fc-detail"><p>ブラウザのツールバーアイコンからワンクリックで課題一覧を表示。TACT を開かなくても締切状況をすばやく確認できます。</p></div>
             </div>
 
             <div class="fc">
@@ -258,6 +267,7 @@
                 </svg>
                 <h3>コースバー色分け</h3>
                 <p>締切の緊急度でコースタブを自動色分け</p>
+                <div class="fc-detail"><p>24 時間以内は赤、3 日以内は黄、それ以降は緑でコースタブを自動着色。どの講義に急ぎの課題があるか一目で分かります。</p></div>
             </div>
 
             <div class="fc">
@@ -265,6 +275,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2" width="36" height="36" rx="2"/><path d="M2 10h36M2 18h36M2 26h36M14 2v36M26 2v36"/></svg>
                 <h3>時間割</h3>
                 <p>年度・学期切替、色カスタマイズ、PNG 出力</p>
+                <div class="fc-detail"><p>登録講義を曜日×時限のテーブルで表示。年度・学期の切り替え、セルの色カスタマイズ、PNG 画像としてエクスポートが可能です。</p></div>
             </div>
 
             <div class="fc">
@@ -272,6 +283,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="6" width="32" height="28" rx="2"/><path d="M4 14h32"/><path d="M12 6V2M28 6V2"/><path d="M10 20l4 4 8-8" stroke-width="2"/></svg>
                 <h3>カレンダー同期</h3>
                 <p>Google カレンダーへ自動 / 手動で締切を登録</p>
+                <div class="fc-detail"><p>OAuth 認証で Google カレンダーと連携。締切をイベントとして自動登録し、リマインダー通知を受け取れます。手動同期も可能。</p></div>
             </div>
 
             <div class="fc">
@@ -279,6 +291,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 4h28v32H6z" rx="2"/><path d="M12 12h16M12 18h12M12 24h14M12 30h8"/><path d="M6 4l6 0" stroke-width="3"/></svg>
                 <h3>メモ <span class="tag tag-tact">TACT</span></h3>
                 <p>講義ごとにメモと外部リンクを保存・検索</p>
+                <div class="fc-detail"><p>TACT の各講義ページにメモタブを追加。ノートの記録と外部リンクの保存ができ、全講義のメモを横断検索可能。</p></div>
             </div>
 
             <div class="fc">
@@ -286,6 +299,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6h12v8H4zM10 14v6l10 0"/><path d="M20 16h12v6H20z"/><path d="M26 22v4l8 0"/><path d="M34 22h4v6h-4z" opacity="0.4"/><path d="M20 30h12v6H20z" opacity="0.4"/></svg>
                 <h3>フォルダ <span class="tag tag-tact">TACT</span></h3>
                 <p>授業資料・課題・お知らせをツリー表示</p>
+                <div class="fc-detail"><p>TACT の各講義ページにフォルダタブを追加。授業資料・課題・お知らせをツリー構造で一覧表示し、ファイルに直接アクセスできます。</p></div>
             </div>
 
             <div class="fc">
@@ -293,6 +307,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="8" width="36" height="24" rx="2"/><path d="M2 16h36"/><rect x="6" y="20" width="14" height="4" rx="1" fill="rgba(194,54,22,0.2)" stroke="currentColor"/><rect x="6" y="28" width="8" height="4" rx="1" fill="rgba(74,124,89,0.2)" stroke="currentColor"/><rect x="24" y="20" width="10" height="4" rx="1" fill="rgba(44,62,107,0.2)" stroke="currentColor"/></svg>
                 <h3>週間ダッシュボード <span class="tag tag-v2">V2</span></h3>
                 <p>ガントチャート風に全課題を週単位で表示</p>
+                <div class="fc-detail"><p>今週〜来週の課題をガントチャート風のタイムラインで可視化。締切の集中度合いが直感的に把握でき、学習計画の立案に役立ちます。</p></div>
             </div>
 
             <div class="fc">
@@ -300,6 +315,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 32V16l12-8 12 8v16"/><path d="M8 16l12 8 12-8"/><path d="M20 24v8"/><circle cx="32" cy="8" r="5" fill="var(--vermillion)" stroke="none"/><text x="32" y="11" text-anchor="middle" fill="white" font-size="8" font-weight="700" font-family="sans-serif">N</text></svg>
                 <h3>新着検知 <span class="tag tag-v2">V2</span></h3>
                 <p>資料の更新をバッジで自動通知</p>
+                <div class="fc-detail"><p>各講義フォルダのファイル更新を定期的にチェック。新しい資料が追加されると miniSakai 上にバッジで通知します。</p></div>
             </div>
 
             <div class="fc">
@@ -307,6 +323,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 8h32M4 16h32M4 24h32M4 32h32"/><circle cx="8" cy="8" r="2" fill="var(--vermillion)" stroke="none"/><circle cx="8" cy="16" r="2" fill="var(--amber)" stroke="none"/><circle cx="8" cy="24" r="2" fill="var(--stone)" stroke="none"/><circle cx="8" cy="32" r="2" fill="var(--stone)" stroke="none"/></svg>
                 <h3>お知らせタイムライン <span class="tag tag-v2">V2</span></h3>
                 <p>全コースのお知らせを時系列で横断一覧</p>
+                <div class="fc-detail"><p>全講義のお知らせを時系列で統合表示。講義を個別に開くことなく、最新の連絡事項をまとめて確認できます。</p></div>
             </div>
 
             <div class="fc">
@@ -320,6 +337,7 @@
                 </svg>
                 <h3>学習負荷ヒートマップ <span class="tag tag-v2">V2</span></h3>
                 <p>4 週間分の締切密度をカレンダー型で可視化</p>
+                <div class="fc-detail"><p>4 週間分の締切密度をヒートマップで表示。忙しい日が濃い色で示され、レポートの集中期間を事前に把握できます。</p></div>
             </div>
 
             <div class="fc">
@@ -332,6 +350,7 @@
                 </svg>
                 <h3>提出率トラッカー <span class="tag tag-v2">V2</span></h3>
                 <p>コースごとの提出状況を棒グラフで確認</p>
+                <div class="fc-detail"><p>コースごとの課題提出状況をプログレスバーで可視化。提出忘れがないか一目で確認でき、学期末の振り返りにも使えます。</p></div>
             </div>
 
             <div class="fc">
@@ -339,6 +358,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4h14v10H4z"/><path d="M22 4h14v10H22z"/><path d="M11 14v4h8"/><path d="M19 14v10H4v-6"/><path d="M29 14v4h-8"/><path d="M19 28h14v8H19z" opacity="0.4"/><path d="M4 28h12v8H4z" opacity="0.4"/><circle cx="34" cy="8" r="3" fill="var(--vermillion)" stroke="none" opacity="0.8"/></svg>
                 <h3>横断フォルダブラウザ <span class="tag tag-v2">V2</span></h3>
                 <p>全教科を学期別に分類、検索・ZIP 一括 DL</p>
+                <div class="fc-detail"><p>全教科の授業資料を学期・カテゴリ別に統合表示。ファイル名での検索や、選択ファイルの ZIP 一括ダウンロードに対応。</p></div>
             </div>
 
             <div class="fc">
@@ -346,6 +366,7 @@
                 <svg class="fc-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="6" y="6" width="28" height="28" rx="3"/><path d="M14 14l12 12M26 14L14 26" stroke-width="2"/></svg>
                 <h3>履修取り消し</h3>
                 <p>不要コースを全機能から一括非表示</p>
+                <div class="fc-detail"><p>履修を取りやめた講義を全機能から一括で非表示に。miniSakai・時間割・カレンダーなどすべてに反映されます。</p></div>
             </div>
 
         </div>
@@ -432,6 +453,13 @@ var observer = new IntersectionObserver(function(entries) {
     });
 }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
 reveals.forEach(function(el) { observer.observe(el); });
+document.querySelectorAll('.fc').forEach(function(card) {
+    card.addEventListener('click', function() {
+        var wasOpen = this.classList.contains('open');
+        document.querySelectorAll('.fc.open').forEach(function(c) { c.classList.remove('open'); });
+        if (!wasOpen) this.classList.add('open');
+    });
+});
 </script>
 
 </body>
