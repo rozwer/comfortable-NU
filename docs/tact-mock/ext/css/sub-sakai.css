@@ -1,0 +1,92 @@
+body {
+    font-family: "Open Sans", sans-serif;
+    min-width: 300px;
+    max-width: 400px;
+    background-color: rgb(202, 202, 202);
+    font-size: medium;
+    line-height: normal;
+}
+span {
+    font-family: "Open Sans", sans-serif;
+}
+
+.cs-assignment-title {
+    font-family: "Open Sans", sans-serif;
+    font-size: 12px !important;
+    color: #524e4e;
+    padding-left: 20px;
+    word-break: break-word;
+}
+.cs-assignment-date {
+    font-family: initial;
+    font-size: 11px !important;
+    font-weight: bold;
+    color: #b01011
+}
+
+.sp{
+    margin: 10px;
+}
+.cs-assignment-time {
+    font-family: "Open Sans", sans-serif;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    margin: 10px;
+    border: inset;
+    font-weight: bold;
+    color: #464646;
+    font-size: small;
+}
+
+.cs-quiz-time {
+    font-family: "Open Sans", sans-serif;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    margin: 10px;
+    border: inset;
+    font-weight: bold;
+    color: #464646;
+    font-size: small;
+}
+
+.cs-minisakai-logo {
+    top: 7px;
+    left: 2px;
+    height: 40px;
+    position: unset;
+}
+
+.cs-version{
+    font-family: "Open  Sans", sans-serif;
+    padding-left: 5px;
+    font-weight: bold;
+}
+
+#subSakai {
+    --topDanger: #f78989;
+    --topWarning: #fdd783;
+    --topSuccess: #8bd48d;
+    --topOther: #adadad;
+    --miniDanger: #e85555;
+    --miniWarning: #d7aa57;
+    --miniSuccess: #62b665;
+    --miniOther: #777777;
+    --miniLate: #212121;
+    --textColor: #464646;
+    --bgColor: #cacaca;
+    --dateColor: #b01011;
+}
+
+/* ダークモード用フォルダモーダル */
+body[data-theme='dark'] {
+  background-color: #23272e !important;
+  color: #f1f1f1 !important;
+}
+body[data-theme='dark'] .cs-assignment-title,
+body[data-theme='dark'] .cs-assignment-date,
+body[data-theme='dark'] .cs-assignment-time,
+body[data-theme='dark'] .cs-quiz-time {
+  color: #fff !important;
+}

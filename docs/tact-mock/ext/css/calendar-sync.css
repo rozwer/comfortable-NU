@@ -1,0 +1,448 @@
+/**
+ * Google Calendar同期機能用スタイルシート
+ * カレンダー同期モーダルとUI要素のスタイル定義
+ * デザイン: material-dialog / datepicker と統一
+ */
+/* Google Calendar Sync Modal Styles */
+.cs-sync-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.35);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+}
+
+.cs-sync-modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 0;
+  min-width: 400px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ヘッダー: material-dialog (#112B72) に統一 */
+.cs-sync-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #112B72;
+  color: white;
+}
+
+.cs-sync-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+}
+
+.cs-sync-close {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: white;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.cs-sync-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ボディ */
+.cs-sync-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* アカウントセクション */
+.cs-sync-account-section {
+  margin-bottom: 16px;
+}
+
+.cs-sync-account-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.cs-sync-accounts {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cs-sync-account {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cs-sync-account:last-child {
+  border-bottom: none;
+}
+
+.cs-sync-account:hover {
+  background: #f5f5f5;
+}
+
+.cs-sync-account-picture {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.cs-sync-account-info {
+  flex: 1;
+}
+
+.cs-sync-account-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.cs-sync-account-email {
+  color: #888;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.cs-sync-loading,
+.cs-sync-error,
+.cs-sync-no-account {
+  padding: 16px;
+  text-align: center;
+  color: #888;
+}
+
+.cs-sync-error {
+  color: #d32f2f;
+}
+
+.cs-sync-error-detail {
+  font-size: 12px;
+  color: #999;
+  margin: 8px 0;
+  font-style: italic;
+}
+
+/* Authentication notice styles */
+.cs-auth-notice {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-left: 4px solid #112B72;
+  border-radius: 4px;
+  padding: 14px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.cs-auth-notice h4 {
+  margin: 0 0 6px 0;
+  color: #333;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cs-auth-notice p {
+  margin: 6px 0;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.cs-auth-notice small {
+  color: #999;
+  font-size: 12px;
+}
+
+/* Connected account styles */
+.cs-connected-account-section {
+  margin-bottom: 12px;
+  padding: 0 0 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.cs-connected-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f0f7ff;
+  border: 1px solid #cce0ff;
+  border-radius: 6px;
+}
+
+.cs-connected-account .cs-sync-account-info {
+  flex: 1;
+}
+
+.cs-connected-account #logoutButton {
+  padding: 4px 10px;
+  font-size: 12px;
+  margin-left: auto;
+  min-width: auto;
+  flex: none;
+}
+
+.cs-connected-label {
+  background: #112B72;
+  color: #fff;
+  font-size: 11px;
+  border-radius: 3px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+/* 同期オプション */
+.cs-sync-options {
+  margin-bottom: 16px;
+}
+
+.cs-sync-options label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+}
+
+.cs-sync-options input[type="checkbox"] {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+}
+
+/* Auto-sync settings styles */
+.cs-sync-auto-settings {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.cs-auto-sync-toggle {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  position: relative;
+}
+
+.cs-auto-sync-toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.cs-toggle-slider {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  background-color: #ccc;
+  border-radius: 22px;
+  margin-right: 10px;
+  transition: background-color 0.3s;
+  flex-shrink: 0;
+}
+
+.cs-toggle-slider:before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.cs-auto-sync-toggle input:checked + .cs-toggle-slider {
+  background-color: #112B72;
+}
+
+.cs-auto-sync-toggle input:checked + .cs-toggle-slider:before {
+  transform: translateX(18px);
+}
+
+.cs-sync-interval-settings {
+  transition: opacity 0.3s;
+}
+
+.cs-sync-interval-settings label {
+  font-size: 13px;
+  color: #666;
+}
+
+.cs-sync-interval-settings input[type="number"] {
+  width: 60px;
+  margin-left: 8px;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+/* 最終同期表示 */
+.cs-sync-settings {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #666;
+}
+
+.cs-sync-settings #refreshLastSyncBtn {
+  padding: 3px 10px;
+  font-size: 12px;
+  flex: none;
+}
+
+/* ステータスメッセージ */
+.cs-sync-status {
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  min-height: 18px;
+}
+
+.cs-sync-status:empty {
+  display: none;
+}
+
+.cs-sync-status-info {
+  background: #e8f0fe;
+  color: #1a5cc8;
+  border: 1px solid #cce0ff;
+}
+
+.cs-sync-status-success {
+  background: #e6f9ed;
+  color: #1a7a3a;
+  border: 1px solid #b3e6c7;
+}
+
+.cs-sync-status-error {
+  background: #fde8e8;
+  color: #d32f2f;
+  border: 1px solid #f5c6c6;
+}
+
+/* フッター: datepicker / material-dialog パターンに統一 */
+.cs-sync-footer {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #eee;
+}
+
+/* ボタン共通 */
+.cs-sync-btn {
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: none;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cs-sync-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cs-sync-btn-primary {
+  background-color: #112B72;
+  border: 1px solid #112B72;
+  color: white;
+}
+
+.cs-sync-btn-primary:hover:not(:disabled) {
+  background-color: #0D1F54;
+}
+
+.cs-sync-btn-secondary {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.cs-sync-btn-secondary:hover:not(:disabled) {
+  background-color: #e5e5e5;
+}
+
+.cs-sync-btn-danger {
+  background: transparent;
+  color: #d32f2f;
+  border: 1px solid #ddd;
+}
+
+.cs-sync-btn-danger:hover:not(:disabled) {
+  background: #fde8e8;
+  border-color: #f5c6c6;
+}
+
+/* Radio button styling */
+.cs-sync-account input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .cs-sync-modal-content {
+    width: calc(100vw - 32px);
+    margin: 16px;
+  }
+
+  .cs-sync-footer {
+    flex-direction: column-reverse;
+  }
+
+  .cs-sync-footer .cs-sync-btn {
+    width: 100%;
+  }
+}

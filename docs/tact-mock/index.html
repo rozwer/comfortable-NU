@@ -594,7 +594,7 @@ sakai.editor.editors.ckeditor.browser = 'elfinder';
 </style>
 </head>
 
-    <body class="Mrphs-portalBody course  "><div style="background:linear-gradient(135deg,#1a73e8,#4285f4);color:#fff;text-align:center;padding:8px 16px;font-size:14px;z-index:10000;position:relative;">This is a demo page for Comfortable NU extension preview. Powered by Sakai (Open Source). <a href="../index.html" style="color:#fff;text-decoration:underline;margin-left:8px;">Back to Comfortable NU</a></div><div class="pasystem-banner-alerts" role="status"></div>
+    <body class="Mrphs-portalBody course  "><div style="background:linear-gradient(135deg,#1a73e8,#4285f4);color:#fff;text-align:center;padding:8px 16px;font-size:14px;z-index:100;position:relative;pointer-events:none;">This is a demo page for Comfortable NU extension preview. Powered by Sakai (Open Source). <a href="../index.html" style="color:#fff;text-decoration:underline;margin-left:8px;pointer-events:auto;">Back to Comfortable NU</a></div><div class="pasystem-banner-alerts" role="status"></div>
 
         <noscript>
             <span id="portal_js_warn" class="Mrphs-noJs js-warn-no-js">JavaScript を有効化すると Sakai はよりよく機能します．ブラウザの JavaScript を有効化して下さい．</span>
@@ -2819,19 +2819,52 @@ if (paSystemJQueryOK()) {
         </div>
     
 
-<!-- Demo: Disable all navigation and make non-essential elements non-interactive -->
+<!-- Demo: Back to main page banner -->
 <style>
-/* Disable all links visually and functionally */
-a[href]:not([data-demo-active]) {
-    pointer-events: none !important;
-    cursor: default !important;
+.demo-back-banner {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(26, 23, 20, 0.88);
+    backdrop-filter: blur(8px);
+    color: #f5f0e8;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    transition: background 0.2s, transform 0.2s;
 }
-/* Disable form submissions */
-form { pointer-events: none !important; }
-select { pointer-events: none !important; }
-button:not([data-demo-active]) { pointer-events: none !important; cursor: default !important; }
+.demo-back-banner:hover {
+    background: rgba(194, 54, 22, 0.92);
+    transform: translateY(-1px);
+    color: #f5f0e8;
+}
+.demo-back-banner svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+</style>
+<a href="../" class="demo-back-banner">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L4 8l6 6"/></svg>
+    トップページへ戻る
+</a>
 
-/* Dim non-essential interactive elements to signal they are disabled */
+<!-- Demo: Control panel assets (load before interaction guards) -->
+<link rel="stylesheet" href="/tact-mock/demo-controls.css">
+<script src="/tact-mock/demo-data.js"></script>
+<script src="/tact-mock/demo-shim.js"></script>
+<script src="/tact-mock/demo-controls.js"></script>
+
+<!-- Demo: Sakai本体のナビ要素のみ個別に無効化（拡張機能の要素は影響なし） -->
+<style>
 #loginLinks,
 .Mrphs-loginNav .portal-bullhorns-buttons,
 .view-all-sites-btn,
@@ -2847,24 +2880,33 @@ button:not([data-demo-active]) { pointer-events: none !important; cursor: defaul
 #show-all-sites,
 .Mrphs-collapseTools,
 #footerAppPresence,
-.Mrphs-footerApp__presence {
-    opacity: 0.5 !important;
-    pointer-events: none !important;
+.Mrphs-footerApp__presence,
+.Mrphs-skipNav,
+.Mrphs-portalBody > .Mrphs-siteHierarchy,
+#content form,
+#content select {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* 旧ビルドのモーダル（overlay なし）を固定オーバーレイとして表示 */
+body > .cs-tact-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+body > .cs-tact-modal::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: -1;
 }
 </style>
-<script>
-// Prevent any remaining click-through on links
-document.addEventListener('click', function(e) {
-    var link = e.target.closest('a');
-    if (link && !link.hasAttribute('data-demo-active')) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-}, true);
-// Prevent form submissions
-document.addEventListener('submit', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}, true);
-</script>
 </body></html>
